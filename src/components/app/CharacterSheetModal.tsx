@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pushLog } from "@/lib/log";
 import { totals, fmtMod, modifier, RARITY_COLOR, SLOTS, type Character, type Item, type Rarity } from "@/lib/game";
 import { RarityBadge } from "@/components/app/RarityBadge";
+import { ConditionsPanel } from "@/components/app/ConditionsPanel";
 
 type Props = {
   characterId: string;
@@ -116,19 +117,20 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
           <p className="text-xs text-muted-foreground">{character.race || "—"} / {character.class || "—"} · {character.role === "dm" ? "Dungeon Master" : "Jugador"}</p>
         </div>
         {character.image_url && (
-          <div className="aspect-[3/2] rounded-lg overflow-hidden bg-[var(--secondary)] relative">
+          <div className="mx-auto w-40 aspect-[3/4] rounded-lg overflow-hidden bg-[var(--secondary)] relative">
             <img src={character.image_url} alt={character.name}
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               style={{
-                transform: `scale(${character.image_scale || 1})`,
-                objectPosition: `${character.image_offset_x ?? 50}% ${character.image_offset_y ?? 50}%`,
+                transform: `translate(${((character.image_offset_x ?? 50) - 50)}%, ${((character.image_offset_y ?? 50) - 50)}%) scale(${character.image_scale || 1})`,
+                transformOrigin: "center center",
               }} />
           </div>
         )}
-        <div className="grid grid-cols-4 gap-2 text-center text-xs">
+        <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
           <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Vida</p><p className="font-display text-sm">{character.current_hp}/{stats.maxHp}</p></div>
           <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Def</p><p className="font-display text-sm text-[var(--gold)]">{stats.defense}</p></div>
           <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Vel</p><p className="font-display text-sm">{character.velocity}</p></div>
+          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Daño</p><p className="font-display text-sm text-[var(--loss)]">{stats.damage > 0 ? `+${stats.damage}` : stats.damage}</p></div>
           <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">🪙</p><p className="font-display text-sm text-[var(--gold)]">{character.coins}</p></div>
         </div>
         {isEdit && (
@@ -173,9 +175,10 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
             ))}
           </div>
         </div>
+        <ConditionsPanel character={character} campaignId={campaignId} canEdit={isEdit} />
         <div>
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Mochila</p>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
+          <div className="space-y-1">
             {items.filter(i => !i.equipped).length === 0 && <p className="text-[10px] text-muted-foreground">Vacía.</p>}
             {items.filter(i => !i.equipped).map(it => (
               <button key={it.id} onClick={() => onPickItem?.(it)} className="w-full flex justify-between text-xs ornate-card px-2 py-1 text-left">

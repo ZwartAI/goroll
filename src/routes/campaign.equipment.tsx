@@ -60,9 +60,11 @@ function Equipment() {
           const it = equipped(s.key);
           return (
             <button key={s.key} onClick={() => setPicker(s.key)}
-              className="ornate-card aspect-square flex flex-col items-center justify-center p-2 relative"
-              style={it ? { borderColor: RARITY_COLOR[it.rarity as Rarity], boxShadow: `0 0 12px ${RARITY_COLOR[it.rarity as Rarity]}` } : undefined}>
-              <span className="text-2xl mb-1">{s.icon}</span>
+              className={`ornate-card aspect-square flex flex-col items-center justify-center p-2 relative ${it ? "" : "opacity-60"}`}
+              style={it
+                ? { borderColor: RARITY_COLOR[it.rarity as Rarity], boxShadow: `0 0 12px ${RARITY_COLOR[it.rarity as Rarity]}` }
+                : { background: "color-mix(in oklab, black 55%, var(--card))", filter: "saturate(0)" }}>
+              <span className={`text-2xl mb-1 ${it ? "" : "grayscale opacity-50"}`}>{s.icon}</span>
               <span className="text-[9px] uppercase text-muted-foreground text-center leading-tight">{s.label}</span>
               {it && <span className="text-[9px] mt-1 text-center font-display truncate w-full" style={{ color: RARITY_COLOR[it.rarity as Rarity] }}>{it.name}</span>}
             </button>
