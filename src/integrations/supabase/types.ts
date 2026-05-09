@@ -127,6 +127,7 @@ export type Database = {
           con: number
           created_at: string
           current_hp: number
+          damage_boost: number
           des: number
           fue: number
           id: string
@@ -154,6 +155,7 @@ export type Database = {
           con?: number
           created_at?: string
           current_hp?: number
+          damage_boost?: number
           des?: number
           fue?: number
           id?: string
@@ -181,6 +183,7 @@ export type Database = {
           con?: number
           created_at?: string
           current_hp?: number
+          damage_boost?: number
           des?: number
           fue?: number
           id?: string
