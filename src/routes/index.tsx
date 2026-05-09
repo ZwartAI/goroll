@@ -7,6 +7,8 @@ import {
   type Campaign, type Character, type Role, type StoredUser,
 } from "@/lib/game";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { attemptLogin } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Vamos a Rolear" }] }),
@@ -65,6 +67,7 @@ function Home() {
     })();
   }, [step, user, campaign, role]);
 
+  const loginFn = useServerFn(attemptLogin);
   async function login() {
     if (busy) return;
     const uname = username.trim();
@@ -72,21 +75,18 @@ function Home() {
     if (!/^[0-9]{4}$/.test(pin)) return toast.error("El PIN debe ser 4 dígitos");
     setBusy(true);
     try {
-      const { data: existing } = await (supabase as any).from("app_users")
-        .select("*").ilike("username", uname).maybeSingle();
-      let u: StoredUser | null = null;
-      if (existing) {
-        if (existing.pin !== pin) { toast.error("PIN incorrecto"); return; }
-        u = { id: existing.id, username: existing.username };
-        toast.success(`Bienvenido de vuelta, ${existing.username}`);
+      const res = await loginFn({ data: { username: uname, pin } });
+      if (!res.ok) { toast.error(res.message); return; }
+      const u: StoredUser = { id: res.user.id, username: res.user.username };
+      setStoredUser(u); setUser(u);
+      toast.success(`Bienvenido, ${res.user.username}`);
+      if (res.user.isMaster) {
+        nav({ to: "/master" });
       } else {
-        const { data, error } = await (supabase as any).from("app_users")
-          .insert({ username: uname, pin }).select().single();
-        if (error) { toast.error(error.message); return; }
-        u = { id: data.id, username: data.username };
-        toast.success(`Cuenta creada: ${data.username}`);
+        setStep("role");
       }
-      setStoredUser(u); setUser(u); setStep("role");
+    } catch (e: any) {
+      toast.error(e?.message || "Error al iniciar sesión");
     } finally { setBusy(false); }
   }
 
