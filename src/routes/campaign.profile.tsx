@@ -10,6 +10,7 @@ import { ItemModal } from "@/components/app/ItemModal";
 import { ConditionsPanel } from "@/components/app/ConditionsPanel";
 import { Settings, LogOut, Minus, Plus, Camera } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/campaign/profile")({
   component: Profile,
