@@ -171,10 +171,16 @@ function Profile() {
       <ConditionsPanel character={character} campaignId={campaign.id} canEdit={true} />
 
       {/* Quick links */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-2">
         <Link to="/campaign/equipment" className="btn-fantasy text-center">⚔️ Equipo</Link>
         <Link to="/campaign/inventory" className="btn-fantasy text-center" style={{ background: "linear-gradient(135deg, oklch(0.5 0.15 195), oklch(0.3 0.1 195))" }}>🎒 Mochila</Link>
         <Link to="/campaign/achievements" className="btn-fantasy text-center" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>🏆 Logros</Link>
+      </div>
+      <div className="grid grid-cols-1 gap-2 mb-4">
+        <Link to="/campaign/boosters" className="btn-fantasy text-center"
+          style={{ background: "linear-gradient(135deg, var(--rarity-purple), oklch(0.35 0.18 300))", color: "white" }}>
+          🃏 Potenciadores
+        </Link>
       </div>
 
       {/* Log */}
