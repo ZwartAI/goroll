@@ -6,6 +6,7 @@ import { SLOTS, RARITY_BONUS, RARITY_COLOR, RARITY_LABEL, ITEM_CATEGORIES, isWea
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog, type UndoAction } from "@/lib/log";
 import { LogSegments } from "@/components/app/LogSegments";
+import { LogList } from "@/components/app/LogList";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { ItemEditor } from "@/components/app/ItemEditor";
 import { CharacterSheetModal } from "@/components/app/CharacterSheetModal";
