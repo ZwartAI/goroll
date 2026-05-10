@@ -117,6 +117,7 @@ function DM() {
               onClick={() => setCreatingBooster(true)}>
               <Plus size={14} className="inline" /> Nuevo potenciador
             </button>
+            <BulkBoosterImport campaignId={campaign.id} />
           </div>
         </div>
       )}
