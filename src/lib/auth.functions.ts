@@ -97,10 +97,8 @@ export const attemptLogin = createServerFn({ method: "POST" })
       };
     }
 
-    // New account: usernames are unique (case-insensitive index). Reject Master clones.
-    if (uname.toLowerCase() === "masteracc1000") {
-      return { ok: false, reason: "invalid", message: "Nombre reservado." };
-    }
+    // New account: first registration claims the username (case-insensitive index).
+    // The Master account (MasterAcc1000) can also be claimed via first-time registration.
     const { data: created, error } = await supabaseAdmin
       .from("app_users")
       .insert({ username: uname, pin })
