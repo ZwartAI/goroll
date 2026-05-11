@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { SLOTS, RARITY_COLOR, RARITY_BONUS, isWeapon, totals, ITEM_CATEGORIES, type Item, type Rarity } from "@/lib/game";
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog } from "@/lib/log";
+import { clampHpForOwner } from "@/lib/hp";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { useState } from "react";
 

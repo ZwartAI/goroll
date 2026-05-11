@@ -393,7 +393,9 @@ function ItemActions({ item, players, dm, campaignId, onClose, onEdit }: {
   const isEq = item.category === "equipo" || !item.category;
   async function reclaim() {
     const prev = { owner_character_id: item.owner_character_id, in_dm_vault: item.in_dm_vault, equipped: item.equipped };
+    const prevOwner = item.owner_character_id;
     await supabase.from("items").update({ owner_character_id: dm.id, in_dm_vault: true, equipped: false }).eq("id", item.id);
+    await clampHpForOwner(prevOwner);
     await pushLog(campaignId, [
       {t:"char",v:dm.name,color:dm.color,id:dm.id},
       {t:"text",v:"reclamó"},
@@ -414,7 +416,9 @@ function ItemActions({ item, players, dm, campaignId, onClose, onEdit }: {
     if (!target) return;
     const t = players.find(p => p.id === target);
     const prev = { owner_character_id: item.owner_character_id, in_dm_vault: item.in_dm_vault, equipped: item.equipped };
+    const prevOwner = item.owner_character_id;
     await supabase.from("items").update({ owner_character_id: target, in_dm_vault: false, equipped: false }).eq("id", item.id);
+    await clampHpForOwner(prevOwner);
     await pushLog(campaignId, [
       {t:"char",v:dm.name,color:dm.color,id:dm.id},{t:"text",v:"entregó"},
       {t:"item",v:item.name,rarity:item.rarity as Rarity,id:item.id},{t:"text",v:"a"},
