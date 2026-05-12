@@ -19,11 +19,11 @@ function Equipment() {
   const owned = items.filter(i => i.owner_character_id === character.id && (i.category === "equipo" || !i.category));
   const equipped = (slot: Slot) => owned.find(i => i.equipped && i.slot === slot);
 
-  async function syncHpAfter(nextEquipped: Item[]) {
+  async function syncHpAfter(nextEquipped: Item[], isEquipping: boolean) {
     const oldMax = totals(character!, owned.filter(i => i.equipped)).maxHp;
     const newMax = totals(character!, nextEquipped).maxHp;
-    const delta = newMax - oldMax;
-    const nextHp = Math.max(0, Math.min(newMax, character!.current_hp + delta));
+    const { nextHpOnEquipChange } = await import("@/lib/hp");
+    const nextHp = nextHpOnEquipChange(character!.current_hp, oldMax, newMax, isEquipping);
     if (nextHp !== character!.current_hp) {
       await supabase.from("characters").update({ current_hp: nextHp }).eq("id", character!.id);
     }
