@@ -4,8 +4,7 @@ import { totals, type Character, type Item } from "./game";
 /**
  * Recomputes max HP for a character based on currently equipped items
  * and clamps current_hp so it never exceeds the new max.
- * Call this after any item change that may reduce a character's max HP
- * (unequip, transfer, discard, reclaim, etc.).
+ * Use after item-owner changes (transfer, discard, reclaim).
  */
 export async function clampHpForOwner(ownerId: string | null | undefined) {
   if (!ownerId) return;
@@ -19,4 +18,15 @@ export async function clampHpForOwner(ownerId: string | null | undefined) {
   if (ch.current_hp > max) {
     await supabase.from("characters").update({ current_hp: max }).eq("id", ownerId);
   }
+}
+
+/**
+ * Compute new current HP after equipment change.
+ *  - Equipping while at FULL hp (current >= oldMax): bumps to newMax (sees the buff fully).
+ *  - Otherwise (equipping while wounded, or unequipping): keeps current HP, only clamps
+ *    if it now exceeds the new max. Equipment is NOT a healing potion.
+ */
+export function nextHpOnEquipChange(currentHp: number, oldMax: number, newMax: number, isEquipping: boolean): number {
+  if (isEquipping && currentHp >= oldMax) return newMax;
+  return Math.max(0, Math.min(newMax, currentHp));
 }
