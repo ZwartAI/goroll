@@ -98,7 +98,7 @@ function Inventory() {
     setSel(null); setTransferTo("");
   }
 
-  const maxSlots = (character as any).backpack_slots ?? 12;
+  const maxSlots = (character as any).backpack_slots ?? 20;
   const slots = Array.from({ length: maxSlots }, (_, i) => owned[i] ?? null);
 
   return (

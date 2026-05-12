@@ -161,12 +161,12 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
             <div className="stat-pill !text-xs gap-1">
               <span className="truncate min-w-0 flex-1">🎒 Slots de mochila</span>
               <button className="px-2 rounded bg-secondary border border-border" onClick={async () => {
-                const next = Math.max(1, ((character as any).backpack_slots ?? 12) - 1);
+                const next = Math.max(1, ((character as any).backpack_slots ?? 20) - 1);
                 await supabase.from("characters").update({ backpack_slots: next } as any).eq("id", character!.id); reload();
               }}>−</button>
-              <span className="w-8 text-center text-[var(--gold)] font-bold">{(character as any).backpack_slots ?? 12}</span>
+              <span className="w-8 text-center text-[var(--gold)] font-bold">{(character as any).backpack_slots ?? 20}</span>
               <button className="px-2 rounded bg-secondary border border-border" onClick={async () => {
-                const next = Math.min(60, ((character as any).backpack_slots ?? 12) + 1);
+                const next = Math.min(60, ((character as any).backpack_slots ?? 20) + 1);
                 await supabase.from("characters").update({ backpack_slots: next } as any).eq("id", character!.id); reload();
               }}>+</button>
             </div>
