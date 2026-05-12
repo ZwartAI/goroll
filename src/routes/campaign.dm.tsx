@@ -158,16 +158,64 @@ function DM() {
               }
             }}
           >🧹 Eliminar duplicados</button>
+
+          <div className="flex gap-2">
+            <button
+              className="flex-1 text-xs px-3 py-2 rounded border border-border"
+              onClick={() => { setBoosterSelectMode(!boosterSelectMode); setBoosterSel(new Set()); }}
+            >{boosterSelectMode ? "Cancelar selección" : "☑️ Seleccionar"}</button>
+            {boosterSelectMode && (
+              <>
+                <button
+                  className="text-xs px-3 py-2 rounded border border-border"
+                  onClick={() => {
+                    const visible = boosters.filter(b => !boosterSearch || b.name.toLowerCase().includes(boosterSearch.toLowerCase()));
+                    if (boosterSel.size === visible.length) setBoosterSel(new Set());
+                    else setBoosterSel(new Set(visible.map(b => b.id)));
+                  }}
+                >{boosterSel.size === boosters.filter(b => !boosterSearch || b.name.toLowerCase().includes(boosterSearch.toLowerCase())).length && boosterSel.size > 0 ? "Ninguno" : "Todos"}</button>
+                <button
+                  className="text-xs px-3 py-2 rounded border border-destructive text-destructive disabled:opacity-50"
+                  disabled={boosterSel.size === 0}
+                  onClick={async () => {
+                    const ids = [...boosterSel];
+                    if (!confirm(`¿Eliminar ${ids.length} potenciador(es)?`)) return;
+                    const { error } = await (supabase as any).from("boosters").delete().in("id", ids);
+                    if (error) toast.error(error.message);
+                    else {
+                      toast.success(`${ids.length} eliminados`);
+                      await pushLog(campaign.id, [
+                        { t: "char", v: character.name, color: character.color, id: character.id },
+                        { t: "text", v: ` eliminó ${ids.length} potenciador(es).` },
+                      ]);
+                      setBoosterSel(new Set()); setBoosterSelectMode(false);
+                    }
+                  }}
+                >🗑️ Eliminar ({boosterSel.size})</button>
+              </>
+            )}
+          </div>
+
           {boosters.length === 0 && <p className="text-center text-xs text-muted-foreground py-6">Sin potenciadores. Crea uno desde "Crear".</p>}
           {boosters
             .filter(b => !boosterSearch || b.name.toLowerCase().includes(boosterSearch.toLowerCase()))
             .map(b => {
               const owner = b.owner_character_id ? characters.find(c => c.id === b.owner_character_id) : null;
+              const checked = boosterSel.has(b.id);
               return (
-                <button key={b.id} onClick={() => setSelBooster(b)}
-                  className="w-full ornate-card p-3 flex justify-between items-center text-left"
-                  style={{ borderColor: RARITY_COLOR[b.rarity as Rarity] }}>
-                  <div>
+                <button key={b.id} onClick={() => {
+                    if (boosterSelectMode) {
+                      const next = new Set(boosterSel);
+                      if (checked) next.delete(b.id); else next.add(b.id);
+                      setBoosterSel(next);
+                    } else setSelBooster(b);
+                  }}
+                  className="w-full ornate-card p-3 flex justify-between items-center text-left gap-2"
+                  style={{ borderColor: checked ? "var(--gold)" : RARITY_COLOR[b.rarity as Rarity] }}>
+                  {boosterSelectMode && (
+                    <input type="checkbox" readOnly checked={checked} className="accent-[var(--gold)]" />
+                  )}
+                  <div className="flex-1">
                     <p className="font-display" style={{ color: RARITY_COLOR[b.rarity as Rarity] }}>🃏 {b.name}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {b.uses}/{b.max_uses} usos · {owner ? `📦 ${owner.name}` : "🏛️ Vault"}
