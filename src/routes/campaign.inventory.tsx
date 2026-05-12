@@ -43,7 +43,7 @@ function Inventory() {
     if (cur) await supabase.from("items").update({ equipped: false }).eq("id", cur.id);
     await supabase.from("items").update({ equipped: true }).eq("id", it.id);
     const next = owned.filter(i => i.equipped && i.id !== cur?.id && i.id !== it.id).concat([{ ...it, equipped: true }]);
-    await syncHpAfter(next);
+    await syncHpAfter(next, true);
     await pushLog(campaign!.id, [{t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:"se equipó"},{t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id}]);
     setSel(null);
   }
