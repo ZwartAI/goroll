@@ -160,10 +160,10 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
               <button className="btn-fantasy text-[10px]" onClick={() => adjustHp(-1)}>−1 ❤️</button>
               <button className="btn-fantasy text-[10px]" onClick={() => adjustHp(1)}>+1 ❤️</button>
               <button className="btn-fantasy text-[10px]" onClick={() => adjustHp(5)}>+5 ❤️</button>
-              <button className="btn-fantasy text-[10px]" onClick={() => adjustCoins(-5)}>−5 🪙</button>
-              <button className="btn-fantasy text-[10px]" onClick={() => adjustCoins(-1)}>−1 🪙</button>
-              <button className="btn-fantasy text-[10px]" onClick={() => adjustCoins(1)}>+1 🪙</button>
-              <button className="btn-fantasy text-[10px]" onClick={() => adjustCoins(5)}>+5 🪙</button>
+            </div>
+            <div className="ornate-card p-2 text-center">
+              <p className="text-[9px] uppercase text-muted-foreground">🪙 Monedas</p>
+              <CoinsAdjuster onApply={adjustCoins} />
             </div>
             <div className="stat-pill !text-xs gap-1">
               <span className="truncate min-w-0 flex-1">🎒 Slots de mochila</span>
