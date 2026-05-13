@@ -524,49 +524,66 @@ function ItemActions({ item, players, dm, campaignId, onClose, onEdit }: {
   );
 }
 
-const RARITY_ALIASES: Record<string, Rarity> = {
-  blanca: "white", blanco: "white", comun: "white", común: "white", common: "white", white: "white",
-  azul: "blue", rara: "blue", raro: "blue", blue: "blue",
-  morada: "purple", morado: "purple", purpura: "purple", púrpura: "purple", epica: "purple", épica: "purple", purple: "purple",
-  dorada: "gold", dorado: "gold", oro: "gold", legendaria: "gold", legendario: "gold", gold: "gold",
-};
-
 function BulkBoosterImport({ campaignId }: { campaignId: string }) {
   const [busy, setBusy] = useState(false);
   async function handleFile(file: File) {
     setBusy(true);
     try {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      const rows: any[] = [];
-      const errors: string[] = [];
-      lines.forEach((line, idx) => {
-        const parts = line.split("/").map(p => p.trim());
-        if (parts.length < 4) { errors.push(`Línea ${idx + 1}: faltan campos`); return; }
-        const [name, rarityRaw, usesRaw, maxRaw] = parts;
-        const rarity = RARITY_ALIASES[rarityRaw.toLowerCase()];
-        if (!rarity) { errors.push(`Línea ${idx + 1}: rareza inválida "${rarityRaw}"`); return; }
-        const uses = parseInt(usesRaw, 10);
-        const max = parseInt(maxRaw, 10);
-        if (isNaN(uses) || isNaN(max)) { errors.push(`Línea ${idx + 1}: usos inválidos`); return; }
-        rows.push({
-          campaign_id: campaignId, name, rarity,
-          uses: Math.max(0, uses), max_uses: Math.max(1, max),
-          in_dm_vault: true, owner_character_id: null,
-        });
-      });
-      if (rows.length) {
-        const { error } = await (supabase as any).from("boosters").insert(rows);
-        if (error) toast.error(error.message);
-        else toast.success(`Creados ${rows.length} potenciadores`);
+      const { parseBoosterFile, normalizeName } = await import("@/lib/boosterImport");
+      const { rows, errors } = await parseBoosterFile(file);
+      if (errors.length) toast.error(`${errors.length} error(es): ${errors.slice(0,2).map(e=>`${e.where}: ${e.message}`).join(" · ")}`);
+      if (!rows.length) return;
+
+      // Load existing for dedup
+      const { data: existing } = await (supabase as any).from("boosters")
+        .select("id,external_id,name,uses,max_uses").eq("campaign_id", campaignId);
+      const byExt = new Map<string, any>();
+      const byName = new Map<string, any>();
+      for (const b of (existing || [])) {
+        if (b.external_id) byExt.set(String(b.external_id).toLowerCase(), b);
+        byName.set(normalizeName(b.name || ""), b);
       }
-      if (errors.length) toast.error(errors.slice(0, 3).join(" · "));
+
+      let created = 0, updated = 0;
+      for (const r of rows) {
+        const match = (r.external_id && byExt.get(r.external_id.toLowerCase()))
+          || byName.get(normalizeName(r.name));
+        const payload: any = {
+          campaign_id: campaignId,
+          external_id: r.external_id,
+          tipo: r.tipo, rarity: r.rarity, name: r.name,
+          modo_lanzamiento: r.modo_lanzamiento, distancia: r.distancia,
+          objetivos: r.objetivos, dados: r.dados, efecto: r.efecto,
+        };
+        if (match) {
+          // Preserve uses/max_uses already edited by DM.
+          await (supabase as any).from("boosters").update(payload).eq("id", match.id);
+          updated++;
+        } else {
+          await (supabase as any).from("boosters").insert({
+            ...payload, uses: 1, max_uses: 1,
+            in_dm_vault: true, owner_character_id: null,
+          });
+          created++;
+        }
+      }
+      toast.success(`Importados: ${created} nuevos · ${updated} actualizados${errors.length ? ` · ${errors.length} con error` : ""}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Error al importar");
     } finally { setBusy(false); }
   }
   return (
     <div className="space-y-1 pt-2 border-t border-border">
-      <p className="text-[10px] text-muted-foreground">📄 Importar desde .txt — formato por línea: <code>Nombre / Rareza / Usos / Máx</code></p>
-      <input type="file" accept=".txt,text/plain" disabled={busy}
+      <p className="text-[10px] text-muted-foreground">
+        📥 Importar potenciadores desde <code>.xlsx</code> o <code>.txt</code>.
+      </p>
+      <p className="text-[10px] text-muted-foreground">
+        <b>XLSX:</b> hoja "Extra Skills - DND". Fila 1-2 encabezados (ID, Tipo, Rareza, Nombre, Modo de lanzamiento, Distancia, Objetivos, Dados a tirar, Efecto o Condición). Fila 3 en adelante datos.
+      </p>
+      <p className="text-[10px] text-muted-foreground">
+        <b>TXT:</b> bloques separados por línea en blanco. Cada línea con etiqueta: <code>ID:</code>, <code>Tipo:</code>, <code>Rareza:</code>, <code>Nombre:</code>, <code>Efecto o Condición:</code>...
+      </p>
+      <input type="file" accept=".xlsx,.xls,.txt" disabled={busy}
         onChange={e => { const f = e.target.files?.[0]; if (f) { handleFile(f); e.target.value = ""; } }}
         className="text-xs text-muted-foreground w-full file:mr-2 file:px-2 file:py-1 file:rounded file:border-0 file:bg-secondary file:text-foreground file:text-xs" />
     </div>
