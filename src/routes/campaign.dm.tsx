@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useGameData } from "@/lib/useGame";
 import { PageFrame } from "@/components/app/Frame";
 import { LogOut, Plus, Send, Trophy, Pencil, Undo2, Search } from "lucide-react";
-import { SLOTS, RARITY_BONUS, RARITY_COLOR, RARITY_LABEL, ITEM_CATEGORIES, isWeapon, setSession, type Item, type ItemCategory, type Rarity, type Slot, type Character, type LogRow } from "@/lib/game";
+import { SLOTS, RARITY_BONUS, RARITY_COLOR, RARITY_LABEL, ITEM_CATEGORIES, isWeapon, totals, setSession, type Item, type ItemCategory, type Rarity, type Slot, type Character, type LogRow } from "@/lib/game";
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog, type UndoAction } from "@/lib/log";
 import { clampHpForOwner } from "@/lib/hp";
