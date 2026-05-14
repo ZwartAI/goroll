@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useGameData } from "@/lib/useGame";
 import { PageFrame } from "@/components/app/Frame";
 import { LogOut, Plus, Send, Trophy, Pencil, Undo2, Search } from "lucide-react";
-import { SLOTS, RARITY_BONUS, RARITY_COLOR, RARITY_LABEL, ITEM_CATEGORIES, isWeapon, setSession, type Item, type ItemCategory, type Rarity, type Slot, type Character, type LogRow } from "@/lib/game";
+import { SLOTS, RARITY_BONUS, RARITY_COLOR, RARITY_LABEL, ITEM_CATEGORIES, isWeapon, totals, setSession, type Item, type ItemCategory, type Rarity, type Slot, type Character, type LogRow } from "@/lib/game";
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog, type UndoAction } from "@/lib/log";
 import { clampHpForOwner } from "@/lib/hp";
@@ -12,7 +12,7 @@ import { RarityBadge } from "@/components/app/RarityBadge";
 import { ItemEditor } from "@/components/app/ItemEditor";
 import { CharacterSheetModal } from "@/components/app/CharacterSheetModal";
 import { DMConditionsCreator } from "@/components/app/ConditionsPanel";
-import { BoosterEditor, BoosterActions } from "@/components/app/BoosterEditor";
+import { BoosterEditor } from "@/components/app/BoosterEditor";
 import { type Booster } from "@/components/app/BoosterCard";
 import { DMRequestGate } from "@/components/app/DMRequestGate";
 import { useEffect, useState } from "react";
@@ -288,6 +288,7 @@ function DM() {
 
       {selItem && (
         <ItemActions item={selItem} players={players} dm={dmCtx} campaignId={campaign.id}
+          allItems={items} allCharacters={characters}
           onClose={() => setSelItem(null)}
           onEdit={() => { setEditItem(selItem); setSelItem(null); }} />
       )}
@@ -304,12 +305,13 @@ function DM() {
           onPickItem={(it) => setSelItem(it)} />
       )}
       {selBooster && (
-        <BoosterActions booster={selBooster} campaignId={campaign.id} players={players} dm={dmCtx}
-          onClose={() => setSelBooster(null)}
-          onEdit={() => { setEditBooster(selBooster); setSelBooster(null); }} />
+        <BoosterEditor booster={selBooster} campaignId={campaign.id}
+          players={players} dm={dmCtx}
+          onClose={() => setSelBooster(null)} />
       )}
       {(editBooster || creatingBooster) && (
         <BoosterEditor booster={editBooster} campaignId={campaign.id}
+          players={players} dm={dmCtx}
           onClose={() => { setEditBooster(null); setCreatingBooster(false); }} />
       )}
     </PageFrame>
@@ -450,21 +452,31 @@ function CreateItem({ campaignId, dm, players }: { campaignId: string; dm: { id:
   );
 }
 
-function ItemActions({ item, players, dm, campaignId, onClose, onEdit }: {
+function ItemActions({ item, players, dm, campaignId, allItems, allCharacters, onClose, onEdit }: {
   item: Item;
   players: Character[];
   dm: { id: string; name: string; color: string };
   campaignId: string;
+  allItems: Item[];
+  allCharacters: Character[];
   onClose: () => void;
   onEdit: () => void;
 }) {
   const [target, setTarget] = useState("");
   const isEq = item.category === "equipo" || !item.category;
+  function oldMaxFor(ownerId: string | null | undefined): number | undefined {
+    if (!ownerId) return undefined;
+    const ch = allCharacters.find(c => c.id === ownerId);
+    if (!ch) return undefined;
+    const eq = allItems.filter(i => i.owner_character_id === ownerId && i.equipped);
+    return totals(ch, eq).maxHp;
+  }
   async function reclaim() {
     const prev = { owner_character_id: item.owner_character_id, in_dm_vault: item.in_dm_vault, equipped: item.equipped };
     const prevOwner = item.owner_character_id;
+    const oldMax = oldMaxFor(prevOwner);
     await supabase.from("items").update({ owner_character_id: dm.id, in_dm_vault: true, equipped: false }).eq("id", item.id);
-    await clampHpForOwner(prevOwner);
+    await clampHpForOwner(prevOwner, oldMax);
     await pushLog(campaignId, [
       {t:"char",v:dm.name,color:dm.color,id:dm.id},
       {t:"text",v:"reclamó"},
@@ -486,8 +498,9 @@ function ItemActions({ item, players, dm, campaignId, onClose, onEdit }: {
     const t = players.find(p => p.id === target);
     const prev = { owner_character_id: item.owner_character_id, in_dm_vault: item.in_dm_vault, equipped: item.equipped };
     const prevOwner = item.owner_character_id;
+    const oldMax = oldMaxFor(prevOwner);
     await supabase.from("items").update({ owner_character_id: target, in_dm_vault: false, equipped: false }).eq("id", item.id);
-    await clampHpForOwner(prevOwner);
+    await clampHpForOwner(prevOwner, oldMax);
     await pushLog(campaignId, [
       {t:"char",v:dm.name,color:dm.color,id:dm.id},{t:"text",v:"entregó"},
       {t:"item",v:item.name,rarity:item.rarity as Rarity,id:item.id},{t:"text",v:"a"},
@@ -526,13 +539,16 @@ function ItemActions({ item, players, dm, campaignId, onClose, onEdit }: {
 
 function BulkBoosterImport({ campaignId }: { campaignId: string }) {
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   async function handleFile(file: File) {
     setBusy(true);
+    setProgress({ done: 0, total: 0 });
     try {
       const { parseBoosterFile, normalizeName } = await import("@/lib/boosterImport");
       const { rows, errors } = await parseBoosterFile(file);
       if (errors.length) toast.error(`${errors.length} error(es): ${errors.slice(0,2).map(e=>`${e.where}: ${e.message}`).join(" · ")}`);
       if (!rows.length) return;
+      setProgress({ done: 0, total: rows.length });
 
       // Load existing for dedup
       const { data: existing } = await (supabase as any).from("boosters")
@@ -545,7 +561,8 @@ function BulkBoosterImport({ campaignId }: { campaignId: string }) {
       }
 
       let created = 0, updated = 0;
-      for (const r of rows) {
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
         const match = (r.external_id && byExt.get(r.external_id.toLowerCase()))
           || byName.get(normalizeName(r.name));
         const payload: any = {
@@ -566,12 +583,14 @@ function BulkBoosterImport({ campaignId }: { campaignId: string }) {
           });
           created++;
         }
+        setProgress({ done: i + 1, total: rows.length });
       }
       toast.success(`Importados: ${created} nuevos · ${updated} actualizados${errors.length ? ` · ${errors.length} con error` : ""}`);
     } catch (e: any) {
       toast.error(e?.message || "Error al importar");
-    } finally { setBusy(false); }
+    } finally { setBusy(false); setProgress({ done: 0, total: 0 }); }
   }
+  const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   return (
     <div className="space-y-1 pt-2 border-t border-border">
       <p className="text-[10px] text-muted-foreground">
@@ -586,6 +605,18 @@ function BulkBoosterImport({ campaignId }: { campaignId: string }) {
       <input type="file" accept=".xlsx,.xls,.txt" disabled={busy}
         onChange={e => { const f = e.target.files?.[0]; if (f) { handleFile(f); e.target.value = ""; } }}
         className="text-xs text-muted-foreground w-full file:mr-2 file:px-2 file:py-1 file:rounded file:border-0 file:bg-secondary file:text-foreground file:text-xs" />
+      {busy && (
+        <div className="space-y-1 pt-2">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>Creando / Actualizando potenciadores…</span>
+            <span>{progress.total ? `${progress.done} / ${progress.total} (${pct}%)` : "Espere un momento…"}</span>
+          </div>
+          <div className="h-2 w-full rounded bg-secondary overflow-hidden border border-border">
+            <div className="h-full transition-all duration-150"
+              style={{ width: `${pct}%`, background: "var(--gradient-gold)" }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

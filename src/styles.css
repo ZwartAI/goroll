@@ -166,6 +166,12 @@
     border-color: var(--color-border);
   }
 
+  /* Reserve space for the vertical scrollbar so the layout doesn't shift
+     when content height changes between tabs. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);

@@ -105,9 +105,10 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
   async function unequip(it: Item) {
     if (!editor) return;
     const prev = { equipped: it.equipped };
+    const oldMax = totals(character!, items.filter(i => i.equipped)).maxHp;
     await supabase.from("items").update({ equipped: false }).eq("id", it.id);
     const { clampHpForOwner } = await import("@/lib/hp");
-    await clampHpForOwner(character!.id);
+    await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaignId, [
       { t: "char", v: editor.name, color: editor.color, id: editor.id },
       { t: "text", v: "desequipó a" },

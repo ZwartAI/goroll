@@ -61,23 +61,26 @@ function Inventory() {
       await supabase.from("items").update({ owner_character_id: null, in_dm_vault: true, equipped: false, uses: 0 }).eq("id", it.id);
       await pushLog(campaign!.id, [
         {t:"char",v:character!.name,color:character!.color,id:character!.id},
-        {t:"text",v:"usó (último)"},
+        {t:"text",v:"usó"},
         {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},
+        {t:"text",v:"(último)"},
       ], { kind: "item.update", id: it.id, prev: { owner_character_id: character!.id, in_dm_vault: false, equipped: it.equipped, uses: it.uses } });
     } else {
       await supabase.from("items").update({ uses: remaining }).eq("id", it.id);
       await pushLog(campaign!.id, [
         {t:"char",v:character!.name,color:character!.color,id:character!.id},
-        {t:"text",v:`usó (${remaining} restantes)`},
+        {t:"text",v:"usó"},
         {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},
+        {t:"text",v:`(${remaining} restantes)`},
       ], { kind: "item.update", id: it.id, prev: { uses: it.uses } });
     }
     setSel(null);
   }
   async function discard(it: Item) {
+    const oldMax = totals(character!, owned.filter(i => i.equipped)).maxHp;
     // Tirado va al vault del DM (no se elimina) para que el DM pueda devolverlo.
     await supabase.from("items").update({ owner_character_id: null, equipped: false, in_dm_vault: true }).eq("id", it.id);
-    await clampHpForOwner(character!.id);
+    await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaign!.id, [
       {t:"char",v:character!.name,color:character!.color,id:character!.id},
       {t:"text",v:"tiró"},
@@ -88,8 +91,9 @@ function Inventory() {
   async function transfer(it: Item) {
     if (!transferTo) return;
     const target = characters.find(c => c.id === transferTo);
+    const oldMax = totals(character!, owned.filter(i => i.equipped)).maxHp;
     await supabase.from("items").update({ owner_character_id: transferTo, equipped: false }).eq("id", it.id);
-    await clampHpForOwner(character!.id);
+    await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaign!.id, [
       {t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:"entregó"},
       {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},{t:"text",v:"a"},
