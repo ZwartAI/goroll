@@ -103,7 +103,9 @@ function FieldTile({ icon, label, value }: { icon: string; label: string; value?
       <span className="text-base mt-0.5" style={{ color: "var(--gold)" }}>{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-[9px] uppercase tracking-widest text-muted-foreground">{label}</p>
-        <p className="text-sm break-words">{value || <span className="text-muted-foreground italic">—</span>}</p>
+        <p className="text-sm break-words">
+          {value ? <StatText>{value}</StatText> : <span className="text-muted-foreground italic">—</span>}
+        </p>
       </div>
     </div>
   );
