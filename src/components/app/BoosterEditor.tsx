@@ -6,6 +6,7 @@ import {
 } from "@/lib/game";
 import { toastSaved } from "@/lib/saved";
 import { toast } from "sonner";
+import { StatText } from "./StatText";
 import type { Booster } from "./BoosterCard";
 
 /* ─────────────────────────────── shared bits ─────────────────────────────── */
