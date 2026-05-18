@@ -81,22 +81,22 @@ function Home() {
   async function login() {
     if (busy) return;
     const uname = username.trim();
-    if (!uname) return toast.error("Escribe un usuario");
-    if (!/^[0-9]{4}$/.test(pin)) return toast.error("El PIN debe ser 4 dígitos");
+    if (!uname) return toast.error(t("home.errWriteUser"));
+    if (!/^[0-9]{4}$/.test(pin)) return toast.error(t("home.errPin"));
     setBusy(true);
     try {
       const res = await loginFn({ data: { username: uname, pin } });
       if (!res.ok) { toast.error(res.message); return; }
       const u: StoredUser = { id: res.user.id, username: res.user.username };
       setStoredUser(u); setUser(u);
-      toast.success(`Bienvenido, ${res.user.username}`);
+      toast.success(t("home.welcome", { name: res.user.username }));
       if (res.user.isMaster) {
         nav({ to: "/master" });
       } else {
         setStep("role");
       }
     } catch (e: any) {
-      toast.error(e?.message || "Error al iniciar sesión");
+      toast.error(e?.message || t("home.errLogin"));
     } finally { setBusy(false); }
   }
 
