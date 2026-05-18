@@ -131,30 +131,16 @@ function RarityBonusChip({ rarity }: { rarity: Rarity }) {
 /* ───────────────────────── Player / Spectator details ─────────────────────── */
 
 function Chip({
-  children, tone = "default",
-}: { children: React.ReactNode; tone?: "default" | "gold" | "rarity" }) {
-  const styles =
-    tone === "gold"
-      ? {
-          borderColor: "color-mix(in oklab, var(--gold) 55%, transparent)",
-          background: "color-mix(in oklab, var(--gold) 10%, transparent)",
-          color: "var(--gold)",
-        }
-      : tone === "rarity"
-      ? {
-          borderColor: "color-mix(in oklab, var(--gold) 35%, transparent)",
-          background: "color-mix(in oklab, var(--gold) 6%, transparent)",
-          color: "color-mix(in oklab, var(--gold) 85%, white)",
-        }
-      : {
-          borderColor: "color-mix(in oklab, var(--gold) 28%, transparent)",
-          background: "color-mix(in oklab, white 5%, transparent)",
-          color: "var(--foreground)",
-        };
+  children, color,
+}: { children: React.ReactNode; color: string }) {
   return (
     <span
       className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap"
-      style={styles}
+      style={{
+        borderColor: `color-mix(in oklab, ${color} 55%, transparent)`,
+        background: `color-mix(in oklab, ${color} 14%, transparent)`,
+        color: `color-mix(in oklab, ${color} 80%, white)`,
+      }}
     >
       {children}
     </span>
@@ -162,8 +148,8 @@ function Chip({
 }
 
 function StatRow({
-  icon, label, children, isLast,
-}: { icon: string; label: string; children: React.ReactNode; isLast?: boolean }) {
+  icon, label, color, children, isLast,
+}: { icon: string; label: string; color: string; children: React.ReactNode; isLast?: boolean }) {
   return (
     <div
       className="flex items-center gap-2 py-2 min-h-[44px]"
@@ -174,7 +160,10 @@ function StatRow({
       }
     >
       <span className="text-sm w-5 text-center shrink-0" aria-hidden>{icon}</span>
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground flex-1 min-w-0 truncate">
+      <span
+        className="text-[10px] uppercase tracking-widest flex-1 min-w-0 truncate"
+        style={{ color: `color-mix(in oklab, ${color} 70%, white)` }}
+      >
         {label}
       </span>
       <span className="flex flex-wrap items-center justify-end gap-1.5 max-w-[60%]">
@@ -190,6 +179,16 @@ function splitDiceChips(dados: string): string[] {
   return parts.map((p, i) => (i === 0 ? p : `+ ${p}`));
 }
 
+// Distinct accent per stat row to avoid the all-gold monotony
+const ROW_ACCENTS = {
+  cast:     "oklch(0.72 0.18 25)",   // coral/red
+  distance: "oklch(0.72 0.14 215)",  // sky blue
+  targets:  "oklch(0.72 0.16 295)",  // purple
+  dice:     "oklch(0.78 0.16 145)",  // green
+  rarity:   "oklch(0.82 0.16 70)",   // amber/gold (kept gold-ish for the bonus)
+  uses:     "oklch(0.78 0.14 330)",  // pink
+} as const;
+
 function BoosterDetails({ b }: { b: Booster }) {
   const color = RARITY_COLOR[b.rarity as Rarity];
   const { t } = useT();
@@ -198,33 +197,33 @@ function BoosterDetails({ b }: { b: Booster }) {
     <>
       <SectionFrame icon="✦" title={t("boosters.summary")} color={color}>
         <div className="px-1">
-          <StatRow icon="🎯" label={t("boosters.castMode")}>
+          <StatRow icon="🎯" label={t("boosters.castMode")} color={ROW_ACCENTS.cast}>
             {b.modo_lanzamiento
-              ? <Chip tone="gold">{b.modo_lanzamiento}</Chip>
+              ? <Chip color={ROW_ACCENTS.cast}>{b.modo_lanzamiento}</Chip>
               : <span className="text-muted-foreground italic text-xs">—</span>}
           </StatRow>
-          <StatRow icon="📏" label={t("boosters.distance")}>
+          <StatRow icon="📏" label={t("boosters.distance")} color={ROW_ACCENTS.distance}>
             {b.distancia
               ? b.distancia.split(/\s+(?=\()|(?<=\))\s+/).filter(Boolean).map((seg, i) => (
-                  <Chip key={i} tone="gold">{seg}</Chip>
+                  <Chip key={i} color={ROW_ACCENTS.distance}>{seg}</Chip>
                 ))
               : <span className="text-muted-foreground italic text-xs">—</span>}
           </StatRow>
-          <StatRow icon="👤" label={t("boosters.targets")}>
+          <StatRow icon="👤" label={t("boosters.targets")} color={ROW_ACCENTS.targets}>
             {b.objetivos
-              ? <Chip tone="gold">{b.objetivos}</Chip>
+              ? <Chip color={ROW_ACCENTS.targets}>{b.objetivos}</Chip>
               : <span className="text-muted-foreground italic text-xs">—</span>}
           </StatRow>
-          <StatRow icon="🎲" label={t("boosters.diceToRoll")}>
+          <StatRow icon="🎲" label={t("boosters.diceToRoll")} color={ROW_ACCENTS.dice}>
             {diceChips.length > 0
               ? diceChips.map((c, i) => (
-                  <Chip key={i} tone="gold"><StatText>{c}</StatText></Chip>
+                  <Chip key={i} color={ROW_ACCENTS.dice}><StatText>{c}</StatText></Chip>
                 ))
               : <span className="text-muted-foreground italic text-xs">—</span>}
-            <Chip tone="rarity">+{RARITY_DICE_BONUS[b.rarity as Rarity]} {t("boosters.rarityBonus")}</Chip>
+            <Chip color={ROW_ACCENTS.rarity}>+{RARITY_DICE_BONUS[b.rarity as Rarity]} {t("boosters.rarityBonus")}</Chip>
           </StatRow>
-          <StatRow icon="🧪" label={t("boosters.usesAvailable")} isLast>
-            <Chip tone="gold">{b.uses} / {b.max_uses}</Chip>
+          <StatRow icon="🧪" label={t("boosters.usesAvailable")} color={ROW_ACCENTS.uses} isLast>
+            <Chip color={ROW_ACCENTS.uses}>{b.uses} / {b.max_uses}</Chip>
           </StatRow>
         </div>
       </SectionFrame>
