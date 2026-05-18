@@ -580,3 +580,40 @@ export function BoosterActions({
     </ModalShell>
   );
 }
+
+/* ─────────── BoosterPeek: open a booster by id (from log click) ─────────── */
+import { useEffect } from "react";
+
+export function BoosterPeek({
+  boosterId, character, campaignId, players, onClose,
+}: {
+  boosterId: string;
+  character?: Character | null;
+  campaignId: string;
+  players?: Character[];
+  onClose: () => void;
+}) {
+  const [b, setB] = useState<Booster | null>(null);
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const { data } = await (supabase as any).from("boosters").select("*").eq("id", boosterId).maybeSingle();
+      if (!live) return;
+      if (!data) setMissing(true);
+      else setB(data as Booster);
+    })();
+    return () => { live = false; };
+  }, [boosterId]);
+  if (missing) { onClose(); return null; }
+  if (!b) return null;
+  return (
+    <BoosterActions
+      booster={b}
+      character={character ?? null}
+      campaignId={campaignId}
+      players={players || []}
+      onClose={onClose}
+    />
+  );
+}
