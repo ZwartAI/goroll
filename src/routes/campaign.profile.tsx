@@ -292,6 +292,10 @@ function Profile() {
       {openItem && (
         <ItemModal itemId={openItem} onClose={() => setOpenItem(null)} />
       )}
+      {openBooster && (
+        <BoosterPeek boosterId={openBooster} character={character} campaignId={campaign.id}
+          onClose={() => setOpenBooster(null)} />
+      )}
     </PageFrame>
   );
 }
