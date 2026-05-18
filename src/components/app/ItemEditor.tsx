@@ -57,17 +57,17 @@ export function ItemEditor({ item, dm, campaignId, onClose }: {
       <h3 className="font-display text-center text-lg">{t("itemEditor.title")}</h3>
       <input className="w-full bg-input border border-border rounded px-3 py-2 text-sm" placeholder={t("itemEditor.name")} value={name} onChange={e => setName(e.target.value)} />
       <select className="w-full bg-input border border-border rounded px-2 py-2 text-sm" value={category} onChange={e => setCategory(e.target.value as ItemCategory)}>
-        {ITEM_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.label}</option>)}
+        {ITEM_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {t(`categories.${c.key}`)}</option>)}
       </select>
       {category === "equipo" ? (
         <>
           <div className="grid grid-cols-2 gap-2">
             <select className="bg-input border border-border rounded px-2 py-2 text-sm" value={slot} onChange={e => setSlot(e.target.value as Slot)}>
-              {SLOTS.map(s => <option key={s.key} value={s.key}>{s.icon} {s.label}</option>)}
+              {SLOTS.map(s => <option key={s.key} value={s.key}>{s.icon} {t(`slots.${s.key}`)}</option>)}
             </select>
             <select className="bg-input border border-border rounded px-2 py-2 text-sm" value={rarity} onChange={e => setRarity(e.target.value as Rarity)}
               style={{ color: RARITY_COLOR[rarity] }}>
-              {(["white","blue","purple","gold"] as Rarity[]).map(r => <option key={r} value={r} style={{ color: "black" }}>{RARITY_LABEL[r]}</option>)}
+              {(["white","blue","purple","gold"] as Rarity[]).map(r => <option key={r} value={r} style={{ color: "black" }}>{t(`rarities.${r}`)}</option>)}
             </select>
           </div>
           {isWeapon(slot) ? (
