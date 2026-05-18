@@ -171,19 +171,20 @@ function DM() {
                 if (seen.has(k)) dupes.push(b.id);
                 else seen.set(k, b);
               }
-              if (!dupes.length) { toast.info("No hay potenciadores duplicados."); return; }
-              if (!confirm(`Se eliminarán ${dupes.length} potenciador(es) duplicado(s). ¿Continuar?`)) return;
+              if (!dupes.length) { toast.info(t("dm.noDupes")); return; }
+              if (!confirm(t("dm.dedupeConfirm", { n: dupes.length }))) return;
               const { error } = await (supabase as any).from("boosters").delete().in("id", dupes);
               if (error) toast.error(error.message);
               else {
-                toast.success(`${dupes.length} duplicados eliminados`);
+                toast.success(t("dm.dedupedToast", { n: dupes.length }));
                 await pushLog(campaign.id, [
                   { t: "char", v: character.name, color: character.color, id: character.id },
-                  { t: "text", v: ` eliminó ${dupes.length} potenciador(es) duplicado(s).` },
+                  { t: "text", v: t("dm.dedupedLog", { n: dupes.length }) },
                 ]);
               }
             }}
-          >🧹 Eliminar duplicados</button>
+          >{t("dm.dedupeBoosters")}</button>
+
 
           <div className="flex gap-2">
             <button
