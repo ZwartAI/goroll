@@ -224,14 +224,30 @@ function Profile() {
           </div>
 
           {/* Atributos */}
-          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-1 text-[var(--gold)]">{t("profile.attributes")}</h2>
-          <div className="grid grid-cols-3 gap-1 mb-3">
-            {stat("fue", t("attr.fue"))}
-            {stat("des", t("attr.des"))}
-            {stat("con", t("attr.con"))}
-            {stat("int_stat", t("attr.int"))}
-            {stat("wis", t("attr.wis"))}
-            {stat("car", t("attr.car"))}
+          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-2 text-[var(--gold)]">{t("profile.attributes")}</h2>
+          <div className="grid grid-cols-6 gap-1 mb-3">
+            {ATTR_META.map(({ k, label, color }) => {
+              const v = (character as any)[k] as number;
+              const mod = fmtMod(modifier(v));
+              return (
+                <div
+                  key={k}
+                  className="ornate-card !p-1.5 text-center flex flex-col items-center justify-center gap-0.5 transition-shadow"
+                  style={{
+                    borderColor: `color-mix(in oklab, ${color} 55%, transparent)`,
+                    background: `linear-gradient(180deg, color-mix(in oklab, ${color} 10%, var(--card)), var(--card))`,
+                    boxShadow: `inset 0 0 12px color-mix(in oklab, ${color} 12%, transparent)`,
+                  }}
+                >
+                  <span className="text-[10px] font-display tracking-wide whitespace-nowrap" style={{ color }}>
+                    {label}: {v}
+                  </span>
+                  <span className="font-display font-bold leading-none text-lg" style={{ color, textShadow: `0 0 8px color-mix(in oklab, ${color} 45%, transparent)` }}>
+                    {mod}
+                  </span>
+                </div>
+              );
+            })}
           </div>
           <div className="stat-pill mb-3 !text-[11px]"><span>{t("profile.initiative")}</span><span className="text-[var(--gold)] font-bold">{fmtMod(character.initiative)}</span></div>
 
