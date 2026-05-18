@@ -103,7 +103,7 @@ function Home() {
   async function createCampaign() {
     if (!user || !newCampaignName.trim()) return;
     const { data, error } = await (supabase as any).from("campaigns")
-      .insert({ name: newCampaignName.trim(), max_players: 999, owner_user_id: user.id, single_dm_only: singleDmOnly }).select().single();
+      .insert({ name: newCampaignName.trim(), max_players: 999, owner_user_id: user.id, single_dm_only: singleDmOnly, lock_character_names: lockNames }).select().single();
     if (error) return toast.error(error.message);
     await (supabase as any).from("campaign_members").insert({ campaign_id: data.id, user_id: user.id, role });
     setNewCampaignName("");
