@@ -1,6 +1,14 @@
 import type { Dict } from "./es";
 
 export const en: Dict = {
+  attr: {
+    fue: "STR",
+    des: "DEX",
+    con: "CON",
+    int: "INT",
+    wis: "WIS",
+    car: "CHA",
+  },
   common: {
     cancel: "Cancel",
     close: "Close",
