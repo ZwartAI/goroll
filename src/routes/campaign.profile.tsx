@@ -27,7 +27,6 @@ function Profile() {
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"personaje" | "escenario">("personaje");
-  const [openOffline, setOpenOffline] = useState(false);
   // When opened from Escenario tab (or from the log), force read-only sheet.
   const [openCharReadOnly, setOpenCharReadOnly] = useState(false);
 
