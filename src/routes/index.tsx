@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { attemptLogin } from "@/lib/auth.functions";
 import { CampaignActionsModal } from "@/components/app/CampaignActionsModal";
+import { AppSettingsModal } from "@/components/app/AppSettingsModal";
+import { Settings as SettingsIcon } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Vamos a Rolear" }] }),
@@ -39,6 +41,7 @@ function Home() {
   const [lockNames, setLockNames] = useState(false);
   const [waitingReqId, setWaitingReqId] = useState<string | null>(null);
   const [actionCampaign, setActionCampaign] = useState<Campaign | null>(null);
+  const [showAppSettings, setShowAppSettings] = useState(false);
 
   // character
   const [myChars, setMyChars] = useState<Character[]>([]);
@@ -255,13 +258,20 @@ function Home() {
 
   return (
     <PageFrame>
+      <button
+        onClick={() => setShowAppSettings(true)}
+        aria-label="Ajustes"
+        className="fixed top-1.5 left-1.5 z-[200] rounded-md border border-border bg-card/60 backdrop-blur p-1.5 text-muted-foreground hover:text-[var(--gold)] hover:border-[var(--gold)] transition-colors"
+      >
+        <SettingsIcon size={14} />
+      </button>
       <div className="flex flex-col items-center gap-1 pt-4 text-center">
         <div className="text-5xl">🎲</div>
         <h1 className="font-display text-3xl font-black tracking-wider rune-glow">VAMOS A</h1>
         <p className="font-display text-4xl font-black tracking-[0.3em] text-[var(--gold)]">ROLEAR</p>
       </div>
       <div className="gem-divider my-5" />
-
+      {showAppSettings && <AppSettingsModal onClose={() => setShowAppSettings(false)} />}
       {step === "login" && (
         <div className="ornate-card p-6 space-y-4">
           <h2 className="text-center font-display text-lg">Entra al códice</h2>

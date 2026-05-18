@@ -11,7 +11,7 @@ import { ItemModal } from "@/components/app/ItemModal";
 import { ConditionsPanel } from "@/components/app/ConditionsPanel";
 import { CoinsAdjuster } from "@/components/app/CoinsAdjuster";
 import { Escenario } from "@/components/app/Escenario";
-import { Settings, LogOut, Minus, Plus, Camera } from "lucide-react";
+import { User, LogOut, Minus, Plus, Camera } from "lucide-react";
 import { FullscreenButton } from "@/components/app/AppShell";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -99,7 +99,7 @@ function Profile() {
           <h1 className="font-display text-xl rune-glow">{character.name}</h1>
           <p className="text-xs text-muted-foreground">{character.race || "Humano"} / {character.class || "Aventurero"}</p>
         </div>
-        <Link to="/campaign/settings" className="text-muted-foreground hover:text-foreground" aria-label="Ajustes"><Settings size={20} /></Link>
+        <Link to="/campaign/settings" className="text-muted-foreground hover:text-foreground" aria-label="Estadísticas"><User size={20} /></Link>
       </header>
       <div className="gem-divider mb-4" />
 

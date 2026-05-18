@@ -6,6 +6,7 @@ import { pushLog } from "@/lib/log";
 import { toastSaved } from "@/lib/saved";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/campaign/settings")({ component: Settings });
 
@@ -40,19 +41,47 @@ function Settings() {
   }
 
   const num = (k: string, label: string) => (
-    <label className="stat-pill gap-1 min-w-0">
-      <span className="truncate min-w-0 flex-1">{label}</span>
+    <label className="stat-pill gap-1 min-w-0 !items-center">
+      <span className="min-w-0 flex-1 whitespace-normal break-words leading-tight text-[10px]">{label}</span>
       <input type="number" className="w-14 flex-shrink-0 bg-transparent text-right outline-none text-[var(--gold)]"
         value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />
     </label>
   );
 
+  const nameLocked = !!(campaign as any).lock_character_names && character.role !== "dm";
+
+  async function saveName() {
+    const next = (form.name || "").trim();
+    if (!next || next === character!.name) return;
+    if (nameLocked) { toast.error("El DM bloqueó la edición de nombres en esta campaña."); return; }
+    const prev = { name: character!.name };
+    await supabase.from("characters").update({ name: next }).eq("id", character!.id);
+    await pushLog(campaign!.id, [
+      { t: "char", v: prev.name, color: character!.color, id: character!.id },
+      { t: "text", v: `cambió su nombre a` },
+      { t: "char", v: next, color: character!.color, id: character!.id },
+    ], { kind: "character.update", id: character!.id, prev });
+    toastSaved();
+  }
+
   return (
-    <PageFrame title="Configuración" subtitle={character.name} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
+    <PageFrame title="Estadísticas" subtitle={character.name} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
       <div className="ornate-card p-4 space-y-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Identidad</p>
           <div className="space-y-2">
+            <label className="block space-y-1">
+              <span className="text-[10px] text-muted-foreground">Nombre del personaje</span>
+              <input
+                className="w-full rounded bg-input border border-border px-3 py-2 text-sm disabled:opacity-60"
+                placeholder="Nombre"
+                value={form.name || ""}
+                disabled={nameLocked}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+                onBlur={saveName}
+              />
+              {nameLocked && <span className="block text-[10px] text-muted-foreground">El DM bloqueó la edición de nombres.</span>}
+            </label>
             <input className="w-full rounded bg-input border border-border px-3 py-2 text-sm" placeholder="Raza" value={form.race} onChange={e => setForm({...form, race: e.target.value})} />
             <input className="w-full rounded bg-input border border-border px-3 py-2 text-sm" placeholder="Clase" value={form.class} onChange={e => setForm({...form, class: e.target.value})} />
           </div>
