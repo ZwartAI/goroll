@@ -28,6 +28,8 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+
   const load = useCallback(async () => {
     const s = getSession();
     if (!s) { nav({ to: "/" }); return; }
@@ -63,12 +65,36 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "items", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "logs", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
       .on("postgres_changes", { event: "*", schema: "public", table: "achievements" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "boosters", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "character_conditions" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
+  // Presence: track which characters are currently connected.
+  useEffect(() => {
+    const s = getSession(); if (!s || !s.characterId) return;
+    const presenceKey = s.characterId;
+    const ch = supabase.channel(`presence:campaign:${s.campaignId}`, {
+      config: { presence: { key: presenceKey } },
+    });
+    const sync = () => {
+      const state = ch.presenceState() as Record<string, any[]>;
+      setOnlineIds(new Set(Object.keys(state)));
+    };
+    ch.on("presence", { event: "sync" }, sync)
+      .on("presence", { event: "join" }, sync)
+      .on("presence", { event: "leave" }, sync)
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await ch.track({ character_id: presenceKey, at: Date.now() });
+        }
+      });
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
   return (
-    <Ctx.Provider value={{ campaign, character, characters, items, logs, achievements, loading, reload: load }}>
+    <Ctx.Provider value={{ campaign, character, characters, items, logs, achievements, loading, onlineIds, reload: load }}>
       {children}
     </Ctx.Provider>
   );
@@ -78,10 +104,8 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
 export function useGameData(): GameData {
   const v = useContext(Ctx);
   if (v) return v;
-  // Fallback (legacy / out-of-tree usage) — should not happen under /campaign/*.
-  // Returns empty state to avoid crashes; provider is mounted in campaign.tsx.
   return {
     campaign: null, character: null, characters: [], items: [], logs: [], achievements: [],
-    loading: true, reload: async () => {},
+    loading: true, onlineIds: new Set(), reload: async () => {},
   };
 }
