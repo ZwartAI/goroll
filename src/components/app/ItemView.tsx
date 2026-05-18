@@ -1,4 +1,4 @@
-import { SLOTS, RARITY_COLOR, RARITY_BONUS, RARITY_LABEL, ITEM_CATEGORIES, isWeapon, type Item, type Rarity } from "@/lib/game";
+import { SLOTS, RARITY_COLOR, RARITY_BONUS, ITEM_CATEGORIES, isWeapon, type Item, type Rarity } from "@/lib/game";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { useT } from "@/lib/i18n";
 
@@ -12,8 +12,8 @@ export function ItemView({ item }: { item: Item }) {
           <h3 className="font-display text-lg" style={isEq ? { color: RARITY_COLOR[item.rarity as Rarity] } : undefined}>{item.name}</h3>
           <p className="text-xs text-muted-foreground">
             {isEq
-              ? SLOTS.find(s => s.key === item.slot)?.label
-              : ITEM_CATEGORIES.find(c => c.key === item.category)?.label || t("inventory.object")}
+              ? (SLOTS.find(s => s.key === item.slot) ? t(`slots.${item.slot}`) : "")
+              : (ITEM_CATEGORIES.find(c => c.key === item.category) ? t(`categories.${item.category}`) : t("inventory.object"))}
           </p>
         </div>
         {isEq && <RarityBadge rarity={item.rarity as Rarity} />}
@@ -27,7 +27,7 @@ export function ItemView({ item }: { item: Item }) {
       ) : (item.uses ?? 0) > 0 && (
         <p className="text-sm">{t("inventory.usesRemaining")} <strong className="text-[var(--gold)]">{item.uses}{item.max_uses ? `/${item.max_uses}` : ""}</strong></p>
       )}
-      {isEq && <p className="text-xs text-muted-foreground">{t("boosters.rarity")}: {RARITY_LABEL[item.rarity as Rarity]}</p>}
+      {isEq && <p className="text-xs text-muted-foreground">{t("boosters.rarity")}: {t(`rarities.${item.rarity}`)}</p>}
       {item.description && <p className="text-xs text-muted-foreground italic">"{item.description}"</p>}
     </div>
   );
