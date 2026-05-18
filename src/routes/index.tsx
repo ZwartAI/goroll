@@ -546,18 +546,43 @@ function Home() {
         </div>
       )}
 
-      {waitingReqId && campaign && (
+      {!waitingReqId && expelledCampaign && (
         <div className="ornate-card p-6 space-y-4 text-center">
-          <div className="text-5xl">⏳</div>
-          <h2 className="font-display text-lg text-[var(--gold)]">{t("home.waitingTitle")}</h2>
-          <p className="text-sm text-muted-foreground">
-            {t("home.waitingBody", { name: campaign.name })}
-          </p>
-          <button className="btn-fantasy w-full" onClick={cancelCoDMRequest}>{t("home.cancelRequest")}</button>
+          <div className="text-5xl">🚫</div>
+          <h2 className="font-display text-lg text-[var(--loss)]">{t("rejoin.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("rejoin.body")}</p>
+          <p className="text-xs text-muted-foreground">{expelledCampaign.name}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-fantasy" onClick={() => setExpelledCampaign(null)}>{t("common.cancel")}</button>
+            <button
+              className="btn-fantasy"
+              style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
+              onClick={async () => { const c = expelledCampaign!; setExpelledCampaign(null); await requestRejoin(c); }}
+            >
+              {t("rejoin.request")}
+            </button>
+          </div>
         </div>
       )}
 
-      {!waitingReqId && step === "campaign" && user && (
+      {waitingReqId && campaign && (
+        <div className="ornate-card p-6 space-y-4 text-center">
+          <div className="text-5xl">⏳</div>
+          <h2 className="font-display text-lg text-[var(--gold)]">
+            {waitingKind === "player_rejoin" ? t("rejoin.waitingTitle") : t("home.waitingTitle")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {waitingKind === "player_rejoin"
+              ? t("rejoin.waitingBody", { name: campaign.name })
+              : t("home.waitingBody", { name: campaign.name })}
+          </p>
+          <button className="btn-fantasy w-full" onClick={cancelCoDMRequest}>
+            {waitingKind === "player_rejoin" ? t("rejoin.cancel") : t("home.cancelRequest")}
+          </button>
+        </div>
+      )}
+
+      {!waitingReqId && !expelledCampaign && step === "campaign" && user && (
         <div className="ornate-card p-5 space-y-4">
           <h2 className="text-center font-display text-lg">{t("home.myCampaigns")}</h2>
           <input className="w-full rounded-md bg-input border border-border px-3 py-2 text-sm"
