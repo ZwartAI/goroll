@@ -532,7 +532,10 @@ export function BoosterActions({
       <MetaChips extId={booster.external_id} tipo={booster.tipo} rarity={booster.rarity as Rarity} />
       <BoosterDetails b={booster} />
 
-      {!readOnly && character && (
+      {(() => {
+        const isOwner = !!character && booster.owner_character_id === character.id;
+        if (readOnly || !character || !isOwner) return null;
+        return (
         <div className="space-y-2">
           {!confirmUse ? (
             <button className="btn-fantasy w-full text-base py-3 flex items-center justify-center gap-2"
@@ -550,21 +553,28 @@ export function BoosterActions({
               </button>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <select value={transferTo} onChange={e => setTransferTo(e.target.value)}
-                className="w-full bg-input border border-border rounded px-2 py-2 text-xs mb-1">
-                <option value="">{t("boosters.pickRecipient")}</option>
-                {players.filter(p => p.id !== character.id).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <button className="btn-fantasy w-full" disabled={!transferTo} onClick={transferPlayer}>{t("boosters.transfer")}</button>
-            </div>
-            <button className="btn-fantasy h-full flex items-center justify-center gap-2" onClick={rollBooster}>
-              {t("boosters.rollBooster")}
+          <div>
+            <select value={transferTo} onChange={e => setTransferTo(e.target.value)}
+              className="w-full bg-input border border-border rounded px-2 py-2 text-xs mb-1">
+              <option value="">{t("boosters.pickRecipient")}</option>
+              {players.filter(p => p.id !== character.id).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <button className="btn-fantasy w-full" disabled={!transferTo} onClick={transferPlayer}>{t("boosters.transfer")}</button>
+          </div>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <button className="btn-fantasy flex items-center justify-center gap-2" onClick={showInChat} title={t("boosters.showInChat")}>
+              <MessageSquare size={14} />
+              <span>{t("boosters.showInChat")}</span>
+            </button>
+            <button className="btn-fantasy aspect-square flex items-center justify-center"
+              style={{ background: "color-mix(in oklab, var(--loss) 30%, transparent)", borderColor: "var(--loss)" }}
+              onClick={discardToVault} title={t("boosters.discardTitle")} aria-label={t("boosters.discardTitle")}>
+              <Trash2 size={16} />
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <button className="text-sm text-muted-foreground underline w-full" onClick={onClose}>{t("boosters.close")}</button>
     </ModalShell>
