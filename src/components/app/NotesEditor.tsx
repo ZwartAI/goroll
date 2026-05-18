@@ -6,30 +6,15 @@ import {
   List, ListOrdered, Heading1, Heading2, Quote,
   AlignLeft, AlignCenter, AlignRight, Undo2, Redo2, Eraser,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   characterId: string;
   characterName: string;
   characterColor?: string;
-  /** When true, hides save/edit controls. */
   readOnly?: boolean;
   onClose: () => void;
 };
-
-const FONTS = [
-  { label: "Predeterminada", value: "" },
-  { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
-  { label: "Sans", value: "system-ui, -apple-system, sans-serif" },
-  { label: "Monospace", value: "ui-monospace, SFMono-Regular, monospace" },
-  { label: "Cursiva", value: "'Brush Script MT', cursive" },
-];
-
-const SIZES = [
-  { label: "Pequeña", value: "2" },
-  { label: "Normal", value: "3" },
-  { label: "Grande", value: "5" },
-  { label: "Enorme", value: "6" },
-];
 
 const COLORS = ["#e8e0c8", "#f5d76e", "#e74c3c", "#5dade2", "#58d68d", "#bb8fce", "#f1948a", "#ffffff"];
 
@@ -39,6 +24,21 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const initialRef = useRef<string>("");
+  const { t } = useT();
+
+  const FONTS = [
+    { label: t("notes.fontDefault"), value: "" },
+    { label: t("notes.fontSerif"), value: "Georgia, 'Times New Roman', serif" },
+    { label: t("notes.fontSans"), value: "system-ui, -apple-system, sans-serif" },
+    { label: t("notes.fontMono"), value: "ui-monospace, SFMono-Regular, monospace" },
+    { label: t("notes.fontCursive"), value: "'Brush Script MT', cursive" },
+  ];
+  const SIZES = [
+    { label: t("notes.sizeSmall"), value: "2" },
+    { label: t("notes.sizeNormal"), value: "3" },
+    { label: t("notes.sizeLarge"), value: "5" },
+    { label: t("notes.sizeHuge"), value: "6" },
+  ];
 
   useEffect(() => {
     let cancel = false;
@@ -71,12 +71,12 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
     if (error) { toast.error(error.message); return; }
     initialRef.current = content;
     setDirty(false);
-    toast.success("Notas guardadas");
+    toast.success(t("notes.saved"));
   }
 
   function tryClose() {
     if (dirty && !readOnly) {
-      if (!confirm("Tienes cambios sin guardar. ¿Cerrar sin guardar?")) return;
+      if (!confirm(t("notes.discardConfirm"))) return;
     }
     onClose();
   }
@@ -87,9 +87,9 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Notas del personaje</p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("notes.title")}</p>
             <h3 className="font-display text-lg truncate" style={{ color: characterColor || "var(--gold)" }}>
-              📝 {characterName} {readOnly && <span className="text-xs text-muted-foreground">(solo lectura)</span>}
+              📝 {characterName} {readOnly && <span className="text-xs text-muted-foreground">{t("notes.readonly")}</span>}
             </h3>
           </div>
           <button className="text-muted-foreground hover:text-foreground text-sm" onClick={tryClose}>✕</button>
@@ -97,31 +97,31 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
 
         {!readOnly && (
           <div className="flex flex-wrap items-center gap-1 p-1.5 rounded-md border border-border bg-secondary/40">
-            <ToolBtn onClick={() => exec("bold")} title="Negrita"><Bold size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("italic")} title="Cursiva"><Italic size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("underline")} title="Subrayado"><Underline size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("strikeThrough")} title="Tachado"><Strikethrough size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("bold")} title={t("notes.tBold")}><Bold size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("italic")} title={t("notes.tItalic")}><Italic size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("underline")} title={t("notes.tUnderline")}><Underline size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("strikeThrough")} title={t("notes.tStrike")}><Strikethrough size={14}/></ToolBtn>
             <Sep/>
-            <ToolBtn onClick={() => exec("formatBlock", "<h2>")} title="Título"><Heading1 size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("formatBlock", "<h3>")} title="Subtítulo"><Heading2 size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("formatBlock", "<blockquote>")} title="Cita"><Quote size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("formatBlock", "<p>")} title="Párrafo">P</ToolBtn>
+            <ToolBtn onClick={() => exec("formatBlock", "<h2>")} title={t("notes.tH1")}><Heading1 size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("formatBlock", "<h3>")} title={t("notes.tH2")}><Heading2 size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("formatBlock", "<blockquote>")} title={t("notes.tQuote")}><Quote size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("formatBlock", "<p>")} title={t("notes.tParagraph")}>P</ToolBtn>
             <Sep/>
-            <ToolBtn onClick={() => exec("insertUnorderedList")} title="Lista"><List size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("insertOrderedList")} title="Lista numerada"><ListOrdered size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("insertUnorderedList")} title={t("notes.tList")}><List size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("insertOrderedList")} title={t("notes.tOrdered")}><ListOrdered size={14}/></ToolBtn>
             <Sep/>
-            <ToolBtn onClick={() => exec("justifyLeft")} title="Izquierda"><AlignLeft size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("justifyCenter")} title="Centrar"><AlignCenter size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("justifyRight")} title="Derecha"><AlignRight size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("justifyLeft")} title={t("notes.tLeft")}><AlignLeft size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("justifyCenter")} title={t("notes.tCenter")}><AlignCenter size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("justifyRight")} title={t("notes.tRight")}><AlignRight size={14}/></ToolBtn>
             <Sep/>
             <select className="bg-input border border-border rounded px-1 py-0.5 text-[11px]"
               defaultValue="" onChange={e => { exec("fontName", e.target.value); e.currentTarget.value = ""; }}>
-              <option value="" disabled>Fuente</option>
+              <option value="" disabled>{t("notes.font")}</option>
               {FONTS.map(f => <option key={f.label} value={f.value}>{f.label}</option>)}
             </select>
             <select className="bg-input border border-border rounded px-1 py-0.5 text-[11px]"
               defaultValue="" onChange={e => { exec("fontSize", e.target.value); e.currentTarget.value = ""; }}>
-              <option value="" disabled>Tamaño</option>
+              <option value="" disabled>{t("notes.size")}</option>
               {SIZES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
             <Sep/>
@@ -131,9 +131,9 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
                 style={{ background: c }} />
             ))}
             <Sep/>
-            <ToolBtn onClick={() => exec("undo")} title="Deshacer"><Undo2 size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("redo")} title="Rehacer"><Redo2 size={14}/></ToolBtn>
-            <ToolBtn onClick={() => exec("removeFormat")} title="Quitar formato"><Eraser size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("undo")} title={t("notes.tUndo")}><Undo2 size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("redo")} title={t("notes.tRedo")}><Redo2 size={14}/></ToolBtn>
+            <ToolBtn onClick={() => exec("removeFormat")} title={t("notes.tClear")}><Eraser size={14}/></ToolBtn>
           </div>
         )}
 
@@ -145,15 +145,15 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
           className="flex-1 overflow-y-auto rounded-md border border-border bg-input p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--gold)] notes-editor"
           style={{ minHeight: "40vh" }}
         />
-        {loading && <p className="text-xs text-muted-foreground text-center">Cargando notas…</p>}
+        {loading && <p className="text-xs text-muted-foreground text-center">{t("notes.loading")}</p>}
 
         <div className="flex gap-2">
-          <button className="btn-fantasy flex-1" onClick={tryClose}>Cerrar</button>
+          <button className="btn-fantasy flex-1" onClick={tryClose}>{t("common.close")}</button>
           {!readOnly && (
             <button className="btn-fantasy flex-1" disabled={saving || !dirty}
               style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)", opacity: !dirty ? 0.6 : 1 }}
               onClick={save}>
-              {saving ? "Guardando…" : "💾 Guardar"}
+              {saving ? t("notes.saving") : t("notes.save")}
             </button>
           )}
         </div>
@@ -165,7 +165,7 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
           .notes-editor ul { list-style: disc; padding-left: 1.5rem; margin: 0.4em 0; }
           .notes-editor ol { list-style: decimal; padding-left: 1.5rem; margin: 0.4em 0; }
           .notes-editor p { margin: 0.3em 0; }
-          .notes-editor:empty:before { content: "Escribe tus notas aquí…"; color: var(--muted-foreground); }
+          .notes-editor:empty:before { content: "${t("notes.placeholder")}"; color: var(--muted-foreground); }
         `}</style>
       </div>
     </div>
