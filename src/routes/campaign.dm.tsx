@@ -325,7 +325,7 @@ function DM() {
   );
 }
 
-async function undoLog(l: LogRow, campaignId: string, dm: { id: string; name: string; color: string }) {
+async function undoLog(l: LogRow, campaignId: string, dm: { id: string; name: string; color: string }, t: (k: string, v?: any) => string) {
   const u = l.undo as unknown as UndoAction | null;
   if (!u) return;
   if (u.kind === "item.update") {
@@ -342,9 +342,10 @@ async function undoLog(l: LogRow, campaignId: string, dm: { id: string; name: st
   await supabase.from("logs").update({ undone: true } as any).eq("id", l.id);
   await pushLog(campaignId, [
     { t: "char", v: dm.name, color: dm.color, id: dm.id },
-    { t: "text", v: "deshizo una acción del log." },
+    { t: "text", v: t("dm.undoneLog") },
   ]);
 }
+
 
 function CreateItem({ campaignId, dm, players }: { campaignId: string; dm: { id: string; name: string; color: string }; players: Character[] }) {
   const [name, setName] = useState("");
