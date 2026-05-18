@@ -73,6 +73,7 @@ export const es = {
     loginHint: "Si es tu primera vez, se creará tu cuenta automáticamente.",
     user: "Usuario",
     enter: "Entrar →",
+    enterCta: "Entrar →",
     hello: "Hola, {name}",
     logout: "Salir",
     roleQuestion: "¿Quién entra al salón?",

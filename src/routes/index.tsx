@@ -14,6 +14,8 @@ import { AppSettingsModal } from "@/components/app/AppSettingsModal";
 import { Settings as SettingsIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import goRollLogo from "@/assets/go-roll-logo.png";
+import loginFrame from "@/assets/login-frame.png";
+import { useRef } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Vamos a Rolear · GoRoll" }] }),
@@ -32,8 +34,15 @@ function Home() {
 
   // login fields
   const [username, setUsername] = useState("");
-  const [pin, setPin] = useState("");
+  const [pinDigits, setPinDigits] = useState<string[]>(["", "", "", ""]);
+  const pin = pinDigits.join("");
+  const setPin = (v: string) => {
+    const d = (v || "").replace(/\D/g, "").slice(0, 4).split("");
+    setPinDigits([d[0] || "", d[1] || "", d[2] || "", d[3] || ""]);
+  };
+  const pinRefs = useRef<Array<HTMLInputElement | null>>([null, null, null, null]);
   const [busy, setBusy] = useState(false);
+  const [pulseKey, setPulseKey] = useState(0);
 
   // role/campaign
   const [role, setRole] = useState<Role>("player");

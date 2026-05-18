@@ -71,6 +71,7 @@ export const en: Dict = {
     loginHint: "If it's your first time, your account is created automatically.",
     user: "Username",
     enter: "Enter →",
+    enterCta: "Join →",
     hello: "Hi, {name}",
     logout: "Log out",
     roleQuestion: "Who enters the hall?",
