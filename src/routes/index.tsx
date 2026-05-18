@@ -55,6 +55,7 @@ function Home() {
   const [waitingReqId, setWaitingReqId] = useState<string | null>(null);
   const [waitingKind, setWaitingKind] = useState<"codm" | "player_rejoin">("codm");
   const [actionCampaign, setActionCampaign] = useState<Campaign | null>(null);
+  const [expelledCampaign, setExpelledCampaign] = useState<Campaign | null>(null);
   const [showAppSettings, setShowAppSettings] = useState(false);
 
   // character
