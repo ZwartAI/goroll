@@ -11,7 +11,7 @@ import { ItemModal } from "@/components/app/ItemModal";
 import { ConditionsPanel } from "@/components/app/ConditionsPanel";
 import { CoinsAdjuster } from "@/components/app/CoinsAdjuster";
 import { Escenario } from "@/components/app/Escenario";
-import { User, LogOut, Minus, Plus, Camera } from "lucide-react";
+import { User, LogOut, Minus, Plus, Camera, HeartPulse, Sword, Backpack, Trophy, Sparkles, NotebookPen } from "lucide-react";
 import { FullscreenButton } from "@/components/app/AppShell";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
