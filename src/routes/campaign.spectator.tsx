@@ -9,17 +9,19 @@ import { LogList } from "@/components/app/LogList";
 import { CharacterSheetModal } from "@/components/app/CharacterSheetModal";
 import { ItemModal } from "@/components/app/ItemModal";
 import { Escenario } from "@/components/app/Escenario";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/campaign/spectator")({ component: Spectator });
 
 function Spectator() {
+  const { t } = useT();
   const { campaign, characters, logs, achievements, onlineIds, loading } = useGameData();
   const nav = useNavigate();
   const [tab, setTab] = useState<"escenario" | "log" | "achievements">("escenario");
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
 
-  if (loading || !campaign) return <PageFrame><p className="text-center text-muted-foreground">Cargando...</p></PageFrame>;
+  if (loading || !campaign) return <PageFrame><p className="text-center text-muted-foreground">{t("spectator.loading")}</p></PageFrame>;
 
   function logout() { setSession(null); nav({ to: "/" }); }
   const players = characters.filter(c => c.role === "player");
@@ -31,7 +33,7 @@ function Spectator() {
         <button onClick={logout} className="text-muted-foreground"><LogOut size={18}/></button>
         <div className="text-center">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{campaign.name}</p>
-          <h1 className="font-display text-xl rune-glow">👁️ Espectador</h1>
+          <h1 className="font-display text-xl rune-glow">{t("spectator.title")}</h1>
         </div>
         <div className="w-5"/>
       </header>
@@ -39,9 +41,9 @@ function Spectator() {
 
       <div className="grid grid-cols-3 gap-1 mb-4">
         {([
-          ["escenario","⛺ Escena"],["log","📜 Log"],["achievements","🏆 Logros"],
+          ["escenario", t("spectator.tabScene")],["log", t("spectator.tabLog")],["achievements", t("spectator.tabAchievements")],
         ] as const).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)}
+          <button key={k} onClick={() => setTab(k as any)}
             className={`text-xs py-2 rounded-md font-display ${tab===k?"bg-[var(--gold)] text-black":"bg-card text-foreground border border-border"}`}>
             {l}
           </button>
@@ -60,7 +62,7 @@ function Spectator() {
       )}
 
       {tab === "log" && (
-        <LogList rows={logs} initial={20} maxH="max-h-[70vh]" empty="Sin movimientos aún."
+        <LogList rows={logs} initial={20} maxH="max-h-[70vh]" empty={t("spectator.noActivity")}
           renderRow={(l: LogRow) => (
             <div key={l.id} className={`text-sm bg-secondary/40 rounded px-3 py-2 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
               <LogSegments segments={l.segments as any}
@@ -82,7 +84,7 @@ function Spectator() {
                   {list.map(a => (
                     <span key={a.id} className="text-[10px] rounded-full px-2 py-0.5 border" style={{ borderColor: a.color, color: a.color }}>🏆 {a.label}</span>
                   ))}
-                  {!list.length && <span className="text-[10px] text-muted-foreground">Sin logros aún.</span>}
+                  {!list.length && <span className="text-[10px] text-muted-foreground">{t("spectator.noAchievements")}</span>}
                 </div>
               </div>
             );

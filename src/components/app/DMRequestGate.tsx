@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoredUser } from "@/lib/game";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
+
 
 type Req = {
   id: string;
@@ -18,9 +20,11 @@ type Req = {
  * show a blocking modal until they answer Sí / No.
  */
 export function DMRequestGate({ campaignId, ownerUserId }: { campaignId: string; ownerUserId: string | null }) {
+  const { t } = useT();
   const me = getStoredUser();
   const isOwner = !!me && !!ownerUserId && me.id === ownerUserId;
   const [pending, setPending] = useState<Req[]>([]);
+
 
   const reload = useCallback(async () => {
     if (!isOwner) return;
@@ -53,33 +57,34 @@ export function DMRequestGate({ campaignId, ownerUserId }: { campaignId: string;
       await (supabase as any).from("campaign_members")
         .upsert({ campaign_id: campaignId, user_id: req.requester_user_id, role: "dm" },
           { onConflict: "campaign_id,user_id" });
-      toast.success(`${req.requester_username} ahora es Co-DM`);
+      toast.success(t("dmGate.nowCoDM", { name: req.requester_username }));
     } else {
-      toast.info(`Solicitud de ${req.requester_username} rechazada`);
+      toast.info(t("dmGate.rejected", { name: req.requester_username }));
     }
   }
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="ornate-card p-6 max-w-sm w-full space-y-4 text-center">
-        <h2 className="font-display text-lg text-[var(--gold)]">👑 Solicitud de Co-DM</h2>
+        <h2 className="font-display text-lg text-[var(--gold)]">{t("dmGate.title")}</h2>
         <p className="text-sm">
           <span className="font-display text-[var(--gold)]">{req.requester_username}</span>{" "}
-          quiere unirse como Dungeon Master a esta campaña.
+          {t("dmGate.body")}
         </p>
         <p className="text-xs text-muted-foreground">
-          Si aceptas, compartirá el control del DM contigo.
+          {t("dmGate.hint")}
         </p>
         <div className="flex gap-2">
-          <button className="btn-fantasy flex-1" onClick={() => decide(true)}>Sí</button>
+          <button className="btn-fantasy flex-1" onClick={() => decide(true)}>{t("common.yes")}</button>
           <button className="btn-fantasy flex-1"
             style={{ background: "var(--loss)", color: "white" }}
-            onClick={() => decide(false)}>No</button>
+            onClick={() => decide(false)}>{t("common.no")}</button>
         </div>
         {pending.length > 1 && (
-          <p className="text-[10px] text-muted-foreground">+{pending.length - 1} solicitud(es) más en espera</p>
+          <p className="text-[10px] text-muted-foreground">{t("dmGate.moreWaiting", { n: pending.length - 1 })}</p>
         )}
       </div>
     </div>
   );
 }
+
