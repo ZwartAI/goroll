@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Mic, MicOff } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   enabled: boolean;
@@ -10,6 +11,7 @@ type Props = {
 
 /** Compact mic toggle. Tap = toggle, long-press = open settings. */
 export function MicToggle({ enabled, onToggle, onLongPress, className }: Props) {
+  const { t } = useT();
   const timerRef = useRef<any>(null);
   const longFiredRef = useRef(false);
 
@@ -42,8 +44,8 @@ export function MicToggle({ enabled, onToggle, onLongPress, className }: Props) 
       onPointerLeave={cancel}
       onPointerCancel={cancel}
       onContextMenu={handleContextMenu}
-      aria-label={enabled ? "Silenciar micrófono" : "Activar micrófono"}
-      title={enabled ? "Silenciar micrófono (mantén pulsado para ajustes)" : "Activar micrófono (mantén pulsado para ajustes)"}
+      aria-label={enabled ? t("micSettings.muteMic") : t("micSettings.enableMic")}
+      title={enabled ? t("micSettings.muteMicWithHint") : t("micSettings.enableMicWithHint")}
       className={`inline-flex items-center justify-center rounded-md p-1 transition select-none ${
         enabled
           ? "text-[var(--gain)] hover:opacity-80"
