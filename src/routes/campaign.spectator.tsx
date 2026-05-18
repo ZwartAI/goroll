@@ -23,6 +23,7 @@ function Spectator() {
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [openBoosterId, setOpenBoosterId] = useState<string | null>(null);
+  const [achPlayerId, setAchPlayerId] = useState<string | null>(null);
   const voice = useVoice(campaign?.id, null);
 
   if (loading || !campaign) return <PageFrame><p className="text-center text-muted-foreground">{t("spectator.loading")}</p></PageFrame>;
