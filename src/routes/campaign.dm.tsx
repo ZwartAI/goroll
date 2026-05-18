@@ -419,7 +419,7 @@ function CreateItem({ campaignId, dm, players }: { campaignId: string; dm: { id:
   return (
     <div className="ornate-card p-4 space-y-3">
       <select className="w-full bg-input border border-border rounded px-2 py-2 text-sm" value={category} onChange={e => setCategory(e.target.value as any)}>
-        {ITEM_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.label}</option>)}
+        {ITEM_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {tr(`categories.${c.key}`)}</option>)}
         <option value="monedas">{tr("dm.coins")}</option>
       </select>
       {!isCoins && (
@@ -429,11 +429,11 @@ function CreateItem({ campaignId, dm, players }: { campaignId: string; dm: { id:
         <>
           <div className="grid grid-cols-2 gap-2">
             <select className="bg-input border border-border rounded px-2 py-2 text-sm" value={slot} onChange={e => setSlot(e.target.value as Slot)}>
-              {SLOTS.map(s => <option key={s.key} value={s.key}>{s.icon} {s.label}</option>)}
+              {SLOTS.map(s => <option key={s.key} value={s.key}>{s.icon} {tr(`slots.${s.key}`)}</option>)}
             </select>
             <select className="bg-input border border-border rounded px-2 py-2 text-sm" value={rarity} onChange={e => setRarity(e.target.value as Rarity)}
               style={{ color: RARITY_COLOR[rarity] }}>
-              {(["white","blue","purple","gold"] as Rarity[]).map(r => <option key={r} value={r} style={{ color: "black" }}>{RARITY_LABEL[r]}</option>)}
+              {(["white","blue","purple","gold"] as Rarity[]).map(r => <option key={r} value={r} style={{ color: "black" }}>{tr(`rarities.${r}`)}</option>)}
             </select>
           </div>
           {isWeapon(slot) ? (
