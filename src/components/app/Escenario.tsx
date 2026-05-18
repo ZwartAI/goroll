@@ -18,6 +18,8 @@ type Props = {
   nameOverrides?: Record<string, { name: string; color: string }>;
   /** Show log under the players grid. Default true. */
   showLog?: boolean;
+  /** Character IDs currently speaking (mic activity). */
+  speakingIds?: Set<string>;
 };
 
 /**
