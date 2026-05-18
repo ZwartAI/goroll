@@ -16,8 +16,7 @@ import { BoosterEditor } from "@/components/app/BoosterEditor";
 import { type Booster } from "@/components/app/BoosterCard";
 import { DMRequestGate } from "@/components/app/DMRequestGate";
 import { Escenario } from "@/components/app/Escenario";
-import { DeleteCampaignButton } from "@/components/app/DeleteCampaignButton";
-import { getStoredUser } from "@/lib/game";
+import { Escenario as _Escenario_keep } from "@/components/app/Escenario";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
