@@ -630,6 +630,8 @@ export const es = {
     tabAchievements: "🏆 Logros",
     noActivity: "Sin movimientos aún.",
     noAchievements: "Sin logros aún.",
+    achievementsCount: "{n} logros",
+    backToPlayers: "← Volver",
     loading: "Cargando...",
   },
   master: {

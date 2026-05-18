@@ -628,6 +628,8 @@ export const en: Dict = {
     tabAchievements: "🏆 Achievements",
     noActivity: "No activity yet.",
     noAchievements: "No achievements yet.",
+    achievementsCount: "{n} achievements",
+    backToPlayers: "← Back",
     loading: "Loading...",
   },
   master: {

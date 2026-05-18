@@ -23,6 +23,7 @@ function Spectator() {
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [openBoosterId, setOpenBoosterId] = useState<string | null>(null);
+  const [achPlayerId, setAchPlayerId] = useState<string | null>(null);
   const voice = useVoice(campaign?.id, null);
 
   if (loading || !campaign) return <PageFrame><p className="text-center text-muted-foreground">{t("spectator.loading")}</p></PageFrame>;
@@ -80,24 +81,40 @@ function Spectator() {
           )} />
       )}
 
-      {tab === "achievements" && (
-        <div className="space-y-3">
+      {tab === "achievements" && !achPlayerId && (
+        <div className="grid grid-cols-2 gap-2">
           {players.map(p => {
-            const list = achievements.filter(a => a.character_id === p.id);
+            const count = achievements.filter(a => a.character_id === p.id).length;
             return (
-              <div key={p.id} className="ornate-card p-3">
-                <p className="font-display text-sm mb-2" style={{ color: p.color }}>{p.name}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {list.map(a => (
-                    <span key={a.id} className="text-[10px] rounded-full px-2 py-0.5 border" style={{ borderColor: a.color, color: a.color }}>🏆 {a.label}</span>
-                  ))}
-                  {!list.length && <span className="text-[10px] text-muted-foreground">{t("spectator.noAchievements")}</span>}
-                </div>
-              </div>
+              <button key={p.id} onClick={() => setAchPlayerId(p.id)}
+                className="ornate-card p-3 text-left hover:opacity-90 transition">
+                <p className="font-display text-sm truncate" style={{ color: p.color }}>{p.name}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">🏆 {t("spectator.achievementsCount", { n: count })}</p>
+              </button>
             );
           })}
         </div>
       )}
+
+      {tab === "achievements" && achPlayerId && (() => {
+        const p = players.find(x => x.id === achPlayerId);
+        if (!p) return null;
+        const list = achievements.filter(a => a.character_id === p.id);
+        return (
+          <div className="space-y-3">
+            <button onClick={() => setAchPlayerId(null)} className="text-xs text-muted-foreground">{t("spectator.backToPlayers")}</button>
+            <div className="ornate-card p-3">
+              <p className="font-display text-sm mb-2" style={{ color: p.color }}>{p.name}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {list.map(a => (
+                  <span key={a.id} className="text-[10px] rounded-full px-2 py-0.5 border" style={{ borderColor: a.color, color: a.color }}>🏆 {a.label}</span>
+                ))}
+                {!list.length && <span className="text-[10px] text-muted-foreground">{t("spectator.noAchievements")}</span>}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {openChar && (
         <CharacterSheetModal characterId={openChar} campaignId={campaign.id} editor={null}
