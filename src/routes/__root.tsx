@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { mountGlobalClickSound } from "@/lib/sound";
 import { useGlobalBackground } from "@/lib/background";
 import { AppShell } from "@/components/app/AppShell";
+import { ThemeProvider } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -127,9 +128,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell />
-      <Outlet />
-      <Toaster richColors position="top-center" />
+      <ThemeProvider>
+        <AppShell />
+        <Outlet />
+        <Toaster richColors position="top-center" />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
