@@ -143,12 +143,12 @@ function Home() {
       const now = Date.now();
       if (until > now) {
         const sec = Math.ceil((until - now) / 1000);
-        toast.error(`Tu solicitud fue rechazada. Espera ${sec}s para reintentar.`);
+        toast.error(t("home.errCooldown", { sec }));
         return;
       }
     } catch {}
     if ((c as any).single_dm_only) {
-      toast.error("Esta campaña solo permite 1 Dungeon Master.");
+      toast.error(t("home.errSingleDm"));
       return;
     }
     // Already a DM member? skip request
