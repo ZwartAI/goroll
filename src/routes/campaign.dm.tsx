@@ -224,7 +224,7 @@ function DM() {
             )}
           </div>
 
-          {boosters.length === 0 && <p className="text-center text-xs text-muted-foreground py-6">Sin potenciadores. Crea uno desde "Crear".</p>}
+          {boosters.length === 0 && <p className="text-center text-xs text-muted-foreground py-6">{t("dm.noBoosters")}</p>}
           {boosters
             .filter(b => !boosterSearch || b.name.toLowerCase().includes(boosterSearch.toLowerCase()))
             .map(b => {
