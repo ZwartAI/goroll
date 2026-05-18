@@ -377,3 +377,16 @@
     gap: 0.5rem;
   }
 }
+
+@layer utilities {
+  @keyframes btn-press-pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 55%, transparent); }
+    100% { box-shadow: 0 0 0 12px color-mix(in oklab, var(--primary) 0%, transparent); }
+  }
+  .btn-press { position: relative; }
+  .btn-press:active { filter: brightness(1.18) saturate(1.05); transform: translateY(0.5px); }
+  .btn-press:active { animation: btn-press-pulse 450ms ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-press:active { animation: none; }
+  }
+}
