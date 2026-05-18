@@ -47,19 +47,22 @@ export function AppSettingsModal({ onClose }: Props) {
         <div className="space-y-2">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("settings.themeLabel")}</p>
           <div className="grid grid-cols-4 gap-2">
-            {THEMES.map(th => (
+            {THEMES.map(th => {
+              const label = t(`colors.${th.key}`);
+              return (
               <button
                 key={th.key}
                 onClick={() => setTheme(th.key as ThemeKey)}
                 className={`flex flex-col items-center gap-1 rounded-lg p-2 border transition ${
                   theme === th.key ? "border-[var(--gold)]" : "border-border hover:border-[var(--gold)]/50"
                 }`}
-                title={th.label}
+                title={label}
               >
                 <span className="w-8 h-8 rounded-full border border-black/30" style={{ background: th.swatch }} />
-                <span className="text-[9px] text-center leading-tight">{th.label.split(" ")[0]}</span>
+                <span className="text-[9px] text-center leading-tight">{label}</span>
               </button>
-            ))}
+              );
+            })}
           </div>
           <p className="text-[10px] text-muted-foreground text-center">{t("settings.themeHint")}</p>
         </div>
