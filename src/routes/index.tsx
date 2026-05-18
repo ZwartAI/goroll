@@ -408,6 +408,10 @@ function Home() {
           role={role}
           onPlay={() => { const c = actionCampaign; setActionCampaign(null); pickCampaign(c); }}
           onClose={() => setActionCampaign(null)}
+          onDeleted={() => {
+            setCampaigns(cs => cs.filter(c => c.id !== actionCampaign.id));
+            setActionCampaign(null);
+          }}
         />
       )}
     </PageFrame>

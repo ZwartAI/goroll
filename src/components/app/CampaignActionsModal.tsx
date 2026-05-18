@@ -6,17 +6,17 @@ import { DeleteCampaignButton } from "./DeleteCampaignButton";
 type Props = {
   campaign: Campaign;
   currentUserId: string;
-  /** User-chosen role at the role-picker step. */
   role: "player" | "dm" | "spectator";
   onPlay: () => void;
   onClose: () => void;
+  onDeleted?: () => void;
 };
 
 /**
  * Modal that opens when the user picks a campaign from their list.
  * Shows 3 actions: Play, Edit (members & flags), Delete (owner only).
  */
-export function CampaignActionsModal({ campaign, currentUserId, role, onPlay, onClose }: Props) {
+export function CampaignActionsModal({ campaign, currentUserId, role, onPlay, onClose, onDeleted }: Props) {
   const [view, setView] = useState<"menu" | "edit">("menu");
   const isOwner = (campaign as any).owner_user_id === currentUserId;
 
@@ -40,7 +40,7 @@ export function CampaignActionsModal({ campaign, currentUserId, role, onPlay, on
             )}
 
             {isOwner && (
-              <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} isOwner={isOwner} />
+              <DeleteCampaignButton campaignId={campaign.id} campaignName={campaign.name} isOwner={isOwner} onDeleted={onDeleted} />
             )}
 
             <button className="text-xs underline text-muted-foreground w-full text-center mt-1" onClick={onClose}>Cancelar</button>

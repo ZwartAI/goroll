@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { setSession } from "@/lib/game";
 import { toast } from "sonner";
 
 /**
@@ -9,10 +7,9 @@ import { toast } from "sonner";
  * Requires typing the word "Eliminar" before confirming.
  * Cascades deletion across all campaign-related tables (no DB FKs in place).
  */
-export function DeleteCampaignButton({ campaignId, campaignName, isOwner }: {
-  campaignId: string; campaignName: string; isOwner: boolean;
+export function DeleteCampaignButton({ campaignId, campaignName, isOwner, onDeleted }: {
+  campaignId: string; campaignName: string; isOwner: boolean; onDeleted?: () => void;
 }) {
-  const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -47,8 +44,9 @@ export function DeleteCampaignButton({ campaignId, campaignName, isOwner }: {
       const { error } = await supabase.from("campaigns").delete().eq("id", campaignId);
       if (error) throw error;
       toast.success(`Campaña "${campaignName}" eliminada`);
-      setSession(null);
-      nav({ to: "/" });
+      setBusy(false);
+      setOpen(false);
+      onDeleted?.();
     } catch (e: any) {
       toast.error(e.message || "No se pudo eliminar la campaña");
       setBusy(false);
