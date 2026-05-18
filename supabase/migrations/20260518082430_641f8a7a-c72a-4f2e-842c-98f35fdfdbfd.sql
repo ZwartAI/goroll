@@ -1,0 +1,1 @@
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS language text NOT NULL DEFAULT 'es';

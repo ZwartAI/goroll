@@ -1,0 +1,71 @@
+/**
+ * Spanish translations. Keys are dot-separated paths consumed by `useT()`.
+ * Placeholders use {name} syntax.
+ */
+export const es = {
+  common: {
+    cancel: "Cancelar",
+    close: "Cerrar",
+    save: "Guardar",
+    delete: "Eliminar",
+    confirm: "Confirmar",
+    back: "Volver",
+    next: "Siguiente",
+    yes: "Sí",
+    no: "No",
+    loading: "Cargando...",
+    saving: "Guardando...",
+    deleting: "Eliminando...",
+    edit: "Editar",
+    create: "Crear",
+    add: "Añadir",
+    remove: "Quitar",
+    search: "Buscar",
+    accept: "Aceptar",
+    reject: "Rechazar",
+    play: "Jugar",
+    exit: "Salir",
+    settings: "Ajustes",
+    language: "Idioma",
+    theme: "Tema",
+    about: "Acerca de",
+    appName: "Vamos a Rolear",
+    appTagline: "Vamos a Rolear · códice digital",
+  },
+  langs: {
+    es: "Español",
+    en: "Inglés",
+  },
+  settings: {
+    title: "⚙️ Ajustes",
+    themeLabel: "Tema de color",
+    themeHint: "El tema se aplica a fondos, cuadros, paneles y modales de toda la app.",
+    langLabel: "Idioma",
+    langHint: "Tu preferencia se guarda en tu cuenta y se sincroniza entre dispositivos.",
+    aboutLabel: "Acerca de",
+  },
+  campaign: {
+    actionTitle: "¿Qué deseas hacer?",
+    play: "▶️ Jugar campaña",
+    edit: "⚙️ Editar campaña",
+    delete: "🗑️ Eliminar campaña",
+    notOwner: "Solo el creador original de la campaña puede editarla o eliminarla.",
+    dangerZone: "⚠️ Zona de peligro",
+    dangerHint: "Solo el creador original puede eliminar la campaña. Esta acción borra personajes, objetos, potenciadores, logros y el log. No se puede deshacer.",
+    deleteTitle: "⚠️ Eliminar campaña",
+    deleteConfirm: 'Vas a eliminar {name} y todo su contenido de forma permanente.',
+    deleteTypePrompt: 'Para confirmar, escribe "Eliminar" en el cuadro de abajo.',
+    deleted: 'Campaña "{name}" eliminada',
+    deleteError: "No se pudo eliminar la campaña",
+  },
+  errors: {
+    pageTitle: "Esta página no cargó",
+    pageDesc: "Algo salió mal. Puedes recargar o volver al inicio.",
+    tryAgain: "Intentar de nuevo",
+    goHome: "Ir al inicio",
+    notFoundTitle: "Página no encontrada",
+    notFoundDesc: "La página que buscas no existe o fue movida.",
+  },
+};
+
+export type Dict = typeof es;
