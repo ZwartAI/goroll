@@ -128,8 +128,8 @@ function Inventory() {
                 <h3 className="font-display text-lg" style={sel.category === "equipo" ? { color: RARITY_COLOR[sel.rarity as Rarity] } : undefined}>{sel.name}</h3>
                 <p className="text-xs text-muted-foreground">
                   {sel.category === "equipo"
-                    ? SLOTS.find(s=>s.key===sel.slot)?.label
-                    : ITEM_CATEGORIES.find(c => c.key === sel.category)?.label || t("inventory.object")}
+                    ? (SLOTS.find(s=>s.key===sel.slot) ? t(`slots.${sel.slot}`) : "")
+                    : (ITEM_CATEGORIES.find(c => c.key === sel.category) ? t(`categories.${sel.category}`) : t("inventory.object"))}
                 </p>
               </div>
               {sel.category === "equipo" && <RarityBadge rarity={sel.rarity as Rarity} />}
