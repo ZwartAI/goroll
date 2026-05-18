@@ -267,7 +267,7 @@ function DM() {
               <div>
                 <p className="font-display" style={it.category === "equipo" ? { color: RARITY_COLOR[it.rarity as Rarity] } : undefined}>{it.name}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {it.category === "equipo" ? SLOTS.find(s=>s.key===it.slot)?.label : ITEM_CATEGORIES.find(c => c.key === it.category)?.label}
+                  {it.category === "equipo" ? t(`slots.${it.slot}`) : t(`categories.${it.category}`)}
                   {it.category !== "equipo" && (it.uses ?? 0) > 0 && ` · x${it.uses}`}
                 </p>
               </div>
