@@ -2,6 +2,7 @@ import { useState } from "react";
 import { LogList } from "@/components/app/LogList";
 import { LogSegments } from "@/components/app/LogSegments";
 import type { Character, LogRow } from "@/lib/game";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   characters: Character[];
@@ -24,6 +25,7 @@ type Props = {
  */
 export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onOpenItem, dmCharacterIds, nameOverrides, showLog = true }: Props) {
   const [openOffline, setOpenOffline] = useState(false);
+  const { t } = useT();
   const dmSet = dmCharacterIds || new Set<string>();
   const players = characters.filter(c => c.role !== "dm" && !dmSet.has(c.id));
   const online = players.filter(p => (onlineIds.has(p.id) || p.id === selfId));
@@ -32,18 +34,18 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
   return (
     <>
       <div className="ornate-card p-3 mb-4">
-        <h2 className="font-display text-sm uppercase tracking-widest text-center mb-2 text-[var(--gold)]">✦ Mesa de jugadores ✦</h2>
+        <h2 className="font-display text-sm uppercase tracking-widest text-center mb-2 text-[var(--gold)]">{t("escenario.title")}</h2>
         <div className="flex items-center gap-1.5 mb-2 text-[10px] uppercase text-[var(--gain)]">
-          <span className="w-2 h-2 rounded-full bg-[var(--gain)] inline-block" /> En línea
+          <span className="w-2 h-2 rounded-full bg-[var(--gain)] inline-block" /> {t("escenario.online")}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
-          {online.map(p => <PlayerCard key={p.id} c={p} online onClick={() => onOpenChar(p.id)} isSelf={p.id === selfId} />)}
-          {online.length === 0 && <p className="col-span-full text-[10px] text-muted-foreground text-center py-2">Nadie en línea</p>}
+          {online.map(p => <PlayerCard key={p.id} c={p} online onClick={() => onOpenChar(p.id)} isSelf={p.id === selfId} t={t} />)}
+          {online.length === 0 && <p className="col-span-full text-[10px] text-muted-foreground text-center py-2">{t("escenario.nobodyOnline")}</p>}
         </div>
         {offline.length > 0 && (
           <>
             <div className="flex items-center gap-1.5 mb-2 text-[10px] uppercase text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-muted-foreground/60 inline-block" /> Desconectados
+              <span className="w-2 h-2 rounded-full bg-muted-foreground/60 inline-block" /> {t("escenario.offline")}
             </div>
             {offline.length <= 3 ? (
               <div className="grid grid-cols-2 gap-2">
@@ -54,10 +56,10 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
                 className="w-full ornate-card p-3 text-center hover:border-[var(--gold)]/60 transition opacity-80">
                 <div className="flex items-center justify-center gap-2 text-xs">
                   <span className="font-display text-[var(--gold)]">{offline.length}</span>
-                  <span className="text-muted-foreground">desconectados</span>
+                  <span className="text-muted-foreground">{t("escenario.disconnectedCount")}</span>
                   <span className="text-[var(--gold)]">···</span>
                 </div>
-                <p className="text-[9px] text-muted-foreground mt-1">Toca para ver todos</p>
+                <p className="text-[9px] text-muted-foreground mt-1">{t("escenario.tapToSeeAll")}</p>
               </button>
             )}
           </>
@@ -66,8 +68,8 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
 
       {showLog && (
         <div className="ornate-card p-3">
-          <h2 className="font-display text-sm uppercase tracking-widest text-center mb-2 text-[var(--gold)]">📜 Log del escenario</h2>
-          <LogList rows={logs} initial={30} maxH="max-h-[50vh]" empty="Sin actividad aún."
+          <h2 className="font-display text-sm uppercase tracking-widest text-center mb-2 text-[var(--gold)]">{t("escenario.logTitle")}</h2>
+          <LogList rows={logs} initial={30} maxH="max-h-[50vh]" empty={t("escenario.noActivity")}
             renderRow={(l: any) => (
               <div key={l.id} className={`text-xs bg-secondary/40 rounded px-2 py-1.5 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
                 <LogSegments segments={l.segments as any}
@@ -82,13 +84,13 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
 
       {openOffline && (
         <OfflineListModal players={offline} onClose={() => setOpenOffline(false)}
-          onPick={(id) => { setOpenOffline(false); onOpenChar(id); }} />
+          onPick={(id) => { setOpenOffline(false); onOpenChar(id); }} title={t("escenario.offlineModalTitle")} closeLabel={t("common.close")} />
       )}
     </>
   );
 }
 
-function PlayerCard({ c, online, onClick, isSelf }: { c: any; online: boolean; onClick: () => void; isSelf?: boolean }) {
+function PlayerCard({ c, online, onClick, isSelf, t }: { c: any; online: boolean; onClick: () => void; isSelf?: boolean; t: (p: string) => string }) {
   const max = c.max_hp || c.base_hp || 1;
   const pct = Math.max(0, Math.min(100, (c.current_hp / max) * 100));
   return (
@@ -109,7 +111,7 @@ function PlayerCard({ c, online, onClick, isSelf }: { c: any; online: boolean; o
         <div className="h-full" style={{ width: `${pct}%`, background: pct > 50 ? "var(--gain)" : pct > 25 ? "var(--gold)" : "var(--loss)" }} />
       </div>
       <p className={`text-[9px] mt-1 ${online ? "text-[var(--gain)]" : "text-muted-foreground"}`}>
-        {isSelf && online ? <span className="inline-flex items-center gap-0.5">Activo<span className="animate-pulse">···</span></span> : online ? "En línea" : "Offline"}
+        {isSelf && online ? <span className="inline-flex items-center gap-0.5">{t("escenario.activeNow")}<span className="animate-pulse">···</span></span> : online ? t("escenario.onlineShort") : t("escenario.offlineShort")}
       </p>
     </button>
   );
@@ -134,15 +136,15 @@ function OfflineRow({ c, onClick }: { c: any; onClick: () => void }) {
   );
 }
 
-function OfflineListModal({ players, onClose, onPick }: { players: any[]; onClose: () => void; onPick: (id: string) => void }) {
+function OfflineListModal({ players, onClose, onPick, title, closeLabel }: { players: any[]; onClose: () => void; onPick: (id: string) => void; title: string; closeLabel: string }) {
   return (
     <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-3" onClick={onClose}>
       <div className="ornate-card p-4 max-w-md w-full max-h-[85vh] overflow-y-auto space-y-2" onClick={e => e.stopPropagation()}>
-        <h3 className="font-display text-lg text-center text-[var(--gold)]">Desconectados</h3>
+        <h3 className="font-display text-lg text-center text-[var(--gold)]">{title}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {players.map(p => <OfflineRow key={p.id} c={p} onClick={() => onPick(p.id)} />)}
         </div>
-        <button className="btn-fantasy w-full" onClick={onClose}>Cerrar</button>
+        <button className="btn-fantasy w-full" onClick={onClose}>{closeLabel}</button>
       </div>
     </div>
   );
