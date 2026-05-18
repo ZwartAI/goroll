@@ -65,6 +65,11 @@ function DM() {
     const it = items.find(i => i.id === id);
     if (it) setSelItem(it);
   };
+  const openBoosterFromId = (id: string) => {
+    const b = boosters.find(x => x.id === id);
+    if (b) setSelBooster(b);
+    else toast.error(t("dm.playerNotFound"));
+  };
 
   return (
     <PageFrame>
@@ -116,6 +121,7 @@ function DM() {
             <div key={l.id} className={`text-sm bg-secondary/40 rounded px-3 py-2 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
               <LogSegments segments={l.segments as any}
                 onItem={openItemFromId}
+                onBooster={openBoosterFromId}
                 onChar={(id) => {
                   if (!characters.find(c => c.id === id)) toast.error(t("dm.playerNotFound"));
                   else setOpenChar(id);
@@ -294,6 +300,7 @@ function DM() {
             nameOverrides={dmLabels}
             onOpenChar={(id) => setOpenChar(id)}
             onOpenItem={openItemFromId}
+            onOpenBooster={openBoosterFromId}
           />
         </>
       )}

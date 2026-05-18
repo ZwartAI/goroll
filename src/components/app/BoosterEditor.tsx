@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   RARITY_COLOR, RARITY_DICE_BONUS,
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { StatText } from "./StatText";
 import type { Booster } from "./BoosterCard";
 import { useT } from "@/lib/i18n";
+import { Trash2, MessageSquare } from "lucide-react";
 
 /* ─────────────────────────────── shared bits ─────────────────────────────── */
 
@@ -468,7 +469,7 @@ export function BoosterActions({
     const segs: any[] = [
       { t: "char", v: actor.name, color: actor.color, id: actor.id },
       { t: "text", v: verb },
-      { t: "item", v: booster.name, rarity: booster.rarity as Rarity },
+      { t: "item", v: booster.name, rarity: booster.rarity as Rarity, id: booster.id, kind: "booster" },
     ];
     if (trailing) segs.push({ t: "text", v: trailing });
     await pushLog(campaignId, segs);
@@ -500,22 +501,22 @@ export function BoosterActions({
     onClose();
   }
 
-  async function rollBooster() {
+  async function showInChat() {
     if (!character) return;
-    const m = (booster.dados || "").match(/(\d+)\s*d\s*(\d+)/i);
-    let detail = "";
-    if (m) {
-      const n = Math.min(20, +m[1] || 1);
-      const f = Math.max(2, +m[2] || 20);
-      const rolls = Array.from({ length: n }, () => 1 + Math.floor(Math.random() * f));
-      const total = rolls.reduce((a, b) => a + b, 0) + RARITY_DICE_BONUS[booster.rarity as Rarity];
-      detail = `→ [${rolls.join(", ")}] +${RARITY_DICE_BONUS[booster.rarity as Rarity]} = ${total}`;
-    } else {
-      const r = 1 + Math.floor(Math.random() * 20);
-      detail = `→ d20 = ${r} (+${RARITY_DICE_BONUS[booster.rarity as Rarity]} ${t("boosters.rarityBonusShort")} = ${r + RARITY_DICE_BONUS[booster.rarity as Rarity]})`;
-    }
-    await pushBoosterLog(character, t("boosters.rolledLog", { detail }));
-    toast.success(detail);
+    await pushBoosterLog(character, t("boosters.showedLog"));
+    toastSaved();
+    onClose();
+  }
+
+  async function discardToVault() {
+    if (!character) return;
+    if (!confirm(t("boosters.discardConfirm"))) return;
+    await (supabase as any).from("boosters").update({
+      owner_character_id: null, in_dm_vault: true,
+    }).eq("id", booster.id);
+    await pushBoosterLog(character, t("boosters.discardedLog"));
+    toastSaved();
+    onClose();
   }
 
   // DM clicking a card opens the full editor instead of this read view.
@@ -531,7 +532,10 @@ export function BoosterActions({
       <MetaChips extId={booster.external_id} tipo={booster.tipo} rarity={booster.rarity as Rarity} />
       <BoosterDetails b={booster} />
 
-      {!readOnly && character && (
+      {(() => {
+        const isOwner = !!character && booster.owner_character_id === character.id;
+        if (readOnly || !character || !isOwner) return null;
+        return (
         <div className="space-y-2">
           {!confirmUse ? (
             <button className="btn-fantasy w-full text-base py-3 flex items-center justify-center gap-2"
@@ -549,23 +553,67 @@ export function BoosterActions({
               </button>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <select value={transferTo} onChange={e => setTransferTo(e.target.value)}
-                className="w-full bg-input border border-border rounded px-2 py-2 text-xs mb-1">
-                <option value="">{t("boosters.pickRecipient")}</option>
-                {players.filter(p => p.id !== character.id).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <button className="btn-fantasy w-full" disabled={!transferTo} onClick={transferPlayer}>{t("boosters.transfer")}</button>
-            </div>
-            <button className="btn-fantasy h-full flex items-center justify-center gap-2" onClick={rollBooster}>
-              {t("boosters.rollBooster")}
+          <div>
+            <select value={transferTo} onChange={e => setTransferTo(e.target.value)}
+              className="w-full bg-input border border-border rounded px-2 py-2 text-xs mb-1">
+              <option value="">{t("boosters.pickRecipient")}</option>
+              {players.filter(p => p.id !== character.id).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <button className="btn-fantasy w-full" disabled={!transferTo} onClick={transferPlayer}>{t("boosters.transfer")}</button>
+          </div>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <button className="btn-fantasy flex items-center justify-center gap-2" onClick={showInChat} title={t("boosters.showInChat")}>
+              <MessageSquare size={14} />
+              <span>{t("boosters.showInChat")}</span>
+            </button>
+            <button className="btn-fantasy aspect-square flex items-center justify-center"
+              style={{ background: "color-mix(in oklab, var(--loss) 30%, transparent)", borderColor: "var(--loss)" }}
+              onClick={discardToVault} title={t("boosters.discardTitle")} aria-label={t("boosters.discardTitle")}>
+              <Trash2 size={16} />
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <button className="text-sm text-muted-foreground underline w-full" onClick={onClose}>{t("boosters.close")}</button>
     </ModalShell>
+  );
+}
+
+/* ─────────── BoosterPeek: open a booster by id (from log click) ─────────── */
+
+
+export function BoosterPeek({
+  boosterId, character, campaignId, players, onClose,
+}: {
+  boosterId: string;
+  character?: Character | null;
+  campaignId: string;
+  players?: Character[];
+  onClose: () => void;
+}) {
+  const [b, setB] = useState<Booster | null>(null);
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const { data } = await (supabase as any).from("boosters").select("*").eq("id", boosterId).maybeSingle();
+      if (!live) return;
+      if (!data) setMissing(true);
+      else setB(data as Booster);
+    })();
+    return () => { live = false; };
+  }, [boosterId]);
+  if (missing) { onClose(); return null; }
+  if (!b) return null;
+  return (
+    <BoosterActions
+      booster={b}
+      character={character ?? null}
+      campaignId={campaignId}
+      players={players || []}
+      onClose={onClose}
+    />
   );
 }

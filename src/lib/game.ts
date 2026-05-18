@@ -122,7 +122,7 @@ export function totals(character: Character, equipped: Item[]) {
 export type Segment =
   | { t: "text"; v: string }
   | { t: "char"; v: string; color: string; id?: string }
-  | { t: "item"; v: string; rarity: Rarity; id?: string }
+  | { t: "item"; v: string; rarity: Rarity; id?: string; kind?: "item" | "booster" }
   | { t: "coins"; v: string }
   | { t: "gain"; v: string }
   | { t: "loss"; v: string };

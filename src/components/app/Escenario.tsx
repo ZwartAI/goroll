@@ -11,6 +11,7 @@ type Props = {
   selfId?: string | null;
   onOpenChar: (id: string) => void;
   onOpenItem?: (id: string) => void;
+  onOpenBooster?: (id: string) => void;
   /** Character IDs that belong to DM-role users — they are hidden from the players table. */
   dmCharacterIds?: Set<string>;
   /** Display overrides for DM/Co-DM names in the log. */
@@ -23,7 +24,7 @@ type Props = {
  * Shared "Escenario" view: shows the party (online first, offline collapsible)
  * and an optional log of the scene below. Used by Player profile, DM, and Spectator.
  */
-export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onOpenItem, dmCharacterIds, nameOverrides, showLog = true }: Props) {
+export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onOpenItem, onOpenBooster, dmCharacterIds, nameOverrides, showLog = true }: Props) {
   const [openOffline, setOpenOffline] = useState(false);
   const { t } = useT();
   const dmSet = dmCharacterIds || new Set<string>();
@@ -75,6 +76,7 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
                 <LogSegments segments={l.segments as any}
                   nameOverrides={nameOverrides}
                   onItem={(id) => onOpenItem?.(id)}
+                  onBooster={(id) => onOpenBooster?.(id)}
                   onChar={(id) => onOpenChar(id)} />
                 <p className="text-[9px] text-muted-foreground mt-0.5">{new Date(l.created_at).toLocaleTimeString()}</p>
               </div>

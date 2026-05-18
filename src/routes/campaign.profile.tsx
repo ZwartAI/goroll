@@ -8,6 +8,7 @@ import { LogSegments } from "@/components/app/LogSegments";
 import { LogList } from "@/components/app/LogList";
 import { CharacterSheetModal } from "@/components/app/CharacterSheetModal";
 import { ItemModal } from "@/components/app/ItemModal";
+import { BoosterPeek } from "@/components/app/BoosterEditor";
 import { ConditionsPanel } from "@/components/app/ConditionsPanel";
 import { CoinsAdjuster } from "@/components/app/CoinsAdjuster";
 import { Escenario } from "@/components/app/Escenario";
@@ -29,6 +30,7 @@ function Profile() {
   const [hpModal, setHpModal] = useState(false);
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<string | null>(null);
+  const [openBooster, setOpenBooster] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"personaje" | "escenario">("personaje");
   // When opened from Escenario tab (or from the log), force read-only sheet.
   const [openCharReadOnly, setOpenCharReadOnly] = useState(false);
@@ -250,6 +252,7 @@ function Profile() {
               <div key={l.id} className={`text-xs bg-secondary/40 rounded px-2 py-1.5 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
                 <LogSegments segments={l.segments as any}
                   onItem={(id) => setOpenItem(id)}
+                  onBooster={(id) => setOpenBooster(id)}
                   onChar={(id) => openCharFromLog(id, false)} />
                 <p className="text-[9px] text-muted-foreground mt-0.5">{new Date(l.created_at).toLocaleTimeString()}</p>
               </div>
@@ -265,6 +268,7 @@ function Profile() {
           selfId={character.id}
           onOpenChar={(id) => openCharFromLog(id, true)}
           onOpenItem={(id) => setOpenItem(id)}
+          onOpenBooster={(id) => setOpenBooster(id)}
         />
       )}
 
@@ -287,6 +291,10 @@ function Profile() {
       )}
       {openItem && (
         <ItemModal itemId={openItem} onClose={() => setOpenItem(null)} />
+      )}
+      {openBooster && (
+        <BoosterPeek boosterId={openBooster} character={character} campaignId={campaign.id}
+          onClose={() => setOpenBooster(null)} />
       )}
     </PageFrame>
   );

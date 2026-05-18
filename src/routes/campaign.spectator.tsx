@@ -8,6 +8,7 @@ import { LogSegments } from "@/components/app/LogSegments";
 import { LogList } from "@/components/app/LogList";
 import { CharacterSheetModal } from "@/components/app/CharacterSheetModal";
 import { ItemModal } from "@/components/app/ItemModal";
+import { BoosterPeek } from "@/components/app/BoosterEditor";
 import { Escenario } from "@/components/app/Escenario";
 import { useT } from "@/lib/i18n";
 
@@ -20,6 +21,7 @@ function Spectator() {
   const [tab, setTab] = useState<"escenario" | "log" | "achievements">("escenario");
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const [openBoosterId, setOpenBoosterId] = useState<string | null>(null);
 
   if (loading || !campaign) return <PageFrame><p className="text-center text-muted-foreground">{t("spectator.loading")}</p></PageFrame>;
 
@@ -58,6 +60,7 @@ function Spectator() {
           selfId={null}
           onOpenChar={(id) => setOpenChar(id)}
           onOpenItem={openItemFromId}
+          onOpenBooster={(id) => setOpenBoosterId(id)}
         />
       )}
 
@@ -67,6 +70,7 @@ function Spectator() {
             <div key={l.id} className={`text-sm bg-secondary/40 rounded px-3 py-2 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
               <LogSegments segments={l.segments as any}
                 onItem={openItemFromId}
+                onBooster={(id) => setOpenBoosterId(id)}
                 onChar={(id) => setOpenChar(id)} />
               <p className="text-[10px] text-muted-foreground mt-1">{new Date(l.created_at).toLocaleTimeString()}</p>
             </div>
@@ -99,6 +103,10 @@ function Spectator() {
       )}
       {openItemId && (
         <ItemModal itemId={openItemId} onClose={() => setOpenItemId(null)} />
+      )}
+      {openBoosterId && (
+        <BoosterPeek boosterId={openBoosterId} character={null} campaignId={campaign.id}
+          onClose={() => setOpenBoosterId(null)} />
       )}
     </PageFrame>
   );

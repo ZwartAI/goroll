@@ -6,12 +6,14 @@ type Override = { name: string; color: string };
 export function LogSegments({
   segments,
   onItem,
+  onBooster,
   onChar,
   /** Map of character_id → { name, color } used to display DMs as "DM" / "Co-DM N" in the log. */
   nameOverrides,
 }: {
   segments: Segment[];
   onItem?: (id: string) => void;
+  onBooster?: (id: string) => void;
   onChar?: (id: string) => void;
   nameOverrides?: Record<string, Override>;
 }) {
@@ -29,11 +31,13 @@ export function LogSegments({
           style={{ color: ov?.color ?? s.color }}>{ov?.name ?? s.v}</strong>
       );
     } else if (s.t === "item") {
-      const clickable = onItem && s.id;
+      const isBooster = s.kind === "booster";
+      const handler = isBooster ? onBooster : onItem;
+      const clickable = handler && s.id;
       out.push(
         <em key={i}
           className={`not-italic underline underline-offset-2 ${clickable ? "cursor-pointer" : ""}`}
-          onClick={clickable ? () => onItem!(s.id!) : undefined}
+          onClick={clickable ? () => handler!(s.id!) : undefined}
           style={{ color: RARITY_COLOR[s.rarity] }}>{s.v}</em>
       );
     }
