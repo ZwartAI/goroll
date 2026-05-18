@@ -134,7 +134,7 @@ function Profile() {
             <button
               onClick={() => setImgModal(true)}
               className="col-span-2 aspect-[3/4] rounded-lg overflow-hidden bg-[var(--secondary)] relative ornate-card !p-0"
-              aria-label="Editar imagen"
+              aria-label={t("profile.editImageAria")}
             >
               {character.image_url ? (
                 <img src={character.image_url} alt={character.name}
@@ -146,35 +146,37 @@ function Profile() {
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
                   <span className="text-3xl mb-1">🧙</span>
-                  <span className="text-[10px] text-center px-1">Toca para subir</span>
+                  <span className="text-[10px] text-center px-1">{t("profile.tapToUpload")}</span>
                 </div>
               )}
             </button>
 
             <div className="col-span-3 grid grid-cols-2 gap-2">
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Vida</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.life")}</p>
                 <p className="font-display text-sm">{character.current_hp}/{stats.maxHp}</p>
               </div>
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Defensa</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.defense")}</p>
                 <p className="font-display text-sm text-[var(--gold)]">{stats.defense}</p>
               </div>
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Velocidad</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.velocity")}</p>
                 <p className="font-display text-sm">{character.velocity}<span className="text-[9px]">ft</span></p>
               </div>
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Daño</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.damage")}</p>
                 <p className="font-display text-sm text-[var(--loss)]">{stats.damage > 0 ? `+${stats.damage}` : stats.damage}</p>
               </div>
               <div className="ornate-card p-2 text-center col-span-2">
-                <p className="text-[9px] uppercase text-muted-foreground">🪙 Monedas</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.coins")}</p>
                 <p className="font-display text-base text-[var(--gold)]">{character.coins}</p>
                 <div className="mt-1">
                   <CoinsAdjuster onApply={changeCoins} />
                 </div>
               </div>
+            </div>
+          </div>
             </div>
           </div>
 
@@ -199,7 +201,7 @@ function Profile() {
           </div>
 
           {/* Atributos */}
-          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-1 text-[var(--gold)]">Atributos</h2>
+          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-1 text-[var(--gold)]">{t("profile.attributes")}</h2>
           <div className="grid grid-cols-3 gap-1 mb-3">
             {stat("fue", "FUE")}
             {stat("des", "DES")}
@@ -208,30 +210,30 @@ function Profile() {
             {stat("wis", "SAB")}
             {stat("car", "CAR")}
           </div>
-          <div className="stat-pill mb-3 !text-[11px]"><span>Iniciativa</span><span className="text-[var(--gold)] font-bold">{fmtMod(character.initiative)}</span></div>
+          <div className="stat-pill mb-3 !text-[11px]"><span>{t("profile.initiative")}</span><span className="text-[var(--gold)] font-bold">{fmtMod(character.initiative)}</span></div>
 
           <ConditionsPanel character={character} campaignId={campaign.id} canEdit={true} />
 
           {/* Quick links */}
           <div className="grid grid-cols-3 gap-2 mb-2">
-            <Link to="/campaign/equipment" className="btn-fantasy text-center">⚔️ Equipo</Link>
-            <Link to="/campaign/inventory" className="btn-fantasy text-center" style={{ background: "linear-gradient(135deg, oklch(0.5 0.15 195), oklch(0.3 0.1 195))" }}>🎒 Mochila</Link>
-            <Link to="/campaign/achievements" className="btn-fantasy text-center" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>🏆 Logros</Link>
+            <Link to="/campaign/equipment" className="btn-fantasy text-center">{t("profile.quickEquip")}</Link>
+            <Link to="/campaign/inventory" className="btn-fantasy text-center" style={{ background: "linear-gradient(135deg, oklch(0.5 0.15 195), oklch(0.3 0.1 195))" }}>{t("profile.quickInv")}</Link>
+            <Link to="/campaign/achievements" className="btn-fantasy text-center" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>{t("profile.quickAch")}</Link>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-4">
             <Link to="/campaign/boosters" className="btn-fantasy text-center"
               style={{ background: "linear-gradient(135deg, var(--rarity-purple), oklch(0.35 0.18 300))", color: "white" }}>
-              🃏 Potenciadores
+              {t("profile.quickBoost")}
             </Link>
             <Link to="/campaign/notes" className="btn-fantasy text-center"
               style={{ background: "linear-gradient(135deg, oklch(0.45 0.12 220), oklch(0.30 0.10 220))", color: "white" }}>
-              📝 Notas
+              {t("profile.quickNotes")}
             </Link>
           </div>
 
           {/* Log */}
-          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-2 text-[var(--gold)]">📜 Log de la partida</h2>
-          <LogList rows={logs} initial={20} maxH="max-h-[40vh]" empty="Sin actividad aún."
+          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-2 text-[var(--gold)]">{t("profile.sessionLog")}</h2>
+          <LogList rows={logs} initial={20} maxH="max-h-[40vh]" empty={t("escenario.noActivity")}
             renderRow={(l: any) => (
               <div key={l.id} className={`text-xs bg-secondary/40 rounded px-2 py-1.5 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
                 <LogSegments segments={l.segments as any}
