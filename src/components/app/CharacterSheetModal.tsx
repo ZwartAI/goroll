@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog } from "@/lib/log";
-import { totals, fmtMod, modifier, RARITY_COLOR, RARITY_LABEL, SLOTS, type Character, type Item, type Rarity } from "@/lib/game";
+import { totals, fmtMod, modifier, RARITY_COLOR, SLOTS, type Character, type Item, type Rarity } from "@/lib/game";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { ConditionsPanel } from "@/components/app/ConditionsPanel";
 import { CoinsAdjuster } from "@/components/app/CoinsAdjuster";
 import { NotesEditor } from "@/components/app/NotesEditor";
+import { useT } from "@/lib/i18n";
 import type { Booster } from "@/components/app/BoosterCard";
 
 type Props = {
@@ -20,6 +21,7 @@ type Props = {
 const ATTR_KEYS = [["fue","FUE"],["des","DES"],["con","CON"],["int_stat","INT"],["wis","SAB"],["car","CAR"]] as const;
 
 export function CharacterSheetModal({ characterId, campaignId, editor, onClose, onPickItem }: Props) {
+  const { t } = useT();
   const [character, setCharacter] = useState<Character | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [achievements, setAchievements] = useState<{id:string;label:string;color:string}[]>([]);
@@ -55,7 +57,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
 
   if (!character) return (
     <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <p className="text-muted-foreground">Cargando...</p>
+      <p className="text-muted-foreground">{t("sheet.loading")}</p>
     </div>
   );
 
@@ -70,7 +72,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
     await supabase.from("characters").update({ current_hp: next }).eq("id", character.id);
     await pushLog(campaignId, [
       { t: "char", v: editor.name, color: editor.color, id: editor.id },
-      { t: "text", v: `ajustó vida de` },
+      { t: "text", v: t("sheet.adjustedLifeOf") },
       { t: "char", v: character.name, color: character.color, id: character.id },
       { t: "text", v: ":" },
       delta > 0 ? { t: "gain", v: `+${delta}` } : { t: "loss", v: `${delta}` },
@@ -85,9 +87,9 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
     await supabase.from("characters").update({ coins: next }).eq("id", character.id);
     await pushLog(campaignId, [
       { t: "char", v: editor.name, color: editor.color, id: editor.id },
-      { t: "text", v: delta >= 0 ? "dio" : "quitó" },
+      { t: "text", v: delta >= 0 ? t("sheet.gave") : t("sheet.took") },
       { t: "coins", v: `${Math.abs(delta)}` },
-      { t: "text", v: delta >= 0 ? "a" : "de" },
+      { t: "text", v: delta >= 0 ? t("sheet.toWho") : t("sheet.fromWho") },
       { t: "char", v: character.name, color: character.color, id: character.id },
     ], { kind: "character.update", id: character.id, prev });
     reload();
@@ -98,9 +100,9 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
     await supabase.from("characters").update({ [key]: val } as any).eq("id", character.id);
     await pushLog(campaignId, [
       { t: "char", v: editor.name, color: editor.color, id: editor.id },
-      { t: "text", v: `cambió ${key.toUpperCase()} de` },
+      { t: "text", v: t("sheet.changedAttrOf", { key: key.toUpperCase() }) },
       { t: "char", v: character.name, color: character.color, id: character.id },
-      { t: "text", v: `a ${val}` },
+      { t: "text", v: t("sheet.toValue", { value: val }) },
     ], { kind: "character.update", id: character.id, prev });
     reload();
   }
@@ -113,7 +115,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
     await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaignId, [
       { t: "char", v: editor.name, color: editor.color, id: editor.id },
-      { t: "text", v: "desequipó a" },
+      { t: "text", v: t("sheet.unequipped") },
       { t: "char", v: character!.name, color: character!.color, id: character!.id },
       { t: "text", v: ":" },
       { t: "item", v: it.name, rarity: it.rarity as Rarity, id: it.id },
@@ -126,7 +128,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
     await supabase.from("achievements").delete().eq("id", id);
     if (row) await pushLog(campaignId, [
       { t: "char", v: editor.name, color: editor.color, id: editor.id },
-      { t: "text", v: `quitó logro "${row.label}" a` },
+      { t: "text", v: t("sheet.removedAch", { label: row.label }) },
       { t: "char", v: character!.name, color: character!.color, id: character!.id },
     ], { kind: "achievement.recreate", row: { ...row, character_id: character!.id } });
     reload();
@@ -137,7 +139,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
       <div className="ornate-card p-4 max-w-md w-full max-h-[92vh] overflow-y-auto space-y-3" onClick={e => e.stopPropagation()}>
         <div className="text-center">
           <h3 className="font-display text-xl rune-glow" style={{ color: character.color }}>{character.name}</h3>
-          <p className="text-xs text-muted-foreground">{character.race || "—"} / {character.class || "—"} · {character.role === "dm" ? "Dungeon Master" : "Jugador"}</p>
+          <p className="text-xs text-muted-foreground">{character.race || "—"} / {character.class || "—"} · {character.role === "dm" ? t("sheet.dungeonMaster") : t("sheet.player")}</p>
         </div>
         {character.image_url && (
           <div className="mx-auto w-40 aspect-[3/4] rounded-lg overflow-hidden bg-[var(--secondary)] relative">
@@ -150,10 +152,10 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
           </div>
         )}
         <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
-          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Vida</p><p className="font-display text-sm">{character.current_hp}/{stats.maxHp}</p></div>
-          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Def</p><p className="font-display text-sm text-[var(--gold)]">{stats.defense}</p></div>
-          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Vel</p><p className="font-display text-sm">{character.velocity}</p></div>
-          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">Daño</p><p className="font-display text-sm text-[var(--loss)]">{stats.damage > 0 ? `+${stats.damage}` : stats.damage}</p></div>
+          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">{t("sheet.life")}</p><p className="font-display text-sm">{character.current_hp}/{stats.maxHp}</p></div>
+          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">{t("sheet.def")}</p><p className="font-display text-sm text-[var(--gold)]">{stats.defense}</p></div>
+          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">{t("sheet.vel")}</p><p className="font-display text-sm">{character.velocity}</p></div>
+          <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">{t("sheet.damage")}</p><p className="font-display text-sm text-[var(--loss)]">{stats.damage > 0 ? `+${stats.damage}` : stats.damage}</p></div>
           <div className="ornate-card p-2"><p className="text-muted-foreground text-[9px] uppercase">🪙</p><p className="font-display text-sm text-[var(--gold)]">{character.coins}</p></div>
         </div>
         {isEdit && (
@@ -169,7 +171,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
               <CoinsAdjuster onApply={adjustCoins} />
             </div>
             <div className="stat-pill !text-xs gap-1">
-              <span className="truncate min-w-0 flex-1">🎒 Slots de mochila</span>
+              <span className="truncate min-w-0 flex-1">{t("sheet.backpackSlots")}</span>
               <button className="px-2 rounded bg-secondary border border-border" onClick={async () => {
                 const next = Math.max(1, ((character as any).backpack_slots ?? 20) - 1);
                 await supabase.from("characters").update({ backpack_slots: next } as any).eq("id", character!.id); reload();
@@ -197,9 +199,9 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
           })}
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Equipado</p>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{t("sheet.equipped")}</p>
           <div className="space-y-1">
-            {equipped.length === 0 && <p className="text-[10px] text-muted-foreground">Nada equipado.</p>}
+            {equipped.length === 0 && <p className="text-[10px] text-muted-foreground">{t("sheet.nothingEquipped")}</p>}
             {equipped.map(it => (
               <div key={it.id} className="flex items-center justify-between text-xs ornate-card px-2 py-1"
                 style={{ borderColor: RARITY_COLOR[it.rarity as Rarity] }}>
@@ -207,16 +209,16 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
                   style={{ color: RARITY_COLOR[it.rarity as Rarity] }}>
                   {it.name} <span className="text-muted-foreground">· {SLOTS.find(s=>s.key===it.slot)?.label}</span>
                 </button>
-                {isEdit && <button className="text-[10px] underline opacity-70" onClick={() => unequip(it)}>quitar</button>}
+                {isEdit && <button className="text-[10px] underline opacity-70" onClick={() => unequip(it)}>{t("sheet.quit")}</button>}
               </div>
             ))}
           </div>
         </div>
         <ConditionsPanel character={character} campaignId={campaignId} canEdit={isEdit} />
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Mochila</p>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{t("sheet.backpack")}</p>
           <div className="space-y-1">
-            {items.filter(i => !i.equipped).length === 0 && <p className="text-[10px] text-muted-foreground">Vacía.</p>}
+            {items.filter(i => !i.equipped).length === 0 && <p className="text-[10px] text-muted-foreground">{t("sheet.empty")}</p>}
             {items.filter(i => !i.equipped).map(it => (
               <button key={it.id} onClick={() => onPickItem?.(it)} className="w-full flex justify-between text-xs ornate-card px-2 py-1 text-left">
                 <span style={it.category === "equipo" ? { color: RARITY_COLOR[it.rarity as Rarity] } : undefined}>{it.name}</span>
@@ -226,9 +228,9 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
           </div>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">🃏 Potenciadores</p>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{t("sheet.boosters")}</p>
           <div className="space-y-1">
-            {boosters.length === 0 && <p className="text-[10px] text-muted-foreground">Sin potenciadores.</p>}
+            {boosters.length === 0 && <p className="text-[10px] text-muted-foreground">{t("sheet.noBoosters")}</p>}
             {boosters.map(b => (
               <div key={b.id} className="flex items-center justify-between text-xs ornate-card px-2 py-1"
                 style={{ borderColor: RARITY_COLOR[b.rarity as Rarity] }}>
@@ -241,12 +243,12 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
                     <button className="text-[10px] underline opacity-70" onClick={async () => {
                       await (supabase as any).from("boosters").update({ owner_character_id: null, in_dm_vault: true, uses: b.max_uses }).eq("id", b.id);
                       reload();
-                    }}>al vault</button>
+                    }}>{t("sheet.toVault")}</button>
                     <button className="text-[10px] underline opacity-70 text-[var(--loss)]" onClick={async () => {
-                      if (!confirm(`¿Eliminar potenciador "${b.name}"?`)) return;
+                      if (!confirm(t("sheet.deleteBoosterConfirm", { name: b.name }))) return;
                       await (supabase as any).from("boosters").delete().eq("id", b.id);
                       reload();
-                    }}>eliminar</button>
+                    }}>{t("sheet.delete")}</button>
                   </div>
                 )}
               </div>
@@ -254,22 +256,22 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
           </div>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Logros</p>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{t("sheet.achievements")}</p>
           <div className="flex flex-wrap gap-1">
             {achievements.map(a => (
               <span key={a.id} className="text-[10px] px-2 py-0.5 rounded border" style={{ color: a.color, borderColor: a.color }}>
                 {a.label}{isEdit && <button onClick={() => removeAch(a.id)} className="ml-1 opacity-70">✕</button>}
               </span>
             ))}
-            {!achievements.length && <p className="text-[10px] text-muted-foreground">Sin logros.</p>}
+            {!achievements.length && <p className="text-[10px] text-muted-foreground">{t("sheet.noAchievements")}</p>}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button className="btn-fantasy" onClick={() => setShowNotes(true)}
             style={{ background: "linear-gradient(135deg, oklch(0.45 0.12 220), oklch(0.30 0.10 220))", color: "white" }}>
-            📝 Ver notas
+            {t("sheet.viewNotes")}
           </button>
-          <button className="btn-fantasy" onClick={onClose}>Regresar</button>
+          <button className="btn-fantasy" onClick={onClose}>{t("sheet.goBack")}</button>
         </div>
         {showNotes && character && (
           <NotesEditor

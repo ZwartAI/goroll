@@ -15,6 +15,7 @@ import { User, LogOut, Minus, Plus, Camera } from "lucide-react";
 import { FullscreenButton } from "@/components/app/AppShell";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/campaign/profile")({
   component: Profile,
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/campaign/profile")({
 function Profile() {
   const { campaign, character, characters, items, logs, onlineIds, loading } = useGameData();
   const nav = useNavigate();
+  const { t } = useT();
   const [imgModal, setImgModal] = useState(false);
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<string | null>(null);
@@ -30,7 +32,7 @@ function Profile() {
   // When opened from Escenario tab (or from the log), force read-only sheet.
   const [openCharReadOnly, setOpenCharReadOnly] = useState(false);
 
-  if (loading || !character || !campaign) return <PageFrame><p className="text-center text-muted-foreground">Cargando...</p></PageFrame>;
+  if (loading || !character || !campaign) return <PageFrame><p className="text-center text-muted-foreground">{t("profile.loading")}</p></PageFrame>;
 
   const equipped = items.filter(i => i.owner_character_id === character.id && i.equipped);
   const stats = totals(character, equipped);
@@ -44,7 +46,7 @@ function Profile() {
     await supabase.from("characters").update({ current_hp: next }).eq("id", character.id);
     await pushLog(campaign.id, [
       { t: "char", v: character.name, color: character.color, id: character.id },
-      { t: "text", v: delta > 0 ? "se curó" : "recibió daño:" },
+      { t: "text", v: delta > 0 ? t("profile.healed") : t("profile.tookDmg") },
       delta > 0 ? { t: "gain", v: `+${delta}` } : { t: "loss", v: `${delta}` },
       { t: "text", v: `(${next}/${stats.maxHp})` },
     ], { kind: "character.update", id: character.id, prev });
@@ -57,7 +59,7 @@ function Profile() {
     await supabase.from("characters").update({ coins: next }).eq("id", character.id);
     await pushLog(campaign.id, [
       { t: "char", v: character.name, color: character.color, id: character.id },
-      { t: "text", v: n > 0 ? "ganó" : "gastó" },
+      { t: "text", v: n > 0 ? t("profile.gained") : t("profile.spent") },
       { t: "coins", v: `${Math.abs(n)}` },
       { t: "text", v: `(${next})` },
     ], { kind: "character.update", id: character.id, prev });
@@ -67,9 +69,9 @@ function Profile() {
 
   /** Open a character sheet from any source (log, escenario). Always read-only here. */
   function openCharFromLog(id: string | undefined, readOnly = false) {
-    if (!id) { toast.error("No se pudo abrir la ficha: el registro del log no tiene un personaje válido."); return; }
+    if (!id) { toast.error(t("profile.cantOpenSheetNoChar")); return; }
     const exists = characters.some(c => c.id === id) || character?.id === id;
-    if (!exists) { toast.error("No se pudo abrir la ficha: el personaje no está en esta campaña."); return; }
+    if (!exists) { toast.error(t("profile.cantOpenSheetMissing")); return; }
     setOpenCharReadOnly(readOnly);
     setOpenChar(id);
   }
@@ -91,15 +93,15 @@ function Profile() {
     <PageFrame>
       <header className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-1.5">
-          <button onClick={logout} className="text-muted-foreground hover:text-foreground" aria-label="Salir"><LogOut size={18} /></button>
+          <button onClick={logout} className="text-muted-foreground hover:text-foreground" aria-label={t("profile.logoutAria")}><LogOut size={18} /></button>
           <FullscreenButton />
         </div>
         <div className="text-center">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{campaign.name}</p>
           <h1 className="font-display text-xl rune-glow">{character.name}</h1>
-          <p className="text-xs text-muted-foreground">{character.race || "Humano"} / {character.class || "Aventurero"}</p>
+          <p className="text-xs text-muted-foreground">{character.race || t("profile.defaultRace")} / {character.class || t("profile.defaultClass")}</p>
         </div>
-        <Link to="/campaign/settings" className="text-muted-foreground hover:text-foreground" aria-label="Estadísticas"><User size={20} /></Link>
+        <Link to="/campaign/settings" className="text-muted-foreground hover:text-foreground" aria-label={t("profile.statsAria")}><User size={20} /></Link>
       </header>
       <div className="gem-divider mb-4" />
 
@@ -112,7 +114,7 @@ function Profile() {
             ? { background: "linear-gradient(135deg, oklch(0.45 0.16 145), oklch(0.30 0.12 145))", color: "white" }
             : undefined}
         >
-          🧙 Personaje
+          {t("profile.tabCharacter")}
         </button>
         <button
           onClick={() => setActiveTab("escenario")}
@@ -121,7 +123,7 @@ function Profile() {
             ? { background: "linear-gradient(135deg, oklch(0.50 0.15 195), oklch(0.30 0.12 195))", color: "white" }
             : undefined}
         >
-          ⛺ Escenario
+          {t("profile.tabScene")}
         </button>
       </div>
 
@@ -132,7 +134,7 @@ function Profile() {
             <button
               onClick={() => setImgModal(true)}
               className="col-span-2 aspect-[3/4] rounded-lg overflow-hidden bg-[var(--secondary)] relative ornate-card !p-0"
-              aria-label="Editar imagen"
+              aria-label={t("profile.editImageAria")}
             >
               {character.image_url ? (
                 <img src={character.image_url} alt={character.name}
@@ -144,30 +146,30 @@ function Profile() {
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
                   <span className="text-3xl mb-1">🧙</span>
-                  <span className="text-[10px] text-center px-1">Toca para subir</span>
+                  <span className="text-[10px] text-center px-1">{t("profile.tapToUpload")}</span>
                 </div>
               )}
             </button>
 
             <div className="col-span-3 grid grid-cols-2 gap-2">
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Vida</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.life")}</p>
                 <p className="font-display text-sm">{character.current_hp}/{stats.maxHp}</p>
               </div>
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Defensa</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.defense")}</p>
                 <p className="font-display text-sm text-[var(--gold)]">{stats.defense}</p>
               </div>
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Velocidad</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.velocity")}</p>
                 <p className="font-display text-sm">{character.velocity}<span className="text-[9px]">ft</span></p>
               </div>
               <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">Daño</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.damage")}</p>
                 <p className="font-display text-sm text-[var(--loss)]">{stats.damage > 0 ? `+${stats.damage}` : stats.damage}</p>
               </div>
               <div className="ornate-card p-2 text-center col-span-2">
-                <p className="text-[9px] uppercase text-muted-foreground">🪙 Monedas</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.coins")}</p>
                 <p className="font-display text-base text-[var(--gold)]">{character.coins}</p>
                 <div className="mt-1">
                   <CoinsAdjuster onApply={changeCoins} />
@@ -197,7 +199,7 @@ function Profile() {
           </div>
 
           {/* Atributos */}
-          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-1 text-[var(--gold)]">Atributos</h2>
+          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-1 text-[var(--gold)]">{t("profile.attributes")}</h2>
           <div className="grid grid-cols-3 gap-1 mb-3">
             {stat("fue", "FUE")}
             {stat("des", "DES")}
@@ -206,30 +208,30 @@ function Profile() {
             {stat("wis", "SAB")}
             {stat("car", "CAR")}
           </div>
-          <div className="stat-pill mb-3 !text-[11px]"><span>Iniciativa</span><span className="text-[var(--gold)] font-bold">{fmtMod(character.initiative)}</span></div>
+          <div className="stat-pill mb-3 !text-[11px]"><span>{t("profile.initiative")}</span><span className="text-[var(--gold)] font-bold">{fmtMod(character.initiative)}</span></div>
 
           <ConditionsPanel character={character} campaignId={campaign.id} canEdit={true} />
 
           {/* Quick links */}
           <div className="grid grid-cols-3 gap-2 mb-2">
-            <Link to="/campaign/equipment" className="btn-fantasy text-center">⚔️ Equipo</Link>
-            <Link to="/campaign/inventory" className="btn-fantasy text-center" style={{ background: "linear-gradient(135deg, oklch(0.5 0.15 195), oklch(0.3 0.1 195))" }}>🎒 Mochila</Link>
-            <Link to="/campaign/achievements" className="btn-fantasy text-center" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>🏆 Logros</Link>
+            <Link to="/campaign/equipment" className="btn-fantasy text-center">{t("profile.quickEquip")}</Link>
+            <Link to="/campaign/inventory" className="btn-fantasy text-center" style={{ background: "linear-gradient(135deg, oklch(0.5 0.15 195), oklch(0.3 0.1 195))" }}>{t("profile.quickInv")}</Link>
+            <Link to="/campaign/achievements" className="btn-fantasy text-center" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>{t("profile.quickAch")}</Link>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-4">
             <Link to="/campaign/boosters" className="btn-fantasy text-center"
               style={{ background: "linear-gradient(135deg, var(--rarity-purple), oklch(0.35 0.18 300))", color: "white" }}>
-              🃏 Potenciadores
+              {t("profile.quickBoost")}
             </Link>
             <Link to="/campaign/notes" className="btn-fantasy text-center"
               style={{ background: "linear-gradient(135deg, oklch(0.45 0.12 220), oklch(0.30 0.10 220))", color: "white" }}>
-              📝 Notas
+              {t("profile.quickNotes")}
             </Link>
           </div>
 
           {/* Log */}
-          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-2 text-[var(--gold)]">📜 Log de la partida</h2>
-          <LogList rows={logs} initial={20} maxH="max-h-[40vh]" empty="Sin actividad aún."
+          <h2 className="font-display text-xs uppercase tracking-widest text-center mb-2 text-[var(--gold)]">{t("profile.sessionLog")}</h2>
+          <LogList rows={logs} initial={20} maxH="max-h-[40vh]" empty={t("escenario.noActivity")}
             renderRow={(l: any) => (
               <div key={l.id} className={`text-xs bg-secondary/40 rounded px-2 py-1.5 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
                 <LogSegments segments={l.segments as any}
@@ -270,6 +272,7 @@ function Profile() {
 
 
 function ImageEditor({ character, onClose }: { character: any; onClose: () => void }) {
+  const { t } = useT();
   const [url, setUrl] = useState<string>(character.image_url || "");
   const [scale, setScale] = useState<number>(character.image_scale || 1);
   const [ox, setOx] = useState<number>(character.image_offset_x ?? 50);
@@ -299,7 +302,7 @@ function ImageEditor({ character, onClose }: { character: any; onClose: () => vo
   return (
     <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-3" onClick={onClose}>
       <div className="ornate-card p-4 max-w-sm w-full space-y-3 max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="font-display text-lg text-center">Imagen del personaje</h3>
+        <h3 className="font-display text-lg text-center">{t("profile.imgTitle")}</h3>
         <div className="aspect-[3/4] rounded-lg overflow-hidden bg-[var(--secondary)] relative border border-border">
           {url
             ? <img src={url} alt="preview"
@@ -308,31 +311,31 @@ function ImageEditor({ character, onClose }: { character: any; onClose: () => vo
                   transform: `translate(${(ox - 50)}%, ${(oy - 50)}%) scale(${scale})`,
                   transformOrigin: "center center",
                 }} />
-            : <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs">Sin imagen</div>}
+            : <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs">{t("profile.imgNone")}</div>}
         </div>
 
         <input ref={fileRef} type="file" accept="image/*" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); }} />
         <button className="btn-fantasy w-full flex items-center justify-center gap-2" disabled={uploading} onClick={() => fileRef.current?.click()}>
-          <Camera size={14}/> {uploading ? "Subiendo..." : "Subir desde galería"}
+          <Camera size={14}/> {uploading ? t("profile.uploading") : t("profile.uploadFromGallery")}
         </button>
         <input className="w-full rounded bg-input border border-border px-3 py-2 text-xs"
-          placeholder="o pega una URL https://..." value={url} onChange={e => setUrl(e.target.value)} />
+          placeholder={t("profile.orPasteUrl")} value={url} onChange={e => setUrl(e.target.value)} />
 
         {url && (
           <>
             <label className="text-xs flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">Zoom</span>
+              <span className="text-muted-foreground">{t("profile.zoom")}</span>
               <input type="range" min={0.5} max={3} step={0.05} value={scale} onChange={e => setScale(+e.target.value)} className="flex-1" />
               <span className="font-mono text-[10px] w-10 text-right">{scale.toFixed(2)}x</span>
             </label>
             <label className="text-xs flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">↔ Pos X</span>
+              <span className="text-muted-foreground">{t("profile.posX")}</span>
               <input type="range" min={-100} max={200} value={ox} onChange={e => setOx(+e.target.value)} className="flex-1" />
               <span className="font-mono text-[10px] w-10 text-right">{ox|0}</span>
             </label>
             <label className="text-xs flex items-center justify-between gap-2">
-              <span className="text-muted-foreground">↕ Pos Y</span>
+              <span className="text-muted-foreground">{t("profile.posY")}</span>
               <input type="range" min={-100} max={200} value={oy} onChange={e => setOy(+e.target.value)} className="flex-1" />
               <span className="font-mono text-[10px] w-10 text-right">{oy|0}</span>
             </label>
@@ -340,8 +343,8 @@ function ImageEditor({ character, onClose }: { character: any; onClose: () => vo
         )}
 
         <div className="flex gap-2">
-          <button className="btn-fantasy flex-1" onClick={onClose}>Cancelar</button>
-          <button className="btn-fantasy flex-1" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={save}>Guardar</button>
+          <button className="btn-fantasy flex-1" onClick={onClose}>{t("common.cancel")}</button>
+          <button className="btn-fantasy flex-1" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={save}>{t("common.save")}</button>
         </div>
       </div>
     </div>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useLocation } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n";
 
 /** Reusable inline fullscreen toggle. Renders nothing on the server. */
 export function FullscreenButton({ className = "" }: { className?: string }) {
   const [fs, setFs] = useState(false);
+  const { t } = useT();
   useEffect(() => {
     if (typeof document === "undefined") return;
     const onFs = () => setFs(!!document.fullscreenElement);
@@ -20,7 +22,7 @@ export function FullscreenButton({ className = "" }: { className?: string }) {
   return (
     <button
       onClick={toggle}
-      aria-label={fs ? "Salir de pantalla completa" : "Pantalla completa"}
+      aria-label={fs ? t("shell.exitFs") : t("shell.enterFs")}
       className={`rounded-md border border-border bg-card/60 backdrop-blur p-1.5 text-muted-foreground hover:text-[var(--gold)] hover:border-[var(--gold)] transition-colors ${className}`}
     >
       {fs ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
