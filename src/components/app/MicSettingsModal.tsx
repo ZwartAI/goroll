@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useMicSettings, sensitivityToThreshold } from "@/lib/micSettings";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   open: boolean;
@@ -19,6 +20,7 @@ type Props = {
 
 /** Live mic settings modal: sensitivity, input gain, audio processing toggles, and a live meter. */
 export function MicSettingsModal({ open, onOpenChange }: Props) {
+  const { t } = useT();
   const { settings, update, reset } = useMicSettings();
   const [level, setLevel] = useState(0);
   const rafRef = useRef(0);
@@ -94,9 +96,9 @@ export function MicSettingsModal({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display">Ajustes del micrófono</DialogTitle>
+          <DialogTitle className="font-display">{t("micSettings.title")}</DialogTitle>
           <DialogDescription>
-            Calibra la sensibilidad y el volumen para que tu voz se detecte mejor.
+            {t("micSettings.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -104,8 +106,8 @@ export function MicSettingsModal({ open, onOpenChange }: Props) {
           {/* Live meter */}
           <div>
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>Nivel de voz en vivo</span>
-              <span>{isOverThreshold ? "Detectando" : "Silencio"}</span>
+              <span>{t("micSettings.liveLevel")}</span>
+              <span>{isOverThreshold ? t("micSettings.detecting") : t("micSettings.silence")}</span>
             </div>
             <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
               <div
@@ -123,14 +125,14 @@ export function MicSettingsModal({ open, onOpenChange }: Props) {
               />
             </div>
             <p className="text-[10px] text-muted-foreground mt-1">
-              La línea vertical marca el umbral actual. Habla normal: tu nivel debería superarla.
+              {t("micSettings.thresholdHint")}
             </p>
           </div>
 
           {/* Sensitivity */}
           <div>
             <div className="flex justify-between text-sm mb-2">
-              <label>Sensibilidad</label>
+              <label>{t("micSettings.sensitivity")}</label>
               <span className="text-muted-foreground">{Math.round(settings.sensitivity * 100)}%</span>
             </div>
             <Slider
@@ -141,14 +143,14 @@ export function MicSettingsModal({ open, onOpenChange }: Props) {
               onValueChange={(v) => update({ sensitivity: v[0] })}
             />
             <p className="text-[10px] text-muted-foreground mt-1">
-              Más alto = capta voces más suaves (pero también más ruido de fondo).
+              {t("micSettings.sensitivityHint")}
             </p>
           </div>
 
           {/* Gain */}
           <div>
             <div className="flex justify-between text-sm mb-2">
-              <label>Volumen de entrada</label>
+              <label>{t("micSettings.inputVolume")}</label>
               <span className="text-muted-foreground">{settings.gain.toFixed(2)}×</span>
             </div>
             <Slider
@@ -159,27 +161,27 @@ export function MicSettingsModal({ open, onOpenChange }: Props) {
               onValueChange={(v) => update({ gain: v[0] })}
             />
             <p className="text-[10px] text-muted-foreground mt-1">
-              Amplifica la señal del micrófono antes de medir.
+              {t("micSettings.inputVolumeHint")}
             </p>
           </div>
 
           {/* Toggles */}
           <div className="space-y-3 pt-1">
             <ToggleRow
-              label="Supresión de ruido"
-              hint="Reduce ruido ambiental constante."
+              label={t("micSettings.noiseSuppression")}
+              hint={t("micSettings.noiseSuppressionHint")}
               checked={settings.noiseSuppression}
               onChange={(v) => update({ noiseSuppression: v })}
             />
             <ToggleRow
-              label="Cancelación de eco"
-              hint="Evita capturar el audio que sale de tus altavoces."
+              label={t("micSettings.echoCancellation")}
+              hint={t("micSettings.echoCancellationHint")}
               checked={settings.echoCancellation}
               onChange={(v) => update({ echoCancellation: v })}
             />
             <ToggleRow
-              label="Control automático de ganancia"
-              hint="Si tu voz se oye irregular, prueba desactivarlo."
+              label={t("micSettings.autoGainControl")}
+              hint={t("micSettings.autoGainControlHint")}
               checked={settings.autoGainControl}
               onChange={(v) => update({ autoGainControl: v })}
             />
@@ -187,8 +189,8 @@ export function MicSettingsModal({ open, onOpenChange }: Props) {
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="ghost" onClick={reset}>Restablecer</Button>
-          <Button onClick={() => onOpenChange(false)}>Listo</Button>
+          <Button variant="ghost" onClick={reset}>{t("micSettings.reset")}</Button>
+          <Button onClick={() => onOpenChange(false)}>{t("micSettings.done")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
