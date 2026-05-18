@@ -268,65 +268,6 @@ function Profile() {
   );
 }
 
-function PlayerCard({ c, online, onClick, isSelf }: { c: any; online: boolean; onClick: () => void; isSelf?: boolean }) {
-  const max = c.max_hp || 1;
-  const pct = Math.max(0, Math.min(100, (c.current_hp / max) * 100));
-  return (
-    <button onClick={onClick}
-      className={`ornate-card !p-2 text-center transition hover:border-[var(--gold)]/70 ${online ? "" : "opacity-50 grayscale"}`}>
-      <div className="relative mx-auto w-14 h-14 rounded-full overflow-hidden border-2"
-        style={{ borderColor: c.color || "var(--gold)" }}>
-        {c.image_url
-          ? <img src={c.image_url} alt={c.name} className="w-full h-full object-cover"
-              style={{ transform: `translate(${((c.image_offset_x ?? 50) - 50)}%, ${((c.image_offset_y ?? 50) - 50)}%) scale(${c.image_scale || 1})` }} />
-          : <div className="w-full h-full flex items-center justify-center text-xl bg-[var(--secondary)]">🧙</div>}
-        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border border-background ${online ? "bg-[var(--gain)]" : "bg-muted-foreground/60"}`} />
-      </div>
-      <p className="font-display text-xs mt-1 truncate" style={{ color: c.color }}>{c.name}</p>
-      <p className="text-[9px] text-muted-foreground truncate">{c.race || "—"} / {c.class || "—"}</p>
-      <p className="text-[10px] mt-0.5">❤️ {c.current_hp}/{max}</p>
-      <div className="h-1 rounded-full bg-secondary overflow-hidden mt-0.5">
-        <div className="h-full" style={{ width: `${pct}%`, background: pct > 50 ? "var(--gain)" : pct > 25 ? "var(--gold)" : "var(--loss)" }} />
-      </div>
-      <p className={`text-[9px] mt-1 ${online ? "text-[var(--gain)]" : "text-muted-foreground"}`}>
-        {isSelf && online ? <span className="inline-flex items-center gap-0.5">Activo<span className="animate-pulse">···</span></span> : online ? "En línea" : "Offline"}
-      </p>
-    </button>
-  );
-}
-
-function OfflineRow({ c, onClick }: { c: any; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="ornate-card !p-2 flex items-center gap-2 opacity-60 hover:opacity-80 transition text-left">
-      <div className="w-8 h-8 rounded-full overflow-hidden border" style={{ borderColor: c.color || "var(--gold)" }}>
-        {c.image_url
-          ? <img src={c.image_url} alt={c.name} className="w-full h-full object-cover grayscale" />
-          : <div className="w-full h-full flex items-center justify-center text-xs bg-[var(--secondary)]">🧙</div>}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-xs truncate" style={{ color: c.color }}>{c.name}</p>
-        <p className="text-[9px] text-muted-foreground truncate">{c.race || "—"} / {c.class || "—"}</p>
-        <div className="h-1 rounded-full bg-secondary overflow-hidden mt-0.5">
-          <div className="h-full bg-muted-foreground/60" style={{ width: `${Math.max(0, Math.min(100, (c.current_hp / (c.max_hp || 1)) * 100))}%` }} />
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function OfflineListModal({ players, onClose, onPick }: { players: any[]; onClose: () => void; onPick: (id: string) => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-3" onClick={onClose}>
-      <div className="ornate-card p-4 max-w-md w-full max-h-[85vh] overflow-y-auto space-y-2" onClick={e => e.stopPropagation()}>
-        <h3 className="font-display text-lg text-center text-[var(--gold)]">Desconectados</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {players.map(p => <OfflineRow key={p.id} c={p} onClick={() => onPick(p.id)} />)}
-        </div>
-        <button className="btn-fantasy w-full" onClick={onClose}>Cerrar</button>
-      </div>
-    </div>
-  );
-}
 
 function ImageEditor({ character, onClose }: { character: any; onClose: () => void }) {
   const [url, setUrl] = useState<string>(character.image_url || "");
