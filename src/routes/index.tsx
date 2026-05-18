@@ -363,7 +363,7 @@ function Home() {
             {/* Username */}
             <input
               type="text"
-              className="absolute bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none font-display text-[var(--gold)] placeholder:text-[color-mix(in_oklab,var(--gold)_55%,transparent)]"
+              className="absolute bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none font-display placeholder:text-[color-mix(in_oklab,var(--gold)_55%,transparent)] mt-[164px] text-xl ml-[112px] pr-0"
               style={{
                 top: "36.5%",
                 left: "11%",
