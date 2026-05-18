@@ -405,11 +405,12 @@ function CreateItem({ campaignId, dm, players }: { campaignId: string; dm: { id:
       const targetChar = players.find(p => p.id === target);
       await pushLog(campaignId, [
         { t: "char", v: dm.name, color: dm.color, id: dm.id },
-        { t: "text", v: send && targetChar ? "entregó a" : "creó" },
+        { t: "text", v: send && targetChar ? tr("dm.handedLog") : tr("dm.createdLog") },
         ...(send && targetChar ? [{ t: "char", v: targetChar.name, color: targetChar.color, id: targetChar.id } as const, { t: "text", v: ":" } as const] : []),
         { t: "item", v: it.name, rarity: it.rarity as any, id: it.id },
       ] as any, { kind: "item.recreate", item: it as any });
     }
+
     setName(""); setDamage(0); setUses(1);
   }
 
