@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStoredUser } from "@/lib/game";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
+
 
 type Req = {
   id: string;
