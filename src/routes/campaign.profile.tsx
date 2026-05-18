@@ -111,7 +111,8 @@ function Profile() {
           <p className="text-xs text-muted-foreground">{character.race || t("profile.defaultRace")} / {character.class || t("profile.defaultClass")}</p>
         </div>
         <div className="flex items-center gap-1.5">
-          <MicToggle enabled={voice.enabled} onToggle={voice.toggle} />
+          <MicToggle enabled={voice.enabled} onToggle={voice.toggle} onLongPress={() => setMicSettingsOpen(true)} />
+          <MicSettingsModal open={micSettingsOpen} onOpenChange={setMicSettingsOpen} />
           <Link to="/campaign/settings" className="text-muted-foreground hover:text-foreground" aria-label={t("profile.statsAria")}><User size={20} /></Link>
         </div>
       </header>
