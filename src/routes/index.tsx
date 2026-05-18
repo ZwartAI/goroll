@@ -333,7 +333,7 @@ function Home() {
           >
             {/* Título */}
             <div
-              className="absolute text-center font-display tracking-[0.18em] text-xs mt-[215px] ml-[178px]"
+              className="login-cta-text is-pulsing pr-0 pl-[31px] pb-[4px]"
               style={{
                 top: "11%",
                 left: "8%",
