@@ -23,9 +23,11 @@ type Step = "login" | "role" | "campaign" | "character";
 
 function Home() {
   const nav = useNavigate();
-  const { t } = useT();
+  const { t, setLang } = useT();
   const [user, setUser] = useState<StoredUser | null>(null);
   const [step, setStep] = useState<Step>("login");
+  const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);
+  const [postLoginTarget, setPostLoginTarget] = useState<"master" | "role">("role");
 
   // login fields
   const [username, setUsername] = useState("");
@@ -90,7 +92,10 @@ function Home() {
       const u: StoredUser = { id: res.user.id, username: res.user.username };
       setStoredUser(u); setUser(u);
       toast.success(t("home.welcome", { name: res.user.username }));
-      if (res.user.isMaster) {
+      if (res.isNewAccount) {
+        setPostLoginTarget(res.user.isMaster ? "master" : "role");
+        setShowLanguagePrompt(true);
+      } else if (res.user.isMaster) {
         nav({ to: "/master" });
       } else {
         setStep("role");
@@ -103,6 +108,14 @@ function Home() {
   function logout() {
     setStoredUser(null); setUser(null);
     setUsername(""); setPin(""); setStep("login");
+    setShowLanguagePrompt(false);
+  }
+
+  function confirmInitialLanguage(lang: "es" | "en") {
+    setLang(lang);
+    setShowLanguagePrompt(false);
+    if (postLoginTarget === "master") nav({ to: "/master" });
+    else setStep("role");
   }
 
   async function createCampaign() {
@@ -274,6 +287,27 @@ function Home() {
       </div>
       <div className="gem-divider my-5" />
       {showAppSettings && <AppSettingsModal onClose={() => setShowAppSettings(false)} />}
+      {showLanguagePrompt && (
+        <div className="fixed inset-0 z-[260] bg-black/85 flex items-center justify-center p-4">
+          <div className="ornate-card p-5 w-full max-w-sm space-y-4 text-center">
+            <div className="text-4xl">🌐</div>
+            <div className="space-y-1">
+              <h2 className="font-display text-lg text-[var(--gold)]">{t("home.languagePromptTitle")}</h2>
+              <p className="text-sm text-muted-foreground">{t("home.languagePromptBody")}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn-fantasy flex items-center justify-center gap-2" onClick={() => confirmInitialLanguage("es")}>
+                <span className="text-base">🇪🇸</span>
+                <span>{t("langs.es")}</span>
+              </button>
+              <button className="btn-fantasy flex items-center justify-center gap-2" onClick={() => confirmInitialLanguage("en")}>
+                <span className="text-base">🇬🇧</span>
+                <span>{t("langs.en")}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {step === "login" && (
         <div className="ornate-card p-6 space-y-4">
           <h2 className="text-center font-display text-lg">{t("home.loginTitle")}</h2>
