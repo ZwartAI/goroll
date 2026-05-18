@@ -559,6 +559,7 @@ function ItemActions({ item, players, dm, campaignId, allItems, allCharacters, o
 }
 
 function BulkBoosterImport({ campaignId }: { campaignId: string }) {
+  const { t: tr } = useT();
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   async function handleFile(file: File) {
@@ -567,11 +568,10 @@ function BulkBoosterImport({ campaignId }: { campaignId: string }) {
     try {
       const { parseBoosterFile, normalizeName } = await import("@/lib/boosterImport");
       const { rows, errors } = await parseBoosterFile(file);
-      if (errors.length) toast.error(`${errors.length} error(es): ${errors.slice(0,2).map(e=>`${e.where}: ${e.message}`).join(" · ")}`);
+      if (errors.length) toast.error(tr("dm.importErrors", { n: errors.length, detail: errors.slice(0,2).map(e=>`${e.where}: ${e.message}`).join(" · ") }));
       if (!rows.length) return;
       setProgress({ done: 0, total: rows.length });
 
-      // Load existing for dedup
       const { data: existing } = await (supabase as any).from("boosters")
         .select("id,external_id,name,uses,max_uses").eq("campaign_id", campaignId);
       const byExt = new Map<string, any>();
@@ -594,7 +594,6 @@ function BulkBoosterImport({ campaignId }: { campaignId: string }) {
           objetivos: r.objetivos, dados: r.dados, efecto: r.efecto,
         };
         if (match) {
-          // Preserve uses/max_uses already edited by DM.
           await (supabase as any).from("boosters").update(payload).eq("id", match.id);
           updated++;
         } else {
@@ -606,31 +605,25 @@ function BulkBoosterImport({ campaignId }: { campaignId: string }) {
         }
         setProgress({ done: i + 1, total: rows.length });
       }
-      toast.success(`Importados: ${created} nuevos · ${updated} actualizados${errors.length ? ` · ${errors.length} con error` : ""}`);
+      toast.success(tr("dm.importDone", { created, updated }) + (errors.length ? tr("dm.importDoneErr", { n: errors.length }) : ""));
     } catch (e: any) {
-      toast.error(e?.message || "Error al importar");
+      toast.error(e?.message || tr("dm.importFailed"));
     } finally { setBusy(false); setProgress({ done: 0, total: 0 }); }
   }
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   return (
     <div className="space-y-1 pt-2 border-t border-border">
-      <p className="text-[10px] text-muted-foreground">
-        📥 Importar potenciadores desde <code>.xlsx</code> o <code>.txt</code>.
-      </p>
-      <p className="text-[10px] text-muted-foreground">
-        <b>XLSX:</b> hoja "Extra Skills - DND". Fila 1-2 encabezados (ID, Tipo, Rareza, Nombre, Modo de lanzamiento, Distancia, Objetivos, Dados a tirar, Efecto o Condición). Fila 3 en adelante datos.
-      </p>
-      <p className="text-[10px] text-muted-foreground">
-        <b>TXT:</b> bloques separados por línea en blanco. Cada línea con etiqueta: <code>ID:</code>, <code>Tipo:</code>, <code>Rareza:</code>, <code>Nombre:</code>, <code>Efecto o Condición:</code>...
-      </p>
+      <p className="text-[10px] text-muted-foreground">{tr("dm.importHint")}</p>
+      <p className="text-[10px] text-muted-foreground">{tr("dm.importXlsx")}</p>
+      <p className="text-[10px] text-muted-foreground">{tr("dm.importTxt")}</p>
       <input type="file" accept=".xlsx,.xls,.txt" disabled={busy}
         onChange={e => { const f = e.target.files?.[0]; if (f) { handleFile(f); e.target.value = ""; } }}
         className="text-xs text-muted-foreground w-full file:mr-2 file:px-2 file:py-1 file:rounded file:border-0 file:bg-secondary file:text-foreground file:text-xs" />
       {busy && (
         <div className="space-y-1 pt-2">
           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>Creando / Actualizando potenciadores…</span>
-            <span>{progress.total ? `${progress.done} / ${progress.total} (${pct}%)` : "Espere un momento…"}</span>
+            <span>{tr("dm.importing")}</span>
+            <span>{progress.total ? tr("dm.importProgress", { done: progress.done, total: progress.total, pct }) : tr("dm.pleaseWait")}</span>
           </div>
           <div className="h-2 w-full rounded bg-secondary overflow-hidden border border-border">
             <div className="h-full transition-all duration-150"
@@ -638,6 +631,7 @@ function BulkBoosterImport({ campaignId }: { campaignId: string }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }
