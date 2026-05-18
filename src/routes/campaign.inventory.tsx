@@ -8,17 +8,17 @@ import { pushLog } from "@/lib/log";
 import { clampHpForOwner } from "@/lib/hp";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/campaign/inventory")({ component: Inventory });
-
-
 
 function Inventory() {
   const { character, items, characters, campaign, loading } = useGameData();
   const [sel, setSel] = useState<Item | null>(null);
   const [transferTo, setTransferTo] = useState("");
+  const { t } = useT();
 
-  if (loading || !character || !campaign) return <PageFrame><p className="text-center text-muted-foreground">Cargando...</p></PageFrame>;
+  if (loading || !character || !campaign) return <PageFrame><p className="text-center text-muted-foreground">{t("common.loading")}</p></PageFrame>;
 
   const owned = items.filter(i => i.owner_character_id === character.id);
   const slotIcon = (it: Item) => {
@@ -44,46 +44,44 @@ function Inventory() {
     await supabase.from("items").update({ equipped: true }).eq("id", it.id);
     const next = owned.filter(i => i.equipped && i.id !== cur?.id && i.id !== it.id).concat([{ ...it, equipped: true }]);
     await syncHpAfter(next, true);
-    await pushLog(campaign!.id, [{t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:"se equipó"},{t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id}]);
+    await pushLog(campaign!.id, [{t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:t("inventory.logEquipped")},{t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id}]);
     setSel(null);
   }
   async function unequip(it: Item) {
     await supabase.from("items").update({ equipped: false }).eq("id", it.id);
     const next = owned.filter(i => i.equipped && i.id !== it.id);
     await syncHpAfter(next, false);
-    await pushLog(campaign!.id, [{t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:"se quitó"},{t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id}]);
+    await pushLog(campaign!.id, [{t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:t("inventory.logUnequipped")},{t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id}]);
     setSel(null);
   }
   async function useItem(it: Item) {
     const remaining = (it.uses ?? 1) - 1;
     if (remaining <= 0) {
-      // send to DM vault
       await supabase.from("items").update({ owner_character_id: null, in_dm_vault: true, equipped: false, uses: 0 }).eq("id", it.id);
       await pushLog(campaign!.id, [
         {t:"char",v:character!.name,color:character!.color,id:character!.id},
-        {t:"text",v:"usó"},
+        {t:"text",v:t("inventory.logUsed")},
         {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},
-        {t:"text",v:"(último)"},
+        {t:"text",v:t("inventory.logLast")},
       ], { kind: "item.update", id: it.id, prev: { owner_character_id: character!.id, in_dm_vault: false, equipped: it.equipped, uses: it.uses } });
     } else {
       await supabase.from("items").update({ uses: remaining }).eq("id", it.id);
       await pushLog(campaign!.id, [
         {t:"char",v:character!.name,color:character!.color,id:character!.id},
-        {t:"text",v:"usó"},
+        {t:"text",v:t("inventory.logUsed")},
         {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},
-        {t:"text",v:`(${remaining} restantes)`},
+        {t:"text",v:t("inventory.logRemaining", { count: remaining })},
       ], { kind: "item.update", id: it.id, prev: { uses: it.uses } });
     }
     setSel(null);
   }
   async function discard(it: Item) {
     const oldMax = totals(character!, owned.filter(i => i.equipped)).maxHp;
-    // Tirado va al vault del DM (no se elimina) para que el DM pueda devolverlo.
     await supabase.from("items").update({ owner_character_id: null, equipped: false, in_dm_vault: true }).eq("id", it.id);
     await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaign!.id, [
       {t:"char",v:character!.name,color:character!.color,id:character!.id},
-      {t:"text",v:"tiró"},
+      {t:"text",v:t("inventory.logDiscarded")},
       {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},
     ], { kind: "item.update", id: it.id, prev: { owner_character_id: character!.id, equipped: it.equipped, in_dm_vault: it.in_dm_vault } });
     setSel(null);
@@ -95,8 +93,8 @@ function Inventory() {
     await supabase.from("items").update({ owner_character_id: transferTo, equipped: false }).eq("id", it.id);
     await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaign!.id, [
-      {t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:"entregó"},
-      {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},{t:"text",v:"a"},
+      {t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:t("inventory.logGave")},
+      {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},{t:"text",v:t("inventory.logTo")},
       {t:"char",v:target?.name||"?",color:target?.color||"#ccc",id:transferTo},
     ], { kind: "item.update", id: it.id, prev: { owner_character_id: character!.id, equipped: it.equipped } });
     setSel(null); setTransferTo("");
@@ -106,7 +104,7 @@ function Inventory() {
   const slots = Array.from({ length: maxSlots }, (_, i) => owned[i] ?? null);
 
   return (
-    <PageFrame title="Mochila" subtitle={`${owned.length}/${maxSlots} slots`} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
+    <PageFrame title={t("inventory.title")} subtitle={t("inventory.slots", { used: owned.length, max: maxSlots })} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
       <div className="grid grid-cols-4 gap-2">
         {slots.map((it, i) => (
           <button key={i} onClick={() => it && setSel(it)}
@@ -116,7 +114,7 @@ function Inventory() {
               <span className="text-xl">{slotIcon(it)}</span>
               <span className="text-[8px] truncate w-full text-center" style={it.category === "equipo" ? { color: RARITY_COLOR[it.rarity as Rarity] } : undefined}>{it.name}</span>
               {it.category !== "equipo" && (it.uses ?? 0) > 0 && <span className="absolute bottom-0 right-0 text-[8px] bg-secondary px-1 rounded">x{it.uses}</span>}
-              {it.equipped && <span className="absolute top-0 right-0 text-[8px] bg-[var(--gold)] text-black px-1 rounded">EQ</span>}
+              {it.equipped && <span className="absolute top-0 right-0 text-[8px] bg-[var(--gold)] text-black px-1 rounded">{t("inventory.equippedTag")}</span>}
             </> : <span className="text-muted-foreground text-xs">·</span>}
           </button>
         ))}
@@ -131,7 +129,7 @@ function Inventory() {
                 <p className="text-xs text-muted-foreground">
                   {sel.category === "equipo"
                     ? SLOTS.find(s=>s.key===sel.slot)?.label
-                    : ITEM_CATEGORIES.find(c => c.key === sel.category)?.label || "Objeto"}
+                    : ITEM_CATEGORIES.find(c => c.key === sel.category)?.label || t("inventory.object")}
                 </p>
               </div>
               {sel.category === "equipo" && <RarityBadge rarity={sel.rarity as Rarity} />}
@@ -139,33 +137,33 @@ function Inventory() {
             {sel.category === "equipo" ? (
               <p className="text-sm">
                 {isWeapon(sel.slot as any)
-                  ? <>Daño permanente: <strong className="text-[var(--gold)]">+{sel.damage_bonus}</strong></>
-                  : <>Defensa <strong className="text-[var(--gold)]">+{sel.defense_bonus||RARITY_BONUS[sel.rarity as Rarity].def}</strong> · Vida <strong className="text-[var(--gold)]">+{sel.hp_bonus||RARITY_BONUS[sel.rarity as Rarity].hp}</strong></>}
+                  ? <>{t("inventory.equipDamage")} <strong className="text-[var(--gold)]">+{sel.damage_bonus}</strong></>
+                  : t("inventory.equipDefHp", { def: sel.defense_bonus || RARITY_BONUS[sel.rarity as Rarity].def, hp: sel.hp_bonus || RARITY_BONUS[sel.rarity as Rarity].hp })}
               </p>
             ) : (
-              (sel.uses ?? 0) > 0 && <p className="text-sm">Usos restantes: <strong className="text-[var(--gold)]">{sel.uses}{sel.max_uses ? `/${sel.max_uses}` : ""}</strong></p>
+              (sel.uses ?? 0) > 0 && <p className="text-sm">{t("inventory.usesRemaining")} <strong className="text-[var(--gold)]">{sel.uses}{sel.max_uses ? `/${sel.max_uses}` : ""}</strong></p>
             )}
             {sel.description && <p className="text-xs text-muted-foreground italic">"{sel.description}"</p>}
             <div className="grid grid-cols-2 gap-2">
               {sel.category === "equipo" ? (
                 sel.equipped
-                  ? <button className="btn-fantasy" onClick={() => unequip(sel)}>Desequipar</button>
-                  : <button className="btn-fantasy" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={() => equip(sel)}>Equipar</button>
+                  ? <button className="btn-fantasy" onClick={() => unequip(sel)}>{t("inventory.unequip")}</button>
+                  : <button className="btn-fantasy" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={() => equip(sel)}>{t("inventory.equip")}</button>
               ) : (
                 <button className="btn-fantasy" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
                   disabled={(sel.uses ?? 0) <= 0}
-                  onClick={() => useItem(sel)}>Usar</button>
+                  onClick={() => useItem(sel)}>{t("inventory.use")}</button>
               )}
-              <button className="btn-fantasy" onClick={() => discard(sel)}>Tirar</button>
+              <button className="btn-fantasy" onClick={() => discard(sel)}>{t("inventory.discard")}</button>
             </div>
             <div className="gem-divider"/>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Transferir a:</p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">{t("inventory.transferTo")}</p>
             <select className="w-full bg-input border border-border rounded px-2 py-2 text-sm" value={transferTo} onChange={e => setTransferTo(e.target.value)}>
-              <option value="">— elige jugador —</option>
-              {characters.filter(c => c.id !== character.id).map(c => <option key={c.id} value={c.id}>{c.name} {c.role === "dm" ? "(DM)" : ""}</option>)}
+              <option value="">{t("inventory.pickPlayer")}</option>
+              {characters.filter(c => c.id !== character.id).map(c => <option key={c.id} value={c.id}>{c.name} {c.role === "dm" ? t("inventory.dmTag") : ""}</option>)}
             </select>
-            <button className="btn-fantasy w-full" disabled={!transferTo} onClick={() => transfer(sel)}>Entregar</button>
-            <button className="text-xs text-muted-foreground underline w-full text-center" onClick={() => setSel(null)}>Cerrar</button>
+            <button className="btn-fantasy w-full" disabled={!transferTo} onClick={() => transfer(sel)}>{t("inventory.give")}</button>
+            <button className="text-xs text-muted-foreground underline w-full text-center" onClick={() => setSel(null)}>{t("common.close")}</button>
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { PageFrame } from "@/components/app/Frame";
 import { ArrowLeft } from "lucide-react";
 import { BoosterCard, type Booster } from "@/components/app/BoosterCard";
 import { BoosterActions } from "@/components/app/BoosterEditor";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/campaign/boosters")({ component: Boosters });
 
@@ -13,6 +14,7 @@ function Boosters() {
   const { character, campaign, loading } = useGameData();
   const [boosters, setBoosters] = useState<Booster[]>([]);
   const [sel, setSel] = useState<Booster | null>(null);
+  const { t } = useT();
 
   async function reload() {
     if (!character) return;
@@ -31,13 +33,13 @@ function Boosters() {
   }, [campaign?.id, character?.id]);
 
   if (loading || !character || !campaign)
-    return <PageFrame><p className="text-center text-muted-foreground">Cargando...</p></PageFrame>;
+    return <PageFrame><p className="text-center text-muted-foreground">{t("common.loading")}</p></PageFrame>;
 
   return (
-    <PageFrame title="Potenciadores" subtitle={character.name}
+    <PageFrame title={t("boosters.title")} subtitle={character.name}
       right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20} /></Link>}>
       {boosters.length === 0 && (
-        <p className="text-center text-xs text-muted-foreground py-10">No tienes potenciadores. Pídele al DM.</p>
+        <p className="text-center text-xs text-muted-foreground py-10">{t("boosters.none")}</p>
       )}
       <div className="grid grid-cols-3 gap-2">
         {boosters.map(b => (

@@ -7,14 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { pushLog } from "@/lib/log";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/campaign/equipment")({ component: Equipment });
 
 function Equipment() {
   const { character, items, campaign, loading } = useGameData();
   const [picker, setPicker] = useState<Slot | null>(null);
+  const { t } = useT();
 
-  if (loading || !character || !campaign) return <PageFrame><p className="text-center text-muted-foreground">Cargando...</p></PageFrame>;
+  if (loading || !character || !campaign) return <PageFrame><p className="text-center text-muted-foreground">{t("common.loading")}</p></PageFrame>;
 
   const owned = items.filter(i => i.owner_character_id === character.id && (i.category === "equipo" || !i.category));
   const equipped = (slot: Slot) => owned.find(i => i.equipped && i.slot === slot);
@@ -35,7 +37,7 @@ function Equipment() {
     await syncHpAfter(next, false);
     await pushLog(campaign!.id, [
       { t: "char", v: character!.name, color: character!.color, id: character!.id },
-      { t: "text", v: "se quitó" },
+      { t: "text", v: t("inventory.logUnequipped") },
       { t: "item", v: item.name, rarity: item.rarity as any, id: item.id },
     ], { kind: "item.update", id: item.id, prev: { equipped: true } });
   }
@@ -47,14 +49,14 @@ function Equipment() {
     await syncHpAfter(next, true);
     await pushLog(campaign!.id, [
       { t: "char", v: character!.name, color: character!.color, id: character!.id },
-      { t: "text", v: "se equipó" },
+      { t: "text", v: t("inventory.logEquipped") },
       { t: "item", v: item.name, rarity: item.rarity as any, id: item.id },
     ], { kind: "item.update", id: item.id, prev: { equipped: false } });
     setPicker(null);
   }
 
   return (
-    <PageFrame title="Equipamiento" subtitle={character.name} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
+    <PageFrame title={t("equipment.title")} subtitle={character.name} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
       <div className="grid grid-cols-3 gap-2">
         {SLOTS.map(s => {
           const it = equipped(s.key);
@@ -77,9 +79,9 @@ function Equipment() {
           <div className="ornate-card p-4 w-full max-w-md max-h-[70vh] overflow-y-auto rounded-b-none" onClick={e => e.stopPropagation()}>
             <h3 className="font-display text-lg mb-3 text-center">{SLOTS.find(s => s.key === picker)?.label}</h3>
             {equipped(picker) && (
-              <button className="btn-fantasy w-full mb-3" onClick={() => { unequip(equipped(picker)!); setPicker(null); }}>Desequipar actual</button>
+              <button className="btn-fantasy w-full mb-3" onClick={() => { unequip(equipped(picker)!); setPicker(null); }}>{t("equipment.unequipCurrent")}</button>
             )}
-            <p className="text-xs uppercase text-muted-foreground tracking-widest mb-2">Mochila</p>
+            <p className="text-xs uppercase text-muted-foreground tracking-widest mb-2">{t("equipment.backpack")}</p>
             <div className="space-y-2">
               {owned.filter(i => i.slot === picker && !i.equipped).map(i => (
                 <button key={i.id} className="w-full ornate-card p-3 flex justify-between items-center text-left"
@@ -89,18 +91,18 @@ function Equipment() {
                     <p className="font-display" style={{ color: RARITY_COLOR[i.rarity as Rarity] }}>{i.name}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {isWeapon(i.slot as any)
-                        ? `Daño +${i.damage_bonus}`
-                        : `Def +${i.defense_bonus || RARITY_BONUS[i.rarity as Rarity].def} · Vida +${i.hp_bonus || RARITY_BONUS[i.rarity as Rarity].hp}`}
+                        ? t("equipment.damagePlus", { n: i.damage_bonus })
+                        : t("equipment.defHpPlus", { def: i.defense_bonus || RARITY_BONUS[i.rarity as Rarity].def, hp: i.hp_bonus || RARITY_BONUS[i.rarity as Rarity].hp })}
                     </p>
                   </div>
                   <RarityBadge rarity={i.rarity as Rarity} />
                 </button>
               ))}
               {!owned.filter(i => i.slot === picker && !i.equipped).length && (
-                <p className="text-center text-xs text-muted-foreground py-6">No tienes objetos para esta ranura.</p>
+                <p className="text-center text-xs text-muted-foreground py-6">{t("equipment.noItemsForSlot")}</p>
               )}
             </div>
-            <button className="btn-fantasy w-full mt-4" onClick={() => setPicker(null)}>Cerrar</button>
+            <button className="btn-fantasy w-full mt-4" onClick={() => setPicker(null)}>{t("common.close")}</button>
           </div>
         </div>
       )}
