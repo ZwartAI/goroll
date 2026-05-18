@@ -189,7 +189,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
             const v = (character as any)[k] as number;
             return (
               <div key={k} className="stat-pill !text-xs">
-                <span>{l}</span>
+                <span>{t(l)}</span>
                 {isEdit
                   ? <input type="number" className="w-10 bg-input border border-border rounded px-1 text-right text-xs" defaultValue={v}
                       onBlur={e => { const nv = +e.target.value; if (nv !== v) setAttr(k, nv); }} />
