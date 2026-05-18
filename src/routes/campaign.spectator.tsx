@@ -60,6 +60,7 @@ function Spectator() {
           selfId={null}
           onOpenChar={(id) => setOpenChar(id)}
           onOpenItem={openItemFromId}
+          onOpenBooster={(id) => setOpenBoosterId(id)}
         />
       )}
 
@@ -69,6 +70,7 @@ function Spectator() {
             <div key={l.id} className={`text-sm bg-secondary/40 rounded px-3 py-2 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
               <LogSegments segments={l.segments as any}
                 onItem={openItemFromId}
+                onBooster={(id) => setOpenBoosterId(id)}
                 onChar={(id) => setOpenChar(id)} />
               <p className="text-[10px] text-muted-foreground mt-1">{new Date(l.created_at).toLocaleTimeString()}</p>
             </div>
