@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageFrame } from "@/components/app/Frame";
 import {
@@ -14,6 +14,7 @@ import { AppSettingsModal } from "@/components/app/AppSettingsModal";
 import { Settings as SettingsIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import goRollLogo from "@/assets/go-roll-logo.png";
+import loginFrame from "@/assets/login-frame.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Vamos a Rolear · GoRoll" }] }),
@@ -32,8 +33,15 @@ function Home() {
 
   // login fields
   const [username, setUsername] = useState("");
-  const [pin, setPin] = useState("");
+  const [pinDigits, setPinDigits] = useState<string[]>(["", "", "", ""]);
+  const pin = pinDigits.join("");
+  const setPin = (v: string) => {
+    const d = (v || "").replace(/\D/g, "").slice(0, 4).split("");
+    setPinDigits([d[0] || "", d[1] || "", d[2] || "", d[3] || ""]);
+  };
+  const pinRefs = useRef<Array<HTMLInputElement | null>>([null, null, null, null]);
   const [busy, setBusy] = useState(false);
+  const [pulseKey, setPulseKey] = useState(0);
 
   // role/campaign
   const [role, setRole] = useState<Role>("player");
@@ -312,20 +320,114 @@ function Home() {
         </div>
       )}
       {step === "login" && (
-        <div className="ornate-card p-6 space-y-4">
-          <h2 className="text-center font-display text-lg">{t("home.loginTitle")}</h2>
-          <p className="text-center text-xs text-muted-foreground">
-            {t("home.loginHint")}
-          </p>
-          <input className="w-full rounded-md bg-input border border-border px-3 py-3 text-center font-display text-lg"
-            placeholder={t("home.user")} value={username} onChange={e => setUsername(e.target.value)} autoFocus />
-          <input className="w-full rounded-md bg-input border border-border px-3 py-3 text-center font-display text-2xl tracking-[0.6em]"
-            placeholder="••••" inputMode="numeric" maxLength={4} value={pin}
-            onChange={e => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            onKeyDown={e => e.key === "Enter" && login()} />
-          <button className="btn-fantasy w-full" disabled={busy} onClick={login}>{t("home.enter")}</button>
+        <div className="flex justify-center">
+          <div
+            className="relative"
+            style={{
+              width: "min(92vw, 480px)",
+              aspectRatio: "1 / 1",
+              backgroundImage: `url(${loginFrame})`,
+              backgroundSize: "100% 100%",
+              backgroundRepeat: "no-repeat",
+            }}
+          >
+            {/* Username */}
+            <input
+              className="absolute bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none font-display text-[var(--gold)] placeholder:text-[color-mix(in_oklab,var(--gold)_55%,transparent)]"
+              style={{
+                top: "36.5%",
+                left: "11%",
+                width: "78%",
+                height: "10.5%",
+                paddingLeft: "14%",
+                paddingRight: "3%",
+                fontSize: "clamp(14px, 3.6vw, 20px)",
+              }}
+              placeholder={t("home.user")}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") pinRefs.current[0]?.focus(); }}
+              autoFocus
+            />
+
+            {/* PIN — 4 cuadros */}
+            <div
+              className="absolute flex justify-between items-center"
+              style={{ top: "55.5%", left: "16.5%", width: "67%", height: "13%" }}
+            >
+              {[0, 1, 2, 3].map(i => (
+                <input
+                  key={i}
+                  ref={el => { pinRefs.current[i] = el; }}
+                  className="bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none text-center font-display text-[var(--gold)] caret-[var(--gold)]"
+                  style={{ width: "21%", height: "100%", fontSize: "clamp(20px, 5.2vw, 30px)" }}
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={pinDigits[i]}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, "").slice(-1);
+                    const next = [...pinDigits];
+                    next[i] = v;
+                    setPinDigits(next);
+                    if (v && i < 3) pinRefs.current[i + 1]?.focus();
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Backspace") {
+                      if (pinDigits[i]) {
+                        const next = [...pinDigits];
+                        next[i] = "";
+                        setPinDigits(next);
+                      } else if (i > 0) {
+                        const next = [...pinDigits];
+                        next[i - 1] = "";
+                        setPinDigits(next);
+                        pinRefs.current[i - 1]?.focus();
+                      }
+                      e.preventDefault();
+                    } else if (e.key === "ArrowLeft" && i > 0) {
+                      pinRefs.current[i - 1]?.focus();
+                    } else if (e.key === "ArrowRight" && i < 3) {
+                      pinRefs.current[i + 1]?.focus();
+                    } else if (e.key === "Enter" && pin.length === 4) {
+                      login();
+                    }
+                  }}
+                  onPaste={e => {
+                    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
+                    if (text.length) {
+                      e.preventDefault();
+                      const next = ["", "", "", ""];
+                      for (let k = 0; k < text.length; k++) next[k] = text[k];
+                      setPinDigits(next);
+                      pinRefs.current[Math.min(text.length, 3)]?.focus();
+                    }
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Botón Entrar / Join */}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => { setPulseKey(k => k + 1); login(); }}
+              className="login-cta absolute bg-transparent border-0 outline-none font-display tracking-wider disabled:opacity-70 cursor-pointer"
+              style={{
+                top: "77%",
+                left: "12%",
+                width: "76%",
+                height: "11%",
+                fontSize: "clamp(18px, 4.6vw, 26px)",
+              }}
+            >
+              <span key={pulseKey} className="login-cta-text is-pulsing">
+                {t("home.enterCta")}
+              </span>
+            </button>
+          </div>
         </div>
       )}
+
 
       {step === "role" && user && (
         <div className="ornate-card p-6 space-y-4">
