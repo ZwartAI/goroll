@@ -53,6 +53,7 @@ function Home() {
   const [singleDmOnly, setSingleDmOnly] = useState(false);
   const [lockNames, setLockNames] = useState(false);
   const [waitingReqId, setWaitingReqId] = useState<string | null>(null);
+  const [waitingKind, setWaitingKind] = useState<"codm" | "player_rejoin">("codm");
   const [actionCampaign, setActionCampaign] = useState<Campaign | null>(null);
   const [showAppSettings, setShowAppSettings] = useState(false);
 
