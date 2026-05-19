@@ -408,17 +408,10 @@ export function BoosterEditor({
       {/* Gestión / Acciones */}
       <SectionFrame icon="📦" title={t("boosters.management")} color={color}>
         {booster && dm && (
-          <>
-            <select value={transferTo} onChange={e => setTransferTo(e.target.value)} className="dm-input w-full">
-              <option value="">{t("boosters.transferOption")}</option>
-              <option value="__vault__">{t("boosters.dmVault")}</option>
-              {(players || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <div className="grid grid-cols-2 gap-2">
-              <button className="btn-fantasy" disabled={!transferTo} onClick={transferDM}>{t("boosters.transfer")}</button>
-              <button className="btn-fantasy" onClick={reclaim}>{t("boosters.reclaim")}</button>
-            </div>
-          </>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-fantasy" onClick={() => setShowTransferPick(true)}>{t("boosters.transfer")}</button>
+            <button className="btn-fantasy" onClick={reclaim}>{t("boosters.reclaim")}</button>
+          </div>
         )}
         <div className="grid grid-cols-2 gap-2">
           <button className="btn-fantasy" onClick={onClose}>{t("boosters.cancel")}</button>
