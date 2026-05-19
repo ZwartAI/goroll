@@ -314,6 +314,7 @@ export const es = {
     viewNotes: "📝 Ver notas",
     goBack: "Regresar",
     toVault: "al vault",
+    toVaultConfirm: "¿Retirar el potenciador \"{name}\" y enviarlo al vault?",
     delete: "eliminar",
     deleteBoosterConfirm: "¿Eliminar potenciador \"{name}\"?",
     quit: "quitar",
