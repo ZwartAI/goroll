@@ -302,6 +302,7 @@ function DM() {
 
           <Escenario
             characters={characters}
+            items={items}
             onlineIds={onlineIds}
             logs={logs}
             selfId={null}

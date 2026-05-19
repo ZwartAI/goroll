@@ -28,7 +28,12 @@ export function ItemView({ item }: { item: Item }) {
         <p className="text-sm">{t("inventory.usesRemaining")} <strong className="text-[var(--gold)]">{item.uses}{item.max_uses ? `/${item.max_uses}` : ""}</strong></p>
       )}
       {isEq && <p className="text-xs text-muted-foreground">{t("boosters.rarity")}: {t(`rarities.${item.rarity}`)}</p>}
-      {item.description && <p className="text-xs text-muted-foreground italic">"{item.description}"</p>}
+      {item.description && (
+        <div className="mt-2 rounded-md border border-[var(--gold)]/30 bg-[var(--card)]/60 p-2">
+          <p className="text-[10px] uppercase tracking-widest text-[var(--gold)]/80 mb-1">{t("itemEditor.description")}</p>
+          <p className="text-xs italic text-muted-foreground whitespace-pre-wrap">"{item.description}"</p>
+        </div>
+      )}
     </div>
   );
 }

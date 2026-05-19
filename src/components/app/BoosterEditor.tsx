@@ -459,10 +459,29 @@ export function BoosterActions({
   onEdit?: () => void;
 }) {
   const [confirmUse, setConfirmUse] = useState(false);
-  const [transferTo, setTransferTo] = useState("");
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [members, setMembers] = useState<Character[]>(players);
   const isDM = !!dm;
   const color = RARITY_COLOR[booster.rarity as Rarity];
   const { t } = useT();
+
+  // Live list of campaign members (online/offline) when the transfer popover opens.
+  useEffect(() => {
+    if (!showTransfer) return;
+    let live = true;
+    async function load() {
+      const { data: chars } = await supabase
+        .from("characters").select("*").eq("campaign_id", campaignId);
+      if (!live) return;
+      setMembers(((chars || []) as Character[]).filter(c => c.role === "player" && c.id !== character?.id));
+    }
+    load();
+    const ch = (supabase as any).channel(`bx:members:${campaignId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${campaignId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "campaign_members", filter: `campaign_id=eq.${campaignId}` }, load)
+      .subscribe();
+    return () => { live = false; (supabase as any).removeChannel(ch); };
+  }, [showTransfer, campaignId, character?.id]);
 
   async function pushBoosterLog(actor: Character, verb: string, trailing?: string) {
     const { pushLog } = await import("@/lib/log");
@@ -490,12 +509,12 @@ export function BoosterActions({
     onClose();
   }
 
-  async function transferPlayer() {
-    if (!transferTo || !character) return;
+  async function transferTo(targetId: string) {
+    if (!character) return;
     await (supabase as any).from("boosters").update({
-      owner_character_id: transferTo, in_dm_vault: false,
+      owner_character_id: targetId, in_dm_vault: false,
     }).eq("id", booster.id);
-    const target = players.find(p => p.id === transferTo);
+    const target = members.find(p => p.id === targetId);
     await pushBoosterLog(character, t("boosters.yieldedLog", { name: target?.name ?? "?" }));
     toastSaved();
     onClose();
@@ -519,12 +538,7 @@ export function BoosterActions({
     onClose();
   }
 
-  // DM clicking a card opens the full editor instead of this read view.
-  // (Kept as fallback for older callers passing dm explicitly here.)
-  if (isDM && onEdit) {
-    onEdit();
-    return null;
-  }
+  if (isDM && onEdit) { onEdit(); return null; }
 
   return (
     <ModalShell onClose={onClose} color={color}>
@@ -536,43 +550,51 @@ export function BoosterActions({
         const isOwner = !!character && booster.owner_character_id === character.id;
         if (readOnly || !character || !isOwner) return null;
         return (
-        <div className="space-y-2">
-          {!confirmUse ? (
-            <button className="btn-fantasy w-full text-base py-3 flex items-center justify-center gap-2"
-              disabled={booster.uses <= 0}
-              onClick={() => setConfirmUse(true)}>
-              {t("boosters.use")}
-            </button>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <button className="btn-fantasy" onClick={() => setConfirmUse(false)}>{t("boosters.cancelPlain")}</button>
-              <button className="btn-fantasy"
-                style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
-                onClick={useBooster}>
-                {t("boosters.confirmUse")}
-              </button>
-            </div>
-          )}
-          <div>
-            <select value={transferTo} onChange={e => setTransferTo(e.target.value)}
-              className="w-full bg-input border border-border rounded px-2 py-2 text-xs mb-1">
-              <option value="">{t("boosters.pickRecipient")}</option>
-              {players.filter(p => p.id !== character.id).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <button className="btn-fantasy w-full" disabled={!transferTo} onClick={transferPlayer}>{t("boosters.transfer")}</button>
+          <div className="space-y-2">
+            {confirmUse ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button className="btn-fantasy" onClick={() => setConfirmUse(false)}>{t("boosters.cancelPlain")}</button>
+                <button className="btn-fantasy"
+                  style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
+                  onClick={useBooster}>{t("boosters.confirmUse")}</button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <button className="btn-fantasy" disabled={booster.uses <= 0}
+                  onClick={() => setConfirmUse(true)}>{t("boosters.use")}</button>
+                <button className="btn-fantasy" onClick={() => setShowTransfer(true)}>{t("boosters.transfer")}</button>
+                <button className="btn-fantasy flex items-center justify-center gap-2" onClick={showInChat}>
+                  <MessageSquare size={14} />
+                  <span className="truncate">{t("boosters.showInChat")}</span>
+                </button>
+                <button className="btn-fantasy flex items-center justify-center"
+                  style={{ background: "color-mix(in oklab, var(--loss) 30%, transparent)", borderColor: "var(--loss)" }}
+                  onClick={discardToVault} title={t("boosters.discardTitle")} aria-label={t("boosters.discardTitle")}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )}
+            {showTransfer && (
+              <div className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center p-3" onClick={() => setShowTransfer(false)}>
+                <div className="ornate-card p-4 max-w-sm w-full max-h-[80vh] overflow-y-auto space-y-2" onClick={e => e.stopPropagation()}>
+                  <h3 className="font-display text-center text-base text-[var(--gold)]">{t("boosters.pickRecipient")}</h3>
+                  {members.length === 0 && (
+                    <p className="text-center text-xs text-muted-foreground py-4">—</p>
+                  )}
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {members.map(p => (
+                      <button key={p.id} className="btn-fantasy flex items-center gap-2 justify-start"
+                        onClick={() => transferTo(p.id)}>
+                        <span className="w-3 h-3 rounded-full" style={{ background: p.color }} />
+                        <span className="truncate">{p.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button className="text-xs text-muted-foreground underline w-full" onClick={() => setShowTransfer(false)}>{t("common.cancel")}</button>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-[1fr_auto] gap-2">
-            <button className="btn-fantasy flex items-center justify-center gap-2" onClick={showInChat} title={t("boosters.showInChat")}>
-              <MessageSquare size={14} />
-              <span>{t("boosters.showInChat")}</span>
-            </button>
-            <button className="btn-fantasy aspect-square flex items-center justify-center"
-              style={{ background: "color-mix(in oklab, var(--loss) 30%, transparent)", borderColor: "var(--loss)" }}
-              onClick={discardToVault} title={t("boosters.discardTitle")} aria-label={t("boosters.discardTitle")}>
-              <Trash2 size={16} />
-            </button>
-          </div>
-        </div>
         );
       })()}
 

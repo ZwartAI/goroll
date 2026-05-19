@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { LogList } from "@/components/app/LogList";
 import { LogSegments } from "@/components/app/LogSegments";
-import type { Character, LogRow } from "@/lib/game";
+import type { Character, Item, LogRow } from "@/lib/game";
+import { totals } from "@/lib/game";
 import { useT } from "@/lib/i18n";
 
 type Props = {
   characters: Character[];
+  /** All items in the campaign — used to compute live maxHp per character (equipment changes). */
+  items?: Item[];
   onlineIds: Set<string>;
   logs: LogRow[];
   selfId?: string | null;
@@ -26,13 +29,24 @@ type Props = {
  * Shared "Escenario" view: shows the party (online first, offline collapsible)
  * and an optional log of the scene below. Used by Player profile, DM, and Spectator.
  */
-export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onOpenItem, onOpenBooster, dmCharacterIds, nameOverrides, showLog = true, speakingIds }: Props) {
+export function Escenario({ characters, items, onlineIds, logs, selfId, onOpenChar, onOpenItem, onOpenBooster, dmCharacterIds, nameOverrides, showLog = true, speakingIds }: Props) {
   const [openOffline, setOpenOffline] = useState(false);
   const { t } = useT();
   const dmSet = dmCharacterIds || new Set<string>();
   const players = characters.filter(c => c.role !== "dm" && !dmSet.has(c.id));
   const online = players.filter(p => (onlineIds.has(p.id) || p.id === selfId));
   const offline = players.filter(p => !onlineIds.has(p.id) && p.id !== selfId);
+
+  // Compute live maxHp for each character based on currently equipped items.
+  const maxHpById = useMemo(() => {
+    const map: Record<string, number> = {};
+    const all = items || [];
+    for (const c of characters) {
+      const equipped = all.filter(i => i.owner_character_id === c.id && i.equipped);
+      map[c.id] = totals(c, equipped).maxHp;
+    }
+    return map;
+  }, [characters, items]);
 
   return (
     <>
@@ -42,7 +56,7 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
           <span className="w-2 h-2 rounded-full bg-[var(--gain)] inline-block" /> {t("escenario.online")}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
-          {online.map(p => <PlayerCard key={p.id} c={p} online onClick={() => onOpenChar(p.id)} isSelf={p.id === selfId} t={t} speaking={!!speakingIds?.has(p.id)} />)}
+          {online.map(p => <PlayerCard key={p.id} c={p} maxHp={maxHpById[p.id]} online onClick={() => onOpenChar(p.id)} isSelf={p.id === selfId} t={t} speaking={!!speakingIds?.has(p.id)} />)}
           {online.length === 0 && <p className="col-span-full text-[10px] text-muted-foreground text-center py-2">{t("escenario.nobodyOnline")}</p>}
         </div>
         {offline.length > 0 && (
@@ -52,7 +66,7 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
             </div>
             {offline.length <= 3 ? (
               <div className="grid grid-cols-2 gap-2">
-                {offline.map(p => <OfflineRow key={p.id} c={p} onClick={() => onOpenChar(p.id)} />)}
+                {offline.map(p => <OfflineRow key={p.id} c={p} maxHp={maxHpById[p.id]} onClick={() => onOpenChar(p.id)} />)}
               </div>
             ) : (
               <button onClick={() => setOpenOffline(true)}
@@ -94,8 +108,8 @@ export function Escenario({ characters, onlineIds, logs, selfId, onOpenChar, onO
   );
 }
 
-function PlayerCard({ c, online, onClick, isSelf, t, speaking }: { c: any; online: boolean; onClick: () => void; isSelf?: boolean; t: (p: string) => string; speaking?: boolean }) {
-  const max = c.max_hp || c.base_hp || 1;
+function PlayerCard({ c, maxHp, online, onClick, isSelf, t, speaking }: { c: any; maxHp?: number; online: boolean; onClick: () => void; isSelf?: boolean; t: (p: string) => string; speaking?: boolean }) {
+  const max = maxHp ?? c.max_hp ?? c.base_hp ?? 1;
   const pct = Math.max(0, Math.min(100, (c.current_hp / max) * 100));
   return (
     <button onClick={onClick}
@@ -127,7 +141,8 @@ function PlayerCard({ c, online, onClick, isSelf, t, speaking }: { c: any; onlin
   );
 }
 
-function OfflineRow({ c, onClick }: { c: any; onClick: () => void }) {
+function OfflineRow({ c, maxHp, onClick }: { c: any; maxHp?: number; onClick: () => void }) {
+  const max = maxHp ?? c.max_hp ?? c.base_hp ?? 1;
   return (
     <button onClick={onClick} className="ornate-card !p-2 flex items-center gap-2 opacity-60 hover:opacity-80 transition text-left">
       <div className="w-8 h-8 rounded-full overflow-hidden border" style={{ borderColor: c.color || "var(--gold)" }}>
@@ -139,7 +154,7 @@ function OfflineRow({ c, onClick }: { c: any; onClick: () => void }) {
         <p className="font-display text-xs truncate" style={{ color: c.color }}>{c.name}</p>
         <p className="text-[9px] text-muted-foreground truncate">{c.race || "—"} / {c.class || "—"}</p>
         <div className="h-1 rounded-full bg-secondary overflow-hidden mt-0.5">
-          <div className="h-full bg-muted-foreground/60" style={{ width: `${Math.max(0, Math.min(100, (c.current_hp / (c.max_hp || c.base_hp || 1)) * 100))}%` }} />
+          <div className="h-full bg-muted-foreground/60" style={{ width: `${Math.max(0, Math.min(100, (c.current_hp / max) * 100))}%` }} />
         </div>
       </div>
     </button>

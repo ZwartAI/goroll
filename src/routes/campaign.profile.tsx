@@ -294,6 +294,7 @@ function Profile() {
       {activeTab === "escenario" && (
         <Escenario
           characters={characters}
+          items={items}
           onlineIds={onlineIds}
           logs={logs}
           selfId={character.id}

@@ -596,6 +596,7 @@ export type Database = {
           ip: string
           last_failed_at: string | null
           next_try_at: string | null
+          username: string | null
         }
         Insert: {
           blocked_until?: string | null
@@ -605,6 +606,7 @@ export type Database = {
           ip: string
           last_failed_at?: string | null
           next_try_at?: string | null
+          username?: string | null
         }
         Update: {
           blocked_until?: string | null
@@ -614,6 +616,7 @@ export type Database = {
           ip?: string
           last_failed_at?: string | null
           next_try_at?: string | null
+          username?: string | null
         }
         Relationships: []
       }
@@ -651,6 +654,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      skill_templates: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          dados: string | null
+          description: string | null
+          distancia: string | null
+          efecto: string | null
+          external_id: string | null
+          id: string
+          modo_lanzamiento: string | null
+          name: string
+          objetivos: string | null
+          rarity: Database["public"]["Enums"]["item_rarity"]
+          tipo: string | null
+          unlocked: boolean
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          dados?: string | null
+          description?: string | null
+          distancia?: string | null
+          efecto?: string | null
+          external_id?: string | null
+          id?: string
+          modo_lanzamiento?: string | null
+          name: string
+          objetivos?: string | null
+          rarity?: Database["public"]["Enums"]["item_rarity"]
+          tipo?: string | null
+          unlocked?: boolean
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          dados?: string | null
+          description?: string | null
+          distancia?: string | null
+          efecto?: string | null
+          external_id?: string | null
+          id?: string
+          modo_lanzamiento?: string | null
+          name?: string
+          objetivos?: string | null
+          rarity?: Database["public"]["Enums"]["item_rarity"]
+          tipo?: string | null
+          unlocked?: boolean
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

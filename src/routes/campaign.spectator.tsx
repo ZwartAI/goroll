@@ -17,7 +17,7 @@ export const Route = createFileRoute("/campaign/spectator")({ component: Spectat
 
 function Spectator() {
   const { t } = useT();
-  const { campaign, characters, logs, achievements, onlineIds, loading } = useGameData();
+  const { campaign, characters, items, logs, achievements, onlineIds, loading } = useGameData();
   const nav = useNavigate();
   const [tab, setTab] = useState<"escenario" | "log" | "achievements">("escenario");
   const [openChar, setOpenChar] = useState<string | null>(null);
@@ -58,6 +58,7 @@ function Spectator() {
       {tab === "escenario" && (
         <Escenario
           characters={characters}
+          items={items}
           onlineIds={onlineIds}
           logs={logs}
           selfId={null}
