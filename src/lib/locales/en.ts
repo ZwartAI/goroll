@@ -422,6 +422,13 @@ export const en: Dict = {
     remainingSuffix: "({n} remaining)",
     yieldedLog: "passed the booster to {name}",
     rolledLog: "rolled the booster {detail}",
+    distributeCopies: "Distribute copies",
+    distributeHint: "Check the players who will receive a copy.",
+    distributeConfirm: "Send copies",
+    distributedLog: "distributed copies to {names}",
+    holders: "Holders",
+    noHolders: "Nobody holds it yet.",
+    movedToVault: "🏛️ Move to DM vault",
   },
   slots: {
     casco: "Helmet",
