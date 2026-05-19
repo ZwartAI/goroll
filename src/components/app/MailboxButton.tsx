@@ -20,7 +20,7 @@ type Req = {
  * Lists pending Co-DM and player-rejoin requests for campaigns the current
  * user OWNS. A red dot appears whenever there are pending requests.
  */
-export function MailboxButton({ className = "" }: { className?: string }) {
+export function MailboxButton({ className = "text-white" }: { className?: string }) {
   const { t } = useT();
   const me = getStoredUser();
   const [open, setOpen] = useState(false);
