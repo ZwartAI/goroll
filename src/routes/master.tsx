@@ -20,8 +20,9 @@ export const Route = createFileRoute("/master")({
   component: Master,
 });
 
-type AppUser = { id: string; username: string; pin: string; created_at: string };
+type AppUser = { id: string; username: string; created_at: string };
 type Attempt = { ip: string; username: string | null; failed_count: number; blocked_until: string | null; next_try_at: string | null };
+
 
 function Master() {
   const { t } = useT();
