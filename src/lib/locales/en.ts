@@ -312,6 +312,7 @@ export const en: Dict = {
     viewNotes: "📝 View notes",
     goBack: "Back",
     toVault: "to vault",
+    toVaultConfirm: "Send booster \"{name}\" back to the vault?",
     delete: "delete",
     deleteBoosterConfirm: "Delete booster \"{name}\"?",
     quit: "remove",
