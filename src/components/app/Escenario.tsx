@@ -56,7 +56,7 @@ export function Escenario({ characters, items, onlineIds, logs, selfId, onOpenCh
           <span className="w-2 h-2 rounded-full bg-[var(--gain)] inline-block" /> {t("escenario.online")}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
-          {online.map(p => <PlayerCard key={p.id} c={p} online onClick={() => onOpenChar(p.id)} isSelf={p.id === selfId} t={t} speaking={!!speakingIds?.has(p.id)} />)}
+          {online.map(p => <PlayerCard key={p.id} c={p} maxHp={maxHpById[p.id]} online onClick={() => onOpenChar(p.id)} isSelf={p.id === selfId} t={t} speaking={!!speakingIds?.has(p.id)} />)}
           {online.length === 0 && <p className="col-span-full text-[10px] text-muted-foreground text-center py-2">{t("escenario.nobodyOnline")}</p>}
         </div>
         {offline.length > 0 && (
