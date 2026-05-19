@@ -41,6 +41,8 @@ function DM() {
   const [creatingBooster, setCreatingBooster] = useState(false);
   const [boosterSel, setBoosterSel] = useState<Set<string>>(new Set());
   const [boosterSelectMode, setBoosterSelectMode] = useState(false);
+  const [vaultTopic, setVaultTopic] = useState<"all" | "equip" | "objects">("all");
+  const [vaultSub, setVaultSub] = useState<string>("all");
   const voice = useVoice(campaign?.id, character?.id);
   const [micSettingsOpen, setMicSettingsOpen] = useState(false);
 
@@ -272,10 +274,71 @@ function DM() {
         </div>
       )}
 
-      {tab === "vault" && (
+      {tab === "vault" && (() => {
+        const filtered = vault.filter(it => {
+          if (vaultTopic === "equip") {
+            if (it.category !== "equipo") return false;
+            if (vaultSub !== "all" && it.slot !== vaultSub) return false;
+            return true;
+          }
+          if (vaultTopic === "objects") {
+            if (it.category === "equipo") return false;
+            if (vaultSub !== "all" && it.category !== vaultSub) return false;
+            return true;
+          }
+          return true;
+        });
+        return (
         <div className="space-y-2">
+          {/* Topic chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {([
+              ["all", t("dm.vaultFilterAll"), "🏛️"],
+              ["equip", t("dm.vaultFilterEquip"), "⚔️"],
+              ["objects", t("dm.vaultFilterObjects"), "🧪"],
+            ] as const).map(([k, l, icon]) => (
+              <button key={k}
+                onClick={() => { setVaultTopic(k as any); setVaultSub("all"); }}
+                className={`flex-shrink-0 inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-md border font-display tracking-wide ${vaultTopic === k ? "bg-[var(--gold)] text-black border-[var(--gold)]" : "bg-card border-border text-foreground"}`}>
+                <span>{icon}</span><span>{l}</span>
+              </button>
+            ))}
+          </div>
+          {/* Sub-chips */}
+          {vaultTopic === "equip" && (
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              <button onClick={() => setVaultSub("all")}
+                className={`flex-shrink-0 text-[10px] px-2 py-1 rounded border ${vaultSub === "all" ? "bg-[var(--gold)] text-black border-[var(--gold)]" : "bg-card border-border"}`}>
+                {t("dm.vaultFilterAllSub")}
+              </button>
+              {SLOTS.map(s => (
+                <button key={s.key} onClick={() => setVaultSub(s.key)}
+                  className={`flex-shrink-0 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${vaultSub === s.key ? "bg-[var(--gold)] text-black border-[var(--gold)]" : "bg-card border-border"}`}>
+                  <span>{s.icon}</span><span>{t(`slots.${s.key}`)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {vaultTopic === "objects" && (
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              <button onClick={() => setVaultSub("all")}
+                className={`flex-shrink-0 text-[10px] px-2 py-1 rounded border ${vaultSub === "all" ? "bg-[var(--gold)] text-black border-[var(--gold)]" : "bg-card border-border"}`}>
+                {t("dm.vaultFilterAllSub")}
+              </button>
+              {ITEM_CATEGORIES.filter(c => c.key !== "equipo").map(c => (
+                <button key={c.key} onClick={() => setVaultSub(c.key)}
+                  className={`flex-shrink-0 inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${vaultSub === c.key ? "bg-[var(--gold)] text-black border-[var(--gold)]" : "bg-card border-border"}`}>
+                  <span>{c.icon}</span><span>{t(`categories.${c.key}`)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {vault.length === 0 && <p className="text-center text-xs text-muted-foreground py-6">{t("dm.vaultEmpty")}</p>}
-          {vault.map(it => (
+          {vault.length > 0 && filtered.length === 0 && (
+            <p className="text-center text-xs text-muted-foreground py-6">{t("dm.vaultNoMatch")}</p>
+          )}
+          {filtered.map(it => (
             <button key={it.id} onClick={() => setSelItem(it)}
               className="w-full ornate-card p-3 flex justify-between items-center text-left"
               style={it.category === "equipo" ? { borderColor: RARITY_COLOR[it.rarity as Rarity] } : undefined}>
@@ -290,7 +353,8 @@ function DM() {
             </button>
           ))}
         </div>
-      )}
+        );
+      })()}
 
       {tab === "escenario" && (
         <>
