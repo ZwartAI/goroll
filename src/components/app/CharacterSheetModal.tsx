@@ -8,6 +8,7 @@ import { CoinsAdjuster } from "@/components/app/CoinsAdjuster";
 import { NotesEditor } from "@/components/app/NotesEditor";
 import { useT } from "@/lib/i18n";
 import type { Booster } from "@/components/app/BoosterCard";
+import { BoosterPeek } from "@/components/app/BoosterEditor";
 
 type Props = {
   characterId: string;
