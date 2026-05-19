@@ -447,7 +447,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 /* ───────────────── Player / Spectator action sheet ───────────────── */
 
 export function BoosterActions({
-  booster, character, campaignId, players, dm, readOnly, onClose, onEdit,
+  booster, character, campaignId, players, dm, readOnly, hideDiscard, onClose, onEdit,
 }: {
   booster: Booster;
   character?: Character | null;
@@ -455,9 +455,11 @@ export function BoosterActions({
   players: Character[];
   dm?: { id: string; name: string; color: string } | null;
   readOnly?: boolean;
+  hideDiscard?: boolean;
   onClose: () => void;
   onEdit?: () => void;
 }) {
+
   const [confirmUse, setConfirmUse] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [members, setMembers] = useState<Character[]>(players);
@@ -567,11 +569,13 @@ export function BoosterActions({
                   <MessageSquare size={14} />
                   <span className="truncate">{t("boosters.showInChat")}</span>
                 </button>
-                <button className="btn-fantasy flex items-center justify-center"
-                  style={{ background: "color-mix(in oklab, var(--loss) 30%, transparent)", borderColor: "var(--loss)" }}
-                  onClick={discardToVault} title={t("boosters.discardTitle")} aria-label={t("boosters.discardTitle")}>
-                  <Trash2 size={16} />
-                </button>
+                {!hideDiscard && (
+                  <button className="btn-fantasy flex items-center justify-center"
+                    style={{ background: "color-mix(in oklab, var(--loss) 30%, transparent)", borderColor: "var(--loss)" }}
+                    onClick={discardToVault} title={t("boosters.discardTitle")} aria-label={t("boosters.discardTitle")}>
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             )}
             {showTransfer && (
@@ -607,12 +611,13 @@ export function BoosterActions({
 
 
 export function BoosterPeek({
-  boosterId, character, campaignId, players, onClose,
+  boosterId, character, campaignId, players, hideDiscard, onClose,
 }: {
   boosterId: string;
   character?: Character | null;
   campaignId: string;
   players?: Character[];
+  hideDiscard?: boolean;
   onClose: () => void;
 }) {
   const [b, setB] = useState<Booster | null>(null);
@@ -635,7 +640,9 @@ export function BoosterPeek({
       character={character ?? null}
       campaignId={campaignId}
       players={players || []}
+      hideDiscard={hideDiscard}
       onClose={onClose}
     />
   );
 }
+

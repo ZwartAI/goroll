@@ -327,7 +327,7 @@ function Profile() {
       )}
       {openBooster && (
         <BoosterPeek boosterId={openBooster} character={character} campaignId={campaign.id}
-          onClose={() => setOpenBooster(null)} />
+          hideDiscard onClose={() => setOpenBooster(null)} />
       )}
     </PageFrame>
   );
