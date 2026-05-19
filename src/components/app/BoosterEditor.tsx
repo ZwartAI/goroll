@@ -611,12 +611,13 @@ export function BoosterActions({
 
 
 export function BoosterPeek({
-  boosterId, character, campaignId, players, onClose,
+  boosterId, character, campaignId, players, hideDiscard, onClose,
 }: {
   boosterId: string;
   character?: Character | null;
   campaignId: string;
   players?: Character[];
+  hideDiscard?: boolean;
   onClose: () => void;
 }) {
   const [b, setB] = useState<Booster | null>(null);
@@ -639,7 +640,9 @@ export function BoosterPeek({
       character={character ?? null}
       campaignId={campaignId}
       players={players || []}
+      hideDiscard={hideDiscard}
       onClose={onClose}
     />
   );
 }
+
