@@ -345,22 +345,60 @@ export function BoosterEditor({
     onClose();
   }
 
-  async function transferDM(targetId: string) {
-    if (!booster || !targetId) return;
-    const goVault = targetId === "__vault__";
+  async function moveToVault() {
+    if (!booster) return;
     await (supabase as any).from("boosters").update({
-      owner_character_id: goVault ? null : targetId,
-      in_dm_vault: goVault,
+      owner_character_id: null,
+      in_dm_vault: true,
     }).eq("id", booster.id);
     if (dm) {
-      const target = (players || []).find(p => p.id === targetId);
       const { pushLog } = await import("@/lib/log");
       await pushLog(campaignId, [
         { t: "char", v: dm.name, color: dm.color, id: dm.id },
-        { t: "text", v: goVault ? t("boosters.savedToVault") : t("boosters.handed") },
+        { t: "text", v: t("boosters.savedToVault") },
         { t: "item", v: booster.name, rarity },
-        ...(target ? [{ t: "text", v: "→" } as const, { t: "char", v: target.name, color: target.color, id: target.id } as const] : []),
       ] as any);
+    }
+    toastSaved();
+    onClose();
+  }
+
+  async function distributeCopies(targetIds: string[]) {
+    if (!booster || targetIds.length === 0) return;
+    const templateId = (booster as any).template_id || booster.id;
+    const baseRow = {
+      campaign_id: campaignId,
+      template_id: templateId,
+      name: booster.name,
+      rarity: booster.rarity,
+      uses: booster.max_uses,
+      max_uses: booster.max_uses,
+      in_dm_vault: false,
+      external_id: booster.external_id ?? null,
+      tipo: booster.tipo ?? null,
+      modo_lanzamiento: booster.modo_lanzamiento ?? null,
+      distancia: booster.distancia ?? null,
+      objetivos: booster.objetivos ?? null,
+      dados: booster.dados ?? null,
+      efecto: booster.efecto ?? null,
+    };
+    const rows = targetIds.map(id => ({ ...baseRow, owner_character_id: id }));
+    const { error } = await (supabase as any).from("boosters").insert(rows);
+    if (error) { toast.error(error.message); return; }
+    if (dm) {
+      const targets = (players || []).filter(p => targetIds.includes(p.id));
+      const { pushLog } = await import("@/lib/log");
+      const segs: any[] = [
+        { t: "char", v: dm.name, color: dm.color, id: dm.id },
+        { t: "text", v: t("boosters.handed") },
+        { t: "item", v: booster.name, rarity },
+        { t: "text", v: "→" },
+      ];
+      targets.forEach((tgt, i) => {
+        if (i > 0) segs.push({ t: "text", v: "," });
+        segs.push({ t: "char", v: tgt.name, color: tgt.color, id: tgt.id });
+      });
+      await pushLog(campaignId, segs);
     }
     toastSaved();
     onClose();
