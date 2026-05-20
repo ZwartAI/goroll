@@ -188,7 +188,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
   }, [members, characters, campaign]);
 
   return (
-    <Ctx.Provider value={{ campaign, character, characters, items, logs, achievements, loading, onlineIds, dmLabels, dmCharacterIds, reload: load }}>
+    <Ctx.Provider value={{ campaign, character, characters, items, logs, achievements, loading, onlineIds, dmLabels, dmCharacterIds, combat, reload: load }}>
       {children}
     </Ctx.Provider>
   );
