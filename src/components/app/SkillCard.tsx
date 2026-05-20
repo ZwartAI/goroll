@@ -83,6 +83,15 @@ export function SkillCard({ s, compact, locked, onClick, expandable, i18n }: Pro
   const { range, targets } = splitRangeTargets(s.range_targets);
   const isExpandable = !!expandable;
 
+  // Color tokens for data types (gold = dice, blue = range, green = targets)
+  const DICE_C = "var(--gold)";
+  const RANGE_C = "oklch(0.72 0.14 230)";
+  const TARGET_C = "oklch(0.70 0.14 165)";
+  const VISUAL_C = "oklch(0.75 0.12 300)";
+
+  // Heuristic: only render extra "full effect" block when text is long enough to be clamped
+  const effectLong = (s.effect?.length ?? 0) > 110;
+
   return (
     <div
       className="rounded-xl overflow-hidden transition-shadow"
@@ -102,7 +111,7 @@ export function SkillCard({ s, compact, locked, onClick, expandable, i18n }: Pro
 
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <h4 className="font-display text-base leading-tight truncate flex-1 min-w-0" style={{ color }}>
+            <h4 className="font-display text-base leading-tight line-clamp-2 flex-1 min-w-0" style={{ color }}>
               {s.name}
             </h4>
             <RarityBadge rarity={s.rarity} />
@@ -122,29 +131,18 @@ export function SkillCard({ s, compact, locked, onClick, expandable, i18n }: Pro
           )}
 
           {s.effect && (
-            <p className={`text-[11px] text-muted-foreground/90 leading-snug ${open ? "" : "line-clamp-2"}`}>
+            <p className={`text-[11px] leading-snug ${open ? "" : "line-clamp-2"}`}
+              style={{ color: "color-mix(in oklab, var(--foreground) 80%, transparent)" }}>
               {s.effect}
             </p>
           )}
 
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground pt-0.5">
-            {s.dice && (
-              <span className="inline-flex items-center gap-1">
-                <Dices size={12} />
-                <span className="text-foreground">{s.dice}</span>
-              </span>
-            )}
-            {range && (
-              <span className="inline-flex items-center gap-1">
-                <Crosshair size={12} />
-                <span className="text-foreground">{range}</span>
-              </span>
-            )}
-            {targets && (
-              <span className="inline-flex items-center gap-1">
-                <Users size={12} />
-                <span className="text-foreground">{targets}</span>
-              </span>
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {s.dice && <DataChip icon={<Dices size={11} />} color={DICE_C}>{s.dice}</DataChip>}
+            {range && <DataChip icon={<Crosshair size={11} />} color={RANGE_C}>{range}</DataChip>}
+            {targets && <DataChip icon={<Users size={11} />} color={TARGET_C}>{targets}</DataChip>}
+            {!range && !targets && s.range_targets && (
+              <DataChip icon={<Crosshair size={11} />} color={RANGE_C}>{s.range_targets}</DataChip>
             )}
           </div>
         </div>
@@ -158,45 +156,41 @@ export function SkillCard({ s, compact, locked, onClick, expandable, i18n }: Pro
         )}
       </button>
 
-      {isExpandable && open && (
-        <div className="px-3 pb-3 pt-1 border-t space-y-2.5" style={{ borderColor: `color-mix(in oklab, ${color} 35%, transparent)` }}>
-          {s.effect && (
+      {isExpandable && open && (effectLong || s.visual_brief) && (
+        <div className="px-3 pb-3 pt-1 border-t space-y-2.5"
+          style={{ borderColor: `color-mix(in oklab, ${color} 35%, transparent)` }}>
+          {effectLong && (
             <DetailRow icon={<Sparkles size={13} color={color} />} label={i18n?.effect ?? "Efecto"}>
-              <p className="text-xs whitespace-pre-wrap">{s.effect}</p>
-            </DetailRow>
-          )}
-          {(range || targets || s.range_targets) && (
-            <div className="grid grid-cols-2 gap-2">
-              {range && (
-                <DetailRow icon={<Crosshair size={13} color={color} />} label={i18n?.range ?? "Alcance"}>
-                  <p className="text-xs">{range}</p>
-                </DetailRow>
-              )}
-              {targets && (
-                <DetailRow icon={<Users size={13} color={color} />} label={i18n?.targets ?? "Objetivos"}>
-                  <p className="text-xs">{targets}</p>
-                </DetailRow>
-              )}
-              {!range && !targets && s.range_targets && (
-                <DetailRow icon={<Crosshair size={13} color={color} />} label={i18n?.rangeTargets ?? "Alcance / Objetivos"}>
-                  <p className="text-xs">{s.range_targets}</p>
-                </DetailRow>
-              )}
-            </div>
-          )}
-          {s.dice && (
-            <DetailRow icon={<Dices size={13} color={color} />} label={i18n?.dice ?? "Dados"}>
-              <p className="text-xs">{s.dice}</p>
+              <p className="text-xs whitespace-pre-wrap"
+                style={{ color: "color-mix(in oklab, var(--foreground) 88%, transparent)" }}>
+                {s.effect}
+              </p>
             </DetailRow>
           )}
           {s.visual_brief && (
-            <DetailRow icon={<Eye size={13} color={color} />} label={i18n?.visual ?? "Visual"}>
-              <p className="text-xs italic text-muted-foreground">{s.visual_brief}</p>
+            <DetailRow icon={<Eye size={13} color={VISUAL_C} />} label={i18n?.visual ?? "Visual"}>
+              <p className="text-xs italic" style={{ color: VISUAL_C }}>{s.visual_brief}</p>
             </DetailRow>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+function DataChip({ icon, color, children }: { icon: React.ReactNode; color: string; children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+      style={{
+        color,
+        border: `1px solid color-mix(in oklab, ${color} 40%, transparent)`,
+        background: `color-mix(in oklab, ${color} 10%, transparent)`,
+      }}
+    >
+      {icon}
+      <span>{children}</span>
+    </span>
   );
 }
 
@@ -210,3 +204,4 @@ function DetailRow({ icon, label, children }: { icon: React.ReactNode; label: st
     </div>
   );
 }
+
