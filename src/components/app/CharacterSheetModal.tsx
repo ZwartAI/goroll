@@ -333,7 +333,34 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
             </div>
           </div>
         )}
-        {peekBooster && (
+        {skillPeek && character && (
+          <SkillDetailModal
+            skill={skillPeek}
+            onClose={() => setSkillPeek(null)}
+            dmActions={isEdit ? {
+              onUnlockFree: async () => {
+                await (supabase as any).from("character_skills")
+                  .update({ is_unlocked: true, unlocked_at: new Date().toISOString() })
+                  .eq("id", skillPeek.id);
+                if (editor) await pushLog(campaignId, [
+                  { t: "char", v: editor.name, color: editor.color, id: editor.id },
+                  { t: "text", v: t("skills.logDmUnlocked") },
+                  { t: "char", v: character.name, color: character.color, id: character.id },
+                  { t: "text", v: ":" },
+                  { t: "item", v: skillPeek.name, rarity: skillPeek.rarity, id: skillPeek.id },
+                ]);
+                setSkillPeek(null);
+                reload();
+              },
+              onDelete: async () => {
+                if (!confirm(t("skills.deleteConfirm", { name: skillPeek.name }))) return;
+                await (supabase as any).from("character_skills").delete().eq("id", skillPeek.id);
+                setSkillPeek(null);
+                reload();
+              },
+            } : undefined}
+          />
+        )}
           <BoosterPeek
             boosterId={peekBooster.id}
             campaignId={campaignId}
