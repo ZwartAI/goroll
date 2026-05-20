@@ -242,7 +242,7 @@ export const es = {
     quickEquip: "Equipo",
     quickInv: "Mochila",
     quickAch: "Logros",
-    quickBoost: "Buffs",
+    quickBoost: "Potenciadores",
     quickNotes: "Notas",
     modifyHp: "Modificar vida",
     modifyHpAria: "Abrir modificador de vida",

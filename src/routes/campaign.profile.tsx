@@ -13,7 +13,7 @@ import { ConditionsPanel } from "@/components/app/ConditionsPanel";
 import { CoinsAdjuster } from "@/components/app/CoinsAdjuster";
 import { Escenario } from "@/components/app/Escenario";
 import { InitiativeButton } from "@/components/app/InitiativeButton";
-import { User, LogOut, Minus, Plus, Camera, HeartPulse, Sword, Backpack, Trophy, Sparkles, NotebookPen } from "lucide-react";
+import { User, LogOut, Minus, Plus, Camera, Heart, HeartPulse, Sword, Backpack, Trophy, Sparkles, NotebookPen } from "lucide-react";
 import { FullscreenButton } from "@/components/app/AppShell";
 import { MailboxButton } from "@/components/app/MailboxButton";
 import { MicToggle } from "@/components/app/MicToggle";
@@ -200,28 +200,27 @@ function Profile() {
           {/* HP bar */}
           <div className="ornate-card p-2 mb-3">
             <div className="flex items-center gap-2">
-              <span>❤️</span>
+              <button
+                type="button"
+                onClick={() => setHpModal(true)}
+                aria-label={t("profile.modifyHpAria")}
+                title={t("profile.modifyHpAria")}
+                className="shrink-0 h-9 w-9 rounded-md flex items-center justify-center border border-[var(--gold)]/60 transition-transform active:scale-95"
+                style={{
+                  background: "linear-gradient(135deg, oklch(0.85 0.10 350), oklch(0.70 0.16 350))",
+                  boxShadow: "0 4px 12px -6px oklch(0.55 0.20 350 / 0.7), inset 0 0 8px oklch(1 0 0 / 0.2)",
+                }}
+              >
+                <Heart size={18} fill="oklch(0.55 0.22 25)" color="oklch(0.45 0.22 25)" strokeWidth={2} />
+              </button>
               <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden border border-[var(--gold)]/40">
                 <div className="h-full transition-all" style={{
                   width: `${hpPct}%`,
                   background: hpPct > 50 ? "var(--gain)" : hpPct > 25 ? "var(--gold)" : "var(--loss)",
                 }} />
               </div>
-              <span className="font-display text-xs">{character.current_hp}/{stats.maxHp}</span>
+              <span className="font-display text-xs shrink-0">{character.current_hp}/{stats.maxHp}</span>
             </div>
-            <button
-              onClick={() => setHpModal(true)}
-              aria-label={t("profile.modifyHpAria")}
-              className="btn-fantasy w-full mt-2 flex items-center justify-center gap-2 font-display tracking-wider"
-              style={{
-                background: "linear-gradient(135deg, oklch(0.72 0.18 350), oklch(0.55 0.20 350))",
-                color: "white",
-                boxShadow: "0 6px 18px -8px oklch(0.55 0.20 350 / 0.6)",
-              }}
-            >
-              <HeartPulse size={16} />
-              <span>{t("profile.modifyHp")}</span>
-            </button>
           </div>
 
           {/* Atributos */}
@@ -267,28 +266,28 @@ function Profile() {
 
           {/* Quick links — icon left, text right */}
           <div className="grid grid-cols-3 gap-2 mb-2">
-            <Link to="/campaign/equipment" className="btn-fantasy flex items-center justify-center gap-1.5">
-              <Sword size={14} /><span>{t("profile.quickEquip")}</span>
+            <Link to="/campaign/equipment" className="btn-fantasy flex items-center justify-center gap-1.5 overflow-hidden min-w-0 px-2">
+              <Sword size={14} className="shrink-0" /><span className="min-w-0 text-center leading-tight break-words line-clamp-2 text-[11px]">{t("profile.quickEquip")}</span>
             </Link>
-            <Link to="/campaign/inventory" className="btn-fantasy flex items-center justify-center gap-1.5" style={{ background: "linear-gradient(135deg, oklch(0.5 0.15 195), oklch(0.3 0.1 195))" }}>
-              <Backpack size={14} /><span>{t("profile.quickInv")}</span>
+            <Link to="/campaign/inventory" className="btn-fantasy flex items-center justify-center gap-1.5 overflow-hidden min-w-0 px-2" style={{ background: "linear-gradient(135deg, oklch(0.5 0.15 195), oklch(0.3 0.1 195))" }}>
+              <Backpack size={14} className="shrink-0" /><span className="min-w-0 text-center leading-tight break-words line-clamp-2 text-[11px]">{t("profile.quickInv")}</span>
             </Link>
-            <Link to="/campaign/achievements" className="btn-fantasy flex items-center justify-center gap-1.5" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>
-              <Trophy size={14} /><span>{t("profile.quickAch")}</span>
+            <Link to="/campaign/achievements" className="btn-fantasy flex items-center justify-center gap-1.5 overflow-hidden min-w-0 px-2" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>
+              <Trophy size={14} className="shrink-0" /><span className="min-w-0 text-center leading-tight break-words line-clamp-2 text-[11px]">{t("profile.quickAch")}</span>
             </Link>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-4">
-            <Link to="/campaign/boosters" className="btn-fantasy flex items-center justify-center gap-1.5"
+            <Link to="/campaign/boosters" className="btn-fantasy flex items-center justify-center gap-1.5 overflow-hidden min-w-0 px-2 tracking-normal"
               style={{ background: "linear-gradient(135deg, var(--rarity-purple), oklch(0.35 0.18 300))", color: "white" }}>
-              <Sparkles size={14} /><span>{t("profile.quickBoost")}</span>
+              <Sparkles size={14} className="shrink-0" /><span className="min-w-0 text-center leading-tight break-words line-clamp-2 text-[10px]">{t("profile.quickBoost")}</span>
             </Link>
-            <Link to="/campaign/skills" className="btn-fantasy flex items-center justify-center gap-1.5"
+            <Link to="/campaign/skills" className="btn-fantasy flex items-center justify-center gap-1.5 overflow-hidden min-w-0 px-2"
               style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}>
-              <Sparkles size={14} /><span>{t("skills.title")}</span>
+              <Sparkles size={14} className="shrink-0" /><span className="min-w-0 text-center leading-tight break-words line-clamp-2 text-[11px]">{t("skills.title")}</span>
             </Link>
-            <Link to="/campaign/notes" className="btn-fantasy flex items-center justify-center gap-1.5"
+            <Link to="/campaign/notes" className="btn-fantasy flex items-center justify-center gap-1.5 overflow-hidden min-w-0 px-2"
               style={{ background: "linear-gradient(135deg, oklch(0.45 0.12 220), oklch(0.30 0.10 220))", color: "white" }}>
-              <NotebookPen size={14} /><span>{t("profile.quickNotes")}</span>
+              <NotebookPen size={14} className="shrink-0" /><span className="min-w-0 text-center leading-tight break-words line-clamp-2 text-[11px]">{t("profile.quickNotes")}</span>
             </Link>
           </div>
 

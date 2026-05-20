@@ -240,7 +240,7 @@ export const en: Dict = {
     quickEquip: "Gear",
     quickInv: "Inventory",
     quickAch: "Achievements",
-    quickBoost: "Buffs",
+    quickBoost: "Boosters",
     quickNotes: "Notes",
     modifyHp: "Modify HP",
     modifyHpAria: "Open HP modifier",
