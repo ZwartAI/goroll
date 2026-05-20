@@ -192,31 +192,29 @@ const ROW_ACCENTS = {
   uses:     "oklch(0.78 0.14 330)",  // pink
 } as const;
 
-function BoosterHolders({ templateId, campaignId, excludeId }: { templateId?: string | null; campaignId: string; excludeId?: string }) {
+function BoosterHolders({ boosterId, campaignId, excludeId }: { boosterId?: string | null; campaignId: string; excludeId?: string }) {
   const { t } = useT();
   const [owners, setOwners] = useState<{ id: string; name: string; color: string }[]>([]);
   useEffect(() => {
-    if (!templateId) return;
+    if (!boosterId) return;
     let live = true;
     async function load() {
-      const { data: copies } = await (supabase as any)
-        .from("boosters")
-        .select("owner_character_id")
-        .eq("campaign_id", campaignId)
-        .eq("template_id", templateId)
-        .not("owner_character_id", "is", null);
-      const ids = Array.from(new Set(((copies || []) as any[]).map(r => r.owner_character_id).filter(Boolean)));
+      const { data: assigns } = await (supabase as any)
+        .from("booster_assignments")
+        .select("character_id")
+        .eq("booster_id", boosterId);
+      const ids = Array.from(new Set(((assigns || []) as any[]).map(r => r.character_id).filter(Boolean)));
       if (ids.length === 0) { if (live) setOwners([]); return; }
       const { data: chars } = await supabase.from("characters").select("id,name,color").in("id", ids);
       if (!live) return;
       setOwners(((chars || []) as any[]).filter(c => c.id !== excludeId));
     }
     load();
-    const ch = (supabase as any).channel(`bx:holders:${templateId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "boosters", filter: `campaign_id=eq.${campaignId}` }, load)
+    const ch = (supabase as any).channel(`bx:holders:${boosterId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "booster_assignments", filter: `campaign_id=eq.${campaignId}` }, load)
       .subscribe();
     return () => { live = false; (supabase as any).removeChannel(ch); };
-  }, [templateId, campaignId, excludeId]);
+  }, [boosterId, campaignId, excludeId]);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <span className="text-[10px] uppercase tracking-widest text-muted-foreground mr-1">{t("boosters.holders")}:</span>
