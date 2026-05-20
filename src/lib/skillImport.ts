@@ -40,7 +40,7 @@ export const SKILL_RARITY_COST: Record<Rarity, number> = {
   white: 1,
   blue: 2,
   purple: 3,
-  gold: 4,
+  gold: 10,
 };
 
 /** Header label → column key. Tolerant to common variants. */
