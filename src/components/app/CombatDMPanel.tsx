@@ -30,6 +30,12 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
   const { t } = useT();
   const status = encounter?.status ?? null;
   const [addingEnemy, setAddingEnemy] = useState(false);
+  const [pickingTemplate, setPickingTemplate] = useState(false);
+  const [templates, setTemplates] = useState<EnemyTemplate[]>([]);
+
+  useEffect(() => {
+    if (pickingTemplate) listTemplates(campaignId).then(setTemplates);
+  }, [pickingTemplate, campaignId]);
 
   const canAddEnemy = encounter && status !== "ended";
 
