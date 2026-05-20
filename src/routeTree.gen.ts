@@ -13,6 +13,7 @@ import { Route as MasterRouteImport } from './routes/master'
 import { Route as CampaignRouteImport } from './routes/campaign'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CampaignSpectatorRouteImport } from './routes/campaign.spectator'
+import { Route as CampaignSkillsRouteImport } from './routes/campaign.skills'
 import { Route as CampaignSettingsRouteImport } from './routes/campaign.settings'
 import { Route as CampaignProfileRouteImport } from './routes/campaign.profile'
 import { Route as CampaignNotesRouteImport } from './routes/campaign.notes'
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
 const CampaignSpectatorRoute = CampaignSpectatorRouteImport.update({
   id: '/spectator',
   path: '/spectator',
+  getParentRoute: () => CampaignRoute,
+} as any)
+const CampaignSkillsRoute = CampaignSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
   getParentRoute: () => CampaignRoute,
 } as any)
 const CampaignSettingsRoute = CampaignSettingsRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/campaign/notes': typeof CampaignNotesRoute
   '/campaign/profile': typeof CampaignProfileRoute
   '/campaign/settings': typeof CampaignSettingsRoute
+  '/campaign/skills': typeof CampaignSkillsRoute
   '/campaign/spectator': typeof CampaignSpectatorRoute
 }
 export interface FileRoutesByTo {
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/campaign/notes': typeof CampaignNotesRoute
   '/campaign/profile': typeof CampaignProfileRoute
   '/campaign/settings': typeof CampaignSettingsRoute
+  '/campaign/skills': typeof CampaignSkillsRoute
   '/campaign/spectator': typeof CampaignSpectatorRoute
 }
 export interface FileRoutesById {
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/campaign/notes': typeof CampaignNotesRoute
   '/campaign/profile': typeof CampaignProfileRoute
   '/campaign/settings': typeof CampaignSettingsRoute
+  '/campaign/skills': typeof CampaignSkillsRoute
   '/campaign/spectator': typeof CampaignSpectatorRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/campaign/notes'
     | '/campaign/profile'
     | '/campaign/settings'
+    | '/campaign/skills'
     | '/campaign/spectator'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/campaign/notes'
     | '/campaign/profile'
     | '/campaign/settings'
+    | '/campaign/skills'
     | '/campaign/spectator'
   id:
     | '__root__'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/campaign/notes'
     | '/campaign/profile'
     | '/campaign/settings'
+    | '/campaign/skills'
     | '/campaign/spectator'
   fileRoutesById: FileRoutesById
 }
@@ -205,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/spectator'
       fullPath: '/campaign/spectator'
       preLoaderRoute: typeof CampaignSpectatorRouteImport
+      parentRoute: typeof CampaignRoute
+    }
+    '/campaign/skills': {
+      id: '/campaign/skills'
+      path: '/skills'
+      fullPath: '/campaign/skills'
+      preLoaderRoute: typeof CampaignSkillsRouteImport
       parentRoute: typeof CampaignRoute
     }
     '/campaign/settings': {
@@ -275,6 +294,7 @@ interface CampaignRouteChildren {
   CampaignNotesRoute: typeof CampaignNotesRoute
   CampaignProfileRoute: typeof CampaignProfileRoute
   CampaignSettingsRoute: typeof CampaignSettingsRoute
+  CampaignSkillsRoute: typeof CampaignSkillsRoute
   CampaignSpectatorRoute: typeof CampaignSpectatorRoute
 }
 
@@ -287,6 +307,7 @@ const CampaignRouteChildren: CampaignRouteChildren = {
   CampaignNotesRoute: CampaignNotesRoute,
   CampaignProfileRoute: CampaignProfileRoute,
   CampaignSettingsRoute: CampaignSettingsRoute,
+  CampaignSkillsRoute: CampaignSkillsRoute,
   CampaignSpectatorRoute: CampaignSpectatorRoute,
 }
 
@@ -302,3 +323,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
