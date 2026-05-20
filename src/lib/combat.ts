@@ -15,6 +15,7 @@ export type CombatEncounter = {
   status: EncounterStatus;
   requested_by_character_id: string | null;
   current_turn_index: number;
+  round_number: number;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
@@ -35,7 +36,7 @@ export type CombatParticipant = {
   id: string;
   encounter_id: string;
   campaign_id: string;
-  character_id: string;
+  character_id: string | null;
   participant_type: "player" | "enemy";
   display_name: string;
   image_url: string | null;
@@ -46,7 +47,25 @@ export type CombatParticipant = {
   order_index: number;
   has_ended_turn: boolean;
   created_at: string;
+  // Enemy fields (null for players)
+  enemy_name: string | null;
+  enemy_icon: string | null;
+  enemy_color: string | null;
+  enemy_hp: number | null;
+  enemy_max_hp: number | null;
+  enemy_defense: number | null;
+  enemy_speed: string | null;
+  enemy_notes: string | null;
+  enemy_instance_number: number | null;
+  enemy_template_id: string | null;
+  is_enemy_visible: boolean;
+  is_defeated: boolean;
 };
+
+export function isEnemy(p: CombatParticipant): boolean {
+  return p.participant_type === "enemy";
+}
+
 
 export type TurnBlock =
   | { kind: "solo"; key: string; initiative: number; participant: CombatParticipant }
