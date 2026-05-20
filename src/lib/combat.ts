@@ -362,8 +362,12 @@ export async function passTurn(
   }
   await supabase
     .from("combat_encounters" as any)
-    .update({ current_turn_index: wrapped ? 0 : nextIndex })
+    .update({
+      current_turn_index: wrapped ? 0 : nextIndex,
+      ...(wrapped ? { round_number: (encounter.round_number || 1) + 1 } : {}),
+    })
     .eq("id", encounter.id);
+
 
   if (block.kind === "solo") {
     await pushLog(encounter.campaign_id, [
