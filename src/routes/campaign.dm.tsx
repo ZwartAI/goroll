@@ -394,6 +394,10 @@ function DM() {
         );
       })()}
 
+      {tab === "skills" && (
+        <SkillsManager campaignId={campaign.id} dm={dmCtx} players={players} onlineIds={onlineIds} />
+      )}
+
       {tab === "escenario" && (
         <>
           {!players.length && (
