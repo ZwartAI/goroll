@@ -531,6 +531,146 @@ export type Database = {
           },
         ]
       }
+      combat_encounters: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          current_turn_index: number
+          ended_at: string | null
+          id: string
+          requested_by_character_id: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          current_turn_index?: number
+          ended_at?: string | null
+          id?: string
+          requested_by_character_id?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          current_turn_index?: number
+          ended_at?: string | null
+          id?: string
+          requested_by_character_id?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      combat_participants: {
+        Row: {
+          campaign_id: string
+          character_id: string
+          color: string | null
+          created_at: string
+          display_name: string
+          encounter_id: string
+          has_ended_turn: boolean
+          id: string
+          image_url: string | null
+          initiative: number
+          is_leader: boolean
+          order_index: number
+          participant_type: string
+          turn_group_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          character_id: string
+          color?: string | null
+          created_at?: string
+          display_name?: string
+          encounter_id: string
+          has_ended_turn?: boolean
+          id?: string
+          image_url?: string | null
+          initiative?: number
+          is_leader?: boolean
+          order_index?: number
+          participant_type?: string
+          turn_group_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          character_id?: string
+          color?: string | null
+          created_at?: string
+          display_name?: string
+          encounter_id?: string
+          has_ended_turn?: boolean
+          id?: string
+          image_url?: string | null
+          initiative?: number
+          is_leader?: boolean
+          order_index?: number
+          participant_type?: string
+          turn_group_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_participants_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "combat_encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combat_participants_turn_group_id_fkey"
+            columns: ["turn_group_id"]
+            isOneToOne: false
+            referencedRelation: "combat_turn_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combat_turn_groups: {
+        Row: {
+          campaign_id: string
+          color: string | null
+          created_at: string
+          encounter_id: string
+          group_initiative: number
+          id: string
+          leader_character_id: string
+          name: string | null
+        }
+        Insert: {
+          campaign_id: string
+          color?: string | null
+          created_at?: string
+          encounter_id: string
+          group_initiative?: number
+          id?: string
+          leader_character_id: string
+          name?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          color?: string | null
+          created_at?: string
+          encounter_id?: string
+          group_initiative?: number
+          id?: string
+          leader_character_id?: string
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_turn_groups_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "combat_encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       condition_effects_catalog: {
         Row: {
           campaign_id: string | null
