@@ -3,12 +3,14 @@ import {
   activeBlock,
   blockContainsCharacter,
   buildOrderedTurns,
+  isEnemy,
   type CombatEncounter,
   type CombatParticipant,
   type CombatTurnGroup,
   type TurnBlock,
 } from "@/lib/combat";
 import { Crown } from "lucide-react";
+import { EnemyIcon } from "@/components/app/EnemyIconPicker";
 
 type Props = {
   encounter: CombatEncounter;
@@ -29,6 +31,11 @@ export function CombatList({ encounter, participants, groups, selfCharacterId, o
 
   return (
     <div className="space-y-2">
+      {encounter.status === "active" && (
+        <p className="text-[10px] text-center text-muted-foreground font-display tracking-widest uppercase">
+          {t("combat.round")} {encounter.round_number || 1}
+        </p>
+      )}
       {blocks.map(b => (
         <TurnRow
           key={b.key}
@@ -36,7 +43,10 @@ export function CombatList({ encounter, participants, groups, selfCharacterId, o
           isActive={!!active && active.key === b.key}
           isSelf={selfCharacterId ? blockContainsCharacter(b, selfCharacterId) : false}
           activeLabel={t("combat.activePlayer")}
+          activeEnemyLabel={t("combat.activeEnemy")}
           enlaceLabel={t("combat.linkBadge")}
+          enemyLabel={t("combat.enemy")}
+          defeatedLabel={t("combat.defeated")}
           onOpenChar={onOpenChar}
         />
       ))}
@@ -45,13 +55,53 @@ export function CombatList({ encounter, participants, groups, selfCharacterId, o
 }
 
 function TurnRow({
-  block, isActive, isSelf, activeLabel, enlaceLabel, onOpenChar,
+  block, isActive, isSelf, activeLabel, activeEnemyLabel, enlaceLabel, enemyLabel, defeatedLabel, onOpenChar,
 }: {
-  block: TurnBlock; isActive: boolean; isSelf: boolean; activeLabel: string; enlaceLabel: string;
+  block: TurnBlock; isActive: boolean; isSelf: boolean;
+  activeLabel: string; activeEnemyLabel: string; enlaceLabel: string; enemyLabel: string; defeatedLabel: string;
   onOpenChar?: (id: string) => void;
 }) {
   const baseColor =
-    block.kind === "solo" ? (block.participant.color || "var(--gold)") : (block.group.color || "var(--gold)");
+    block.kind === "solo"
+      ? (block.participant.enemy_color || block.participant.color || "var(--gold)")
+      : (block.group.color || "var(--gold)");
+
+  if (block.kind === "solo" && isEnemy(block.participant)) {
+    const p = block.participant;
+    const defeated = p.is_defeated;
+    const containerStyle = {
+      borderColor: isActive ? "var(--loss)" : `color-mix(in oklab, ${baseColor} 70%, transparent)`,
+      background: `linear-gradient(180deg, color-mix(in oklab, ${baseColor} 18%, var(--card)), var(--card))`,
+      boxShadow: isActive ? `0 0 0 1px var(--loss), 0 0 18px color-mix(in oklab, ${baseColor} 50%, transparent)` : undefined,
+      opacity: defeated ? 0.55 : 1,
+    } as const;
+    return (
+      <div className="ornate-card !p-2 flex items-center gap-3 transition-shadow" style={containerStyle}>
+        <div className="w-10 h-10 rounded-full border-2 flex-shrink-0 flex items-center justify-center bg-card"
+          style={{ borderColor: baseColor, color: baseColor }}>
+          <EnemyIcon name={p.enemy_icon} size={20} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-sm truncate" style={{ color: baseColor }}>
+            {p.display_name}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-[9px] font-display uppercase tracking-widest px-1.5 py-0.5 rounded bg-[var(--loss)]/25 text-[var(--loss)]">
+              {enemyLabel}
+            </span>
+            {defeated && (
+              <span className="text-[9px] font-display uppercase tracking-widest px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {defeatedLabel}
+              </span>
+            )}
+          </div>
+        </div>
+        <InitiativeChip n={p.initiative} />
+        {isActive && <ActiveBadge label={activeEnemyLabel} tone="enemy" />}
+      </div>
+    );
+  }
+
   const containerStyle = {
     borderColor: isActive ? "var(--gold)" : `color-mix(in oklab, ${baseColor} 55%, transparent)`,
     background: `linear-gradient(180deg, color-mix(in oklab, ${baseColor} 12%, var(--card)), var(--card))`,
@@ -62,7 +112,7 @@ function TurnRow({
     const p = block.participant;
     return (
       <div className="ornate-card !p-2 flex items-center gap-3 transition-shadow" style={containerStyle}>
-        <Avatar p={p} onClick={() => onOpenChar?.(p.character_id)} />
+        <Avatar p={p} onClick={() => p.character_id && onOpenChar?.(p.character_id)} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-sm truncate" style={{ color: p.color || undefined }}>
             {p.display_name}{isSelf && <span className="text-[10px] text-[var(--gain)] ml-1">●</span>}
@@ -90,12 +140,11 @@ function TurnRow({
       <div className="grid grid-cols-1 gap-1.5">
         {block.members.map(m => (
           <div key={m.id} className="flex items-center gap-2">
-            <Avatar p={m} small onClick={() => onOpenChar?.(m.character_id)} />
+            <Avatar p={m} small onClick={() => m.character_id && onOpenChar?.(m.character_id)} />
             <div className="min-w-0 flex-1 flex items-center gap-1">
               {m.is_leader && <Crown size={12} className="text-[var(--gold)]" />}
               <p className="font-display text-xs truncate" style={{ color: m.color || undefined }}>
                 {m.display_name}
-                {selfMatch(m, isSelf) && <span className="text-[10px] text-[var(--gain)] ml-1">●</span>}
               </p>
             </div>
           </div>
@@ -103,10 +152,6 @@ function TurnRow({
       </div>
     </div>
   );
-}
-
-function selfMatch(_p: CombatParticipant, isSelf: boolean) {
-  return false && isSelf;
 }
 
 function Avatar({ p, small, onClick }: { p: CombatParticipant; small?: boolean; onClick?: () => void }) {
@@ -132,9 +177,12 @@ function InitiativeChip({ n }: { n: number }) {
   );
 }
 
-function ActiveBadge({ label }: { label: string }) {
+function ActiveBadge({ label, tone }: { label: string; tone?: "enemy" }) {
+  const bg = tone === "enemy" ? "var(--loss)" : "var(--gold)";
+  const color = tone === "enemy" ? "white" : "black";
   return (
-    <span className="text-[9px] font-display uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--gold)] text-black whitespace-nowrap">
+    <span className="text-[9px] font-display uppercase tracking-widest px-2 py-0.5 rounded-full whitespace-nowrap"
+      style={{ background: bg, color }}>
       {label}
     </span>
   );
