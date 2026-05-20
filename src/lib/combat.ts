@@ -658,3 +658,81 @@ export async function dmEndEnemyTurn(
   return dmShiftTurn(encounter, blocks, 1);
 }
 
+// ─────────────── Enemy skills (snapshot in combat) ───────────────
+
+export type CombatEnemySkill = {
+  id: string;
+  campaign_id: string;
+  encounter_id: string;
+  combat_participant_id: string;
+  template_skill_id: string | null;
+  name: string;
+  rarity: string;
+  skill_type: string | null;
+  target_shape: string | null;
+  targets: string | null;
+  dice: string | null;
+  range_text: string | null;
+  effect: string | null;
+  visual_brief: string | null;
+  order_index: number;
+  created_at: string;
+};
+
+export async function listEnemySkills(participantId: string): Promise<CombatEnemySkill[]> {
+  const { data } = await (supabase as any)
+    .from("combat_enemy_skills")
+    .select("*")
+    .eq("combat_participant_id", participantId)
+    .order("order_index", { ascending: true });
+  return (data as any) || [];
+}
+
+export type EnemySkillVisibility = "private" | "nameAndEffect" | "full";
+
+export async function logEnemySkillUse(
+  participant: CombatParticipant,
+  skill: CombatEnemySkill | {
+    name: string; rarity: string; skill_type: string | null; target_shape: string | null;
+    targets: string | null; dice: string | null; range_text: string | null;
+    effect: string | null; visual_brief: string | null;
+  },
+  opts: { visibility: EnemySkillVisibility; resolvedTargets?: string; rollResult?: string; dmNote?: string },
+) {
+  if (opts.visibility === "private") return { ok: true };
+  const payload = {
+    enemyName: participant.display_name,
+    enemyIcon: participant.enemy_icon,
+    enemyColor: participant.enemy_color,
+    skillName: skill.name,
+    rarity: skill.rarity,
+    skillType: skill.skill_type,
+    targetShape: skill.target_shape,
+    targets: skill.targets,
+    dice: skill.dice,
+    rangeText: skill.range_text,
+    effect: skill.effect,
+    visualBrief: skill.visual_brief,
+    detail: opts.visibility,
+    resolvedTargets: opts.resolvedTargets || null,
+    rollResult: opts.rollResult || null,
+    dmNote: opts.dmNote || null,
+  };
+  await pushLog(participant.campaign_id, [{ t: "enemy_skill", v: payload } as any]);
+  return { ok: true };
+}
+
+export async function logEnemySpeech(participant: CombatParticipant, text: string) {
+  const clean = (text || "").trim();
+  if (!clean) return { ok: false, error: "empty" };
+  const payload = {
+    enemyName: participant.display_name,
+    enemyIcon: participant.enemy_icon,
+    enemyColor: participant.enemy_color,
+    text: clean,
+  };
+  await pushLog(participant.campaign_id, [{ t: "enemy_speech", v: payload } as any]);
+  return { ok: true };
+}
+
+

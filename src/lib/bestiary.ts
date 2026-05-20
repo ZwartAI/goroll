@@ -311,12 +311,47 @@ export async function spawnFromTemplate(
       is_defeated: false,
     });
   }
-  const { error } = await (supabase as any).from("combat_participants").insert(rows);
+  const { data: inserted, error } = await (supabase as any)
+    .from("combat_participants").insert(rows).select("id");
   if (error) return { ok: false as const, error: error.message };
+
+  // Snapshot skills for each new participant.
+  const skills = await listTemplateSkills(template.id);
+  if (skills.length && inserted && inserted.length) {
+    const skillRows: any[] = [];
+    for (const p of inserted) {
+      for (const s of skills) {
+        skillRows.push({
+          campaign_id: encounter.campaign_id,
+          encounter_id: encounter.id,
+          combat_participant_id: p.id,
+          template_skill_id: s.id,
+          name: s.name,
+          rarity: s.rarity,
+          skill_type: s.skill_type,
+          target_shape: s.target_shape,
+          targets: s.targets,
+          dice: s.dice,
+          range_text: s.range_text,
+          effect: s.effect,
+          visual_brief: s.visual_brief,
+          order_index: s.order_index,
+        });
+      }
+    }
+    await (supabase as any).from("combat_enemy_skills").insert(skillRows);
+  }
 
   await pushLog(encounter.campaign_id, [
     { t: "char", v: dm.name, color: dm.color, id: dm.id },
     { t: "text", v: ` añadió ${qty > 1 ? `${qty} ` : ""}${template.name}${qty > 1 ? "s" : ""} desde Bestiario.` },
   ]);
   return { ok: true as const };
+}
+
+/** Load the template (for tier/role/etc.) and its skill list — used by EnemyCombatSheetModal. */
+export async function loadTemplate(templateId: string): Promise<EnemyTemplate | null> {
+  const { data } = await (supabase as any)
+    .from("enemy_templates").select("*").eq("id", templateId).maybeSingle();
+  return (data as any) || null;
 }
