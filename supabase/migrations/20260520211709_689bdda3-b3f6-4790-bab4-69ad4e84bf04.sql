@@ -1,0 +1,1 @@
+UPDATE public.character_skills SET cost = 10 WHERE rarity = 'gold' AND is_unlocked = false AND cost = 4;
