@@ -21,7 +21,6 @@ import { Route as CampaignInventoryRouteImport } from './routes/campaign.invento
 import { Route as CampaignEquipmentRouteImport } from './routes/campaign.equipment'
 import { Route as CampaignDmRouteImport } from './routes/campaign.dm'
 import { Route as CampaignBoostersRouteImport } from './routes/campaign.boosters'
-import { Route as CampaignSkillsRouteImport } from './routes/campaign.skills'
 import { Route as CampaignAchievementsRouteImport } from './routes/campaign.achievements'
 
 const MasterRoute = MasterRouteImport.update({
@@ -82,6 +81,11 @@ const CampaignDmRoute = CampaignDmRouteImport.update({
 const CampaignBoostersRoute = CampaignBoostersRouteImport.update({
   id: '/boosters',
   path: '/boosters',
+  getParentRoute: () => CampaignRoute,
+} as any)
+const CampaignSkillsRoute = CampaignSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
   getParentRoute: () => CampaignRoute,
 } as any)
 const CampaignAchievementsRoute = CampaignAchievementsRouteImport.update({
