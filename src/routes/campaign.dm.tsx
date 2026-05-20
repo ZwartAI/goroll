@@ -35,7 +35,7 @@ function DM() {
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [boosters, setBoosters] = useState<Booster[]>([]);
-  const [holderCounts, setHolderCounts] = useState<Map<string, number>>(new Map());
+  const [holdersByBooster, setHoldersByBooster] = useState<Map<string, string[]>>(new Map());
   const [boosterSearch, setBoosterSearch] = useState("");
   const [selBooster, setSelBooster] = useState<Booster | null>(null);
   const [editBooster, setEditBooster] = useState<Booster | null>(null);
@@ -56,14 +56,16 @@ function DM() {
           .is("owner_character_id", null)
           .order("created_at"),
         (supabase as any).from("booster_assignments")
-          .select("booster_id").eq("campaign_id", campaign.id),
+          .select("booster_id, character_id").eq("campaign_id", campaign.id),
       ]);
       setBoosters((bs || []) as Booster[]);
-      const counts = new Map<string, number>();
+      const map = new Map<string, string[]>();
       for (const a of (assigns || []) as any[]) {
-        counts.set(a.booster_id, (counts.get(a.booster_id) || 0) + 1);
+        const arr = map.get(a.booster_id) || [];
+        arr.push(a.character_id);
+        map.set(a.booster_id, arr);
       }
-      setHolderCounts(counts);
+      setHoldersByBooster(map);
     };
     reload();
     const ch = (supabase as any).channel(`boosters:dm:${campaign.id}`)
