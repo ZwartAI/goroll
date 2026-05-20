@@ -1,8 +1,40 @@
 import {
   Heart, Sword, Shield, Lock, Mountain, Wind, Ghost, BookOpen, Sparkles,
+  Plus, Zap, Flame, Snowflake, Eye, Footprints, CircleDot, DoorOpen,
+  Star, Moon, Cat, Skull, VenetianMask, Gem,
   type LucideIcon,
 } from "lucide-react";
 import { RARITY_COLOR, type Rarity } from "@/lib/game";
+
+/** Catalog of manual icon options usable by the DM. */
+export const SKILL_ICON_OPTIONS: { key: string; icon: LucideIcon; labelKey: string }[] = [
+  { key: "heart",    icon: Heart,         labelKey: "skills.iconOpts.heart" },
+  { key: "cross",    icon: Plus,          labelKey: "skills.iconOpts.cross" },
+  { key: "shield",   icon: Shield,        labelKey: "skills.iconOpts.shield" },
+  { key: "sword",    icon: Sword,         labelKey: "skills.iconOpts.sword" },
+  { key: "bolt",     icon: Zap,           labelKey: "skills.iconOpts.bolt" },
+  { key: "flame",    icon: Flame,         labelKey: "skills.iconOpts.flame" },
+  { key: "ice",      icon: Snowflake,     labelKey: "skills.iconOpts.ice" },
+  { key: "eye",      icon: Eye,           labelKey: "skills.iconOpts.eye" },
+  { key: "chain",    icon: Lock,          labelKey: "skills.iconOpts.chain" },
+  { key: "wind",     icon: Wind,          labelKey: "skills.iconOpts.wind" },
+  { key: "boots",    icon: Footprints,    labelKey: "skills.iconOpts.boots" },
+  { key: "rune",     icon: CircleDot,     labelKey: "skills.iconOpts.rune" },
+  { key: "portal",   icon: DoorOpen,      labelKey: "skills.iconOpts.portal" },
+  { key: "book",     icon: BookOpen,      labelKey: "skills.iconOpts.book" },
+  { key: "star",     icon: Star,          labelKey: "skills.iconOpts.star" },
+  { key: "moon",     icon: Moon,          labelKey: "skills.iconOpts.moon" },
+  { key: "claw",     icon: Cat,           labelKey: "skills.iconOpts.claw" },
+  { key: "poison",   icon: Skull,         labelKey: "skills.iconOpts.poison" },
+  { key: "mask",     icon: VenetianMask,  labelKey: "skills.iconOpts.mask" },
+  { key: "crystal",  icon: Gem,           labelKey: "skills.iconOpts.crystal" },
+  { key: "terrain",  icon: Mountain,      labelKey: "skills.iconOpts.terrain" },
+  { key: "summon",   icon: Ghost,         labelKey: "skills.iconOpts.summon" },
+];
+
+const ICON_BY_KEY: Record<string, LucideIcon> = Object.fromEntries(
+  SKILL_ICON_OPTIONS.map(o => [o.key, o.icon])
+);
 
 /** Map a free-text "type" string to a lucide icon. Case/locale insensitive. */
 export function iconForType(type: string | null | undefined): LucideIcon {
@@ -19,6 +51,11 @@ export function iconForType(type: string | null | undefined): LucideIcon {
   return Sparkles;
 }
 
+export function resolveSkillIcon(iconKey: string | null | undefined, type: string | null | undefined): LucideIcon {
+  if (iconKey && ICON_BY_KEY[iconKey]) return ICON_BY_KEY[iconKey];
+  return iconForType(type);
+}
+
 type Size = "sm" | "md" | "lg";
 const SIZES: Record<Size, { box: number; icon: number }> = {
   sm: { box: 40, icon: 18 },
@@ -27,9 +64,9 @@ const SIZES: Record<Size, { box: number; icon: number }> = {
 };
 
 export function SkillIconMedallion({
-  type, rarity, size = "md", locked = false,
-}: { type: string | null; rarity: Rarity; size?: Size; locked?: boolean }) {
-  const Icon = iconForType(type);
+  type, rarity, size = "md", locked = false, iconKey = null,
+}: { type: string | null; rarity: Rarity; size?: Size; locked?: boolean; iconKey?: string | null }) {
+  const Icon = resolveSkillIcon(iconKey, type);
   const { box, icon } = SIZES[size];
   const color = RARITY_COLOR[rarity];
   return (
@@ -46,7 +83,6 @@ export function SkillIconMedallion({
       aria-hidden
     >
       <Icon size={icon} color={color} strokeWidth={1.8} />
-      {/* tiny decorative rune dot */}
       <span
         className="absolute -top-0.5 -right-0.5 rounded-full"
         style={{
