@@ -282,7 +282,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
           <div className="grid grid-cols-2 gap-1.5">
             {skills.length === 0 && <p className="text-[10px] text-muted-foreground col-span-2">{t("skills.charHasNone")}</p>}
             {skills.map(s => (
-              <SkillCard key={s.id} s={s} locked={!s.is_unlocked} onClick={() => setSkillPeek(s)} />
+              <SkillCard key={s.id} s={s} compact locked={!s.is_unlocked} onClick={() => setSkillPeek(s)} />
             ))}
           </div>
         </div>

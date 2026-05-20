@@ -794,6 +794,17 @@ export const es = {
     massLevelDone: "Nivel actualizado en {n} personajes",
     skillsList: "Habilidades",
     charHasNone: "Este personaje no tiene habilidades aún.",
+    acquireOpen: "Adquirir habilidades",
+    acquireOpenSubtitle: "Ver habilidades disponibles",
+    shopTitle: "Tienda de habilidades",
+    shopSubtitle: "Potencia tu estilo",
+    learn: "Aprender",
+    viewDetails: "Ver detalles",
+    needMoreSp: "Te faltan {n} SP",
+    noneShop: "Sin habilidades disponibles para adquirir.",
+    range: "Alcance",
+    targets: "Objetivos",
+    learned: "¡Aprendida!",
   },
 };
 

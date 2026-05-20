@@ -792,6 +792,17 @@ export const en: Dict = {
     massLevelDone: "Level updated for {n} characters",
     skillsList: "Skills",
     charHasNone: "This character has no skills yet.",
+    acquireOpen: "Acquire Skills",
+    acquireOpenSubtitle: "View available skills",
+    shopTitle: "Skill Shop",
+    shopSubtitle: "Empower your style",
+    learn: "Learn",
+    viewDetails: "View details",
+    needMoreSp: "You need {n} more SP",
+    noneShop: "No skills available to acquire.",
+    range: "Range",
+    targets: "Targets",
+    learned: "Learned!",
   },
 };
 
