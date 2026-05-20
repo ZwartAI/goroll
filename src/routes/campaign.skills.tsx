@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGameData } from "@/lib/useGame";
 import { PageFrame } from "@/components/app/Frame";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, ChevronRight, Gem } from "lucide-react";
 import { SkillCard, type CharacterSkill } from "@/components/app/SkillCard";
-import { SkillDetailModal } from "@/components/app/SkillDetailModal";
+import { SkillAcquireModal } from "@/components/app/SkillAcquireModal";
 import { useT } from "@/lib/i18n";
 import { pushLog } from "@/lib/log";
 import { toast } from "sonner";
@@ -16,8 +16,7 @@ function Skills() {
   const { character, campaign, loading } = useGameData();
   const { t } = useT();
   const [skills, setSkills] = useState<CharacterSkill[]>([]);
-  const [sel, setSel] = useState<CharacterSkill | null>(null);
-  const [mode, setMode] = useState<"owned" | "acquire">("owned");
+  const [shopOpen, setShopOpen] = useState(false);
 
   async function reload() {
     if (!character) return;
@@ -44,6 +43,15 @@ function Skills() {
   const unlocked = skills.filter(s => s.is_unlocked);
   const locked = skills.filter(s => !s.is_unlocked);
 
+  const skillI18n = {
+    dice: t("skills.dice"),
+    range: t("skills.range"),
+    targets: t("skills.targets"),
+    effect: t("skills.effect"),
+    visual: t("skills.visualBrief"),
+    rangeTargets: t("skills.rangeTargets"),
+  };
+
   async function purchase(s: CharacterSkill) {
     if (!character || !campaign) return;
     if (sp < s.cost) { toast.error(t("skills.notEnoughSp", { have: sp, need: s.cost })); return; }
@@ -60,56 +68,88 @@ function Skills() {
       { t: "text", v: `✨ ${s.name}` },
       { t: "loss", v: `-${s.cost} SP` },
     ], { kind: "character.update", id: character.id, prev });
-    setSel(null);
     reload();
   }
 
   return (
-    <PageFrame title={t("skills.title")} subtitle={character.name}
-      right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20} /></Link>}>
-      <div className="ornate-card p-3 flex items-center justify-between mb-3">
+    <PageFrame
+      title={t("skills.title")}
+      subtitle={character.name}
+      right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20} /></Link>}
+    >
+      {/* SP card */}
+      <div
+        className="ornate-card p-3 flex items-center justify-between mb-3"
+        style={{
+          borderColor: "var(--gold)",
+          background: "linear-gradient(135deg, color-mix(in oklab, var(--gold) 14%, var(--card)), var(--card))",
+          boxShadow: "0 0 18px color-mix(in oklab, var(--gold) 25%, transparent)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <Sparkles size={18} className="text-[var(--gold)]" />
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">{t("skills.spBalance")}</span>
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{
+              background: "radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--gold) 55%, transparent), transparent 70%)",
+              border: "1px solid var(--gold)",
+              boxShadow: "0 0 10px color-mix(in oklab, var(--gold) 50%, transparent)",
+            }}
+          >
+            <Gem size={18} className="text-[var(--gold)]" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground leading-none">{t("skills.spBalance")}</span>
+            <span className="font-display text-2xl text-[var(--gold)] leading-tight">{sp}</span>
+          </div>
         </div>
-        <span className="font-display text-xl text-[var(--gold)]">{sp}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <button onClick={() => setMode("owned")}
-          className={`btn-fantasy text-xs ${mode === "owned" ? "" : "opacity-60"}`}>
-          {t("skills.tabOwned")} ({unlocked.length})
-        </button>
-        <button onClick={() => setMode("acquire")}
-          className={`btn-fantasy text-xs ${mode === "acquire" ? "" : "opacity-60"}`}
-          style={mode === "acquire" ? { background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" } : undefined}>
-          {t("skills.tabAcquire")} ({locked.length})
-        </button>
+      {/* Owned skills */}
+      <div className="space-y-2.5">
+        {unlocked.length === 0 && (
+          <div className="ornate-card p-6 text-center text-xs text-muted-foreground">
+            {t("skills.noneOwned")}
+          </div>
+        )}
+        {unlocked.map(s => (
+          <SkillCard key={s.id} s={s} expandable i18n={skillI18n} />
+        ))}
       </div>
 
-      {mode === "owned" && (
-        <>
-          {unlocked.length === 0 && <p className="text-center text-xs text-muted-foreground py-10">{t("skills.noneOwned")}</p>}
-          <div className="grid grid-cols-2 gap-2">
-            {unlocked.map(s => <SkillCard key={s.id} s={s} onClick={() => setSel(s)} />)}
-          </div>
-        </>
-      )}
+      {/* Acquire CTA */}
+      <button
+        onClick={() => setShopOpen(true)}
+        className="w-full mt-4 rounded-xl p-3 flex items-center gap-3 group"
+        style={{
+          border: "1.5px solid var(--gold)",
+          background: "linear-gradient(135deg, color-mix(in oklab, var(--gold) 22%, var(--card)), color-mix(in oklab, var(--gold) 8%, var(--card)))",
+          boxShadow: "0 0 22px color-mix(in oklab, var(--gold) 30%, transparent)",
+        }}
+      >
+        <div
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+          style={{
+            background: "radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--gold) 70%, transparent), transparent 70%)",
+            border: "1px solid var(--gold)",
+            boxShadow: "0 0 12px color-mix(in oklab, var(--gold) 55%, transparent)",
+          }}
+        >
+          <Sparkles size={20} className="text-[var(--gold)]" />
+        </div>
+        <div className="flex-1 text-left min-w-0">
+          <p className="font-display text-base text-[var(--gold)] leading-tight">{t("skills.acquireOpen")}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{t("skills.acquireOpenSubtitle")} · {locked.length}</p>
+        </div>
+        <ChevronRight size={20} className="text-[var(--gold)] transition-transform group-hover:translate-x-0.5" />
+      </button>
 
-      {mode === "acquire" && (
-        <>
-          {locked.length === 0 && <p className="text-center text-xs text-muted-foreground py-10">{t("skills.noneToAcquire")}</p>}
-          <div className="grid grid-cols-2 gap-2">
-            {locked.map(s => <SkillCard key={s.id} s={s} locked onClick={() => setSel(s)} />)}
-          </div>
-        </>
-      )}
-
-      {sel && (
-        <SkillDetailModal skill={sel} spBalance={sp}
-          onClose={() => setSel(null)}
-          onAcquire={!sel.is_unlocked ? () => purchase(sel) : undefined}
-          canAcquire={!sel.is_unlocked && sp >= sel.cost} />
+      {shopOpen && (
+        <SkillAcquireModal
+          skills={locked}
+          spBalance={sp}
+          onClose={() => setShopOpen(false)}
+          onPurchase={purchase}
+        />
       )}
     </PageFrame>
   );
