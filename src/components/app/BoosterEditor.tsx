@@ -363,25 +363,16 @@ export function BoosterEditor({
 
   async function distributeCopies(targetIds: string[]) {
     if (!booster || targetIds.length === 0) return;
-    const templateId = (booster as any).template_id || booster.id;
-    const baseRow = {
+    const rows = targetIds.map(id => ({
       campaign_id: campaignId,
-      template_id: templateId,
-      name: booster.name,
-      rarity: booster.rarity,
+      booster_id: booster.id,
+      character_id: id,
       uses: booster.max_uses,
       max_uses: booster.max_uses,
-      in_dm_vault: false,
-      external_id: booster.external_id ?? null,
-      tipo: booster.tipo ?? null,
-      modo_lanzamiento: booster.modo_lanzamiento ?? null,
-      distancia: booster.distancia ?? null,
-      objetivos: booster.objetivos ?? null,
-      dados: booster.dados ?? null,
-      efecto: booster.efecto ?? null,
-    };
-    const rows = targetIds.map(id => ({ ...baseRow, owner_character_id: id }));
-    const { error } = await (supabase as any).from("boosters").insert(rows);
+    }));
+    const { error } = await (supabase as any)
+      .from("booster_assignments")
+      .upsert(rows, { onConflict: "booster_id,character_id", ignoreDuplicates: true });
     if (error) { toast.error(error.message); return; }
     if (dm) {
       const targets = (players || []).filter(p => targetIds.includes(p.id));
@@ -404,9 +395,8 @@ export function BoosterEditor({
 
   async function reclaim() {
     if (!booster) return;
-    await (supabase as any).from("boosters").update({
-      owner_character_id: null, in_dm_vault: true,
-    }).eq("id", booster.id);
+    // Remove every player's assignment for this booster — the catalog row stays.
+    await (supabase as any).from("booster_assignments").delete().eq("booster_id", booster.id);
     if (dm) {
       const { pushLog } = await import("@/lib/log");
       await pushLog(campaignId, [
