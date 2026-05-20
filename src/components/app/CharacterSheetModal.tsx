@@ -36,13 +36,15 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
   const [peekBooster, setPeekBooster] = useState<Booster | null>(null);
 
   async function reload() {
-    const [a, b, c, d] = await Promise.all([
+    const [a, b, c, d, e] = await Promise.all([
       supabase.from("characters").select("*").eq("id", characterId).single(),
       supabase.from("items").select("*").eq("owner_character_id", characterId),
       supabase.from("achievements").select("*").eq("character_id", characterId),
       (supabase as any).from("booster_assignments")
         .select("id, uses, max_uses, booster:boosters(*)")
         .eq("character_id", characterId),
+      (supabase as any).from("character_skills")
+        .select("*").eq("character_id", characterId).order("order_index", { ascending: true }),
     ]);
     if (a.data) setCharacter(a.data as Character);
     setItems((b.data || []) as Item[]);
@@ -58,6 +60,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
         _assignmentId: row.id,
       }));
     setBoosters(list);
+    setSkills((e.data || []) as CharacterSkill[]);
   }
   useEffect(() => { reload(); /* eslint-disable-next-line */ }, [characterId]);
 
