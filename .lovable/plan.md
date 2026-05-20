@@ -1,96 +1,150 @@
-# Fase 2 — Enemigos temporales en combate
+## Fase 4 — Fichas y Skills de enemigos en combate
 
-Extiende la Fase 1 sin tocar su flujo. Los enemigos viven solo dentro del encounter activo y se integran a la lista de turnos existente.
+Objetivo: el DM controla enemigos durante su turno con ficha rápida, ficha completa, uso de skills, hablar como enemigo, y pasar turno. Jugadores solo ven lo que el DM publica en el log.
 
-## 1. Base de datos (migración)
+### 1. Datos / Base de datos
 
-Extender `combat_participants` (mantiene compatibilidad con la lista de turnos actual):
+Migración nueva: tabla `combat_enemy_skills` (snapshot de skills al añadir enemigo al combate; editar plantilla NO altera enemigos ya activos).
 
-- `enemy_name` text null
-- `enemy_icon` text null  (clave de icono, ej `wolf`, `skull`)
-- `enemy_color` text null
-- `enemy_hp` int null
-- `enemy_max_hp` int null
-- `enemy_defense` int null default 0
-- `enemy_speed` text null
-- `enemy_notes` text null
-- `enemy_instance_number` int null
-- `enemy_template_id` uuid null  (reservado, no se usa todavía)
-- `is_enemy_visible` boolean default true
-- `is_defeated` boolean default false
+```
+combat_enemy_skills
+- id uuid pk
+- campaign_id uuid
+- encounter_id uuid
+- combat_participant_id uuid (FK lógico → combat_participants.id)
+- template_skill_id uuid nullable
+- name text
+- rarity item_rarity
+- skill_type text
+- target_shape text
+- targets text
+- dice text
+- range_text text
+- effect text
+- visual_brief text
+- order_index int
+- created_at timestamptz
+```
 
-`character_id` pasa a ser nullable (los enemigos no tienen character). RLS ya es pública.
+RLS pública (igual que resto de tablas del proyecto). Habilitar realtime.
 
-Añadir `round_number int default 1` a `combat_encounters`.
+Modificar `spawnFromTemplate` en `src/lib/bestiary.ts` para que después de insertar el participant, copie las skills del template a `combat_enemy_skills` por cada instancia spawneada.
 
-## 2. Tipos y lógica (`src/lib/combat.ts`)
+### 2. Lógica nueva (`src/lib/combat.ts` + helper)
 
-- Actualizar `CombatParticipant` con los nuevos campos opcionales.
-- `buildOrderedTurns` ya ordena por `initiative`+`order_index`; añadir bloque `kind: "enemy"` (solo participantes con `participant_type === 'enemy'` van como bloque enemigo individual; no se agrupan en enlaces).
-- Nuevas acciones:
-  - `addEnemies(encounter, payload, count, position)` — inserta `count` filas con `enemy_instance_number` autoincremental, `order_index` calculado según `position` ('byInitiative' | 'afterCurrent' | 'end').
-  - `updateEnemy(participantId, patch)`
-  - `duplicateEnemy(participant)`
-  - `removeEnemy(participantId)`
-  - `applyEnemyDamage(participant, raw, { useDefense })` — `final = useDefense ? max(0, raw - def) : raw`; clamp 0..max_hp; si llega a 0 marca `is_defeated=true` y loguea derrota.
-  - `healEnemy(participant, amount)` — clamp 0..max_hp.
-  - `moveParticipant(encounter, participantId, direction|index)` — reasigna `order_index` y ajusta `current_turn_index` si afecta al turno activo.
-- Avance de turno: incrementar `round_number` cuando el índice vuelve a 0.
+- `listEnemySkills(participantId)` — leer skills snapshot.
+- `logEnemySkillUse(...)` — inserta en `logs` con segmentos personalizados (icono enemigo, nombre skill, dados, alcance, objetivos, efecto, visual_brief opcional según nivel de detalle: `nameAndEffect` | `full`).
+- `logEnemySpeech(enemy, text)` — log con icono+color+nombre del enemigo y la frase.
+- `logEnemyDefeated(enemy)` — log al marcar derrotado (ya parcialmente existe, asegurar formato).
+- `logEnemyEndedTurn(enemy)` — se enchufa en `dmEndEnemyTurn` ya existente.
+- Validaciones: encounter activo, es DM, enemigo pertenece al encounter, status != ended.
 
-## 3. UI DM (`CombatDMPanel`)
+### 3. UI — Ficha rápida del enemigo (DM)
 
-Añadir botón "Añadir enemigo" siempre que el encounter exista y no esté `ended`.
+En `EnemyManagerDM.tsx` (o `CombatList` DM view), por cada enemigo:
+- Icono circular con color.
+- Nombre + badge tier (Normal/Élite/Jefe) si hay `enemy_template_id`.
+- HP actual/máx + barra (verde/amarillo/rojo).
+- DEF, VEL, iniciativa.
+- Botón "Ficha" (también long-press en móvil) → abre `EnemyCombatSheetModal`.
+- Si está en turno: zona "Turno activo" con botones Usar skill / Hablar / Ajustar HP / Pasar turno.
+- Si no está en turno: botón principal indica "No es su turno" (deshabilitado o secundario).
 
-Nuevo modal `EnemyEditorModal` con:
-- nombre, icono (grid de lucide: Skull, Sword, Shield, Eye, Flame, Bug, Crown, Ghost, PawPrint, Drama, Swords, Cloud), color preset (7 swatches), iniciativa (1–20), HP max, HP actual, defensa, velocidad, notas, cantidad (1–20), posición de inserción.
+Long-press: hook `useLongPress(onLongPress, 400ms)` en `src/hooks/`.
 
-Lista DM: extender `CombatList` con prop `dmView` que renderiza bloque ampliado para enemigos:
-- barra de HP (verde / amarillo / rojo según %), texto HP/MAX, DEF, VEL.
-- Botones: −1, −5, +1, +5, Daño/Curar (abre `EnemyDamageModal` con toggle "Aplicar con defensa"), Editar, Duplicar, Eliminar.
-- Si activo y es enemigo: botón "Pasar turno del enemigo".
-- Si derrotado: opacidad 50% + badge "Derrotado".
+### 4. UI — Ficha completa: `EnemyCombatSheetModal.tsx` (nuevo)
 
-Nuevo `EnemyDamageModal`: campos daño y curación, toggle "Usar defensa", muestra cálculo y "Daño aplicado: X después de DEF Y".
+Modal scrolleable. Secciones:
+1. Header: icono grande, nombre, tier, rol, bioma, estado activo/derrotado.
+2. Estadísticas: HP/max + barra, DEF, VEL, daño base, iniciativa.
+3. Controles HP: -1, -5, +1, +5, "Daño bruto", "Daño con defensa", "Curar", "Editar HP" (abre `EnemyDamageModal` ya existente).
+4. Conducta (privada DM): behavior_notes, description, enemy_notes.
+5. Inmunidades: chips. "Sin inmunidades registradas" si vacío.
+6. Debilidades: texto. Ocultar sección si vacío.
+7. Skills: lista de `EnemySkillCard`. "Sin skills registradas" si vacío.
 
-## 4. UI pública (`CombatList` para jugadores/espectadores)
+Tier sólo se muestra si se puede consultar el template (cargar `enemy_templates` por id si hace falta — o copiar tier al participant en spawn; preferible cargar on-demand para no migrar más columnas).
 
-Bloque enemigo público:
-- Icono circular (lucide) con `enemy_color` como borde/glow.
-- Nombre + nº instancia.
-- Iniciativa.
-- Badge "Enemigo".
-- Si turno activo: badge "En turno".
-- No mostrar HP/DEF/VEL/notas.
+### 5. UI — `EnemySkillCard.tsx` (nuevo)
 
-Botón "Pasar turno" del jugador se desactiva si el turno activo es enemigo.
+Card oscura "arcana", distinta a `SkillCard` de jugadores:
+- Borde/halo por rareza.
+- Icono auto por `skill_type` (sword/shield/sparkles/zap…).
+- Dados en dorado, alcance en azul, objetivos en verde/turquesa, efecto blanco, visual_brief violeta/plata.
+- Acciones: "Usar" (abre `EnemySkillUseModal`), "Mostrar" (atajo → log directo con detalles completos).
 
-## 5. CampaignProvider
+### 6. UI — `EnemySkillUseModal.tsx` (nuevo)
 
-Ya carga `participants`; al incluir enemigos en la misma tabla, no requiere consultas extra. Solo asegurar que el filtro no excluya `character_id IS NULL`.
+- Muestra nombre, enemigo emisor, dados, alcance, objetivos, efecto, visual breve.
+- Selector de objetivos (multi): jugadores (de `characters` rol player), grupos Enlace (`combat_turn_groups`), otros enemigos del encounter, "todos", "sin objetivo".
+- Inputs: resultado tirada (texto libre), nota DM.
+- Radios visibility: `private` | `nameAndEffect` | `full`.
+- Confirmar:
+  - Si no es `private` → `logEnemySkillUse` con detalles según radio.
+  - No aplica daño automático.
+- Validación: si effect contiene número y dice está vacío → mostrar warning inline (no bloquea).
+- Si enemigo derrotado → confirm "Este enemigo fue derrotado. ¿Seguro?".
 
-## 6. Logs
+### 7. UI — `EnemySpeechModal.tsx` (nuevo)
 
-Usar `pushLog` con segmentos. Solo loguear:
-- Añadir enemigo(s).
-- Derrota.
-- Enemigo terminó turno.
-- Eliminar / duplicar.
-No loguear ajustes pequeños de HP.
+- Textarea, validar no vacío.
+- Confirmar → `logEnemySpeech` con segmentos: `[icon+color name]: "frase"`.
 
-## 7. i18n
+### 8. Integración con CombatDMPanel / EnemyManagerDM
 
-Añadir claves en `combat.*` de `es.ts` y `en.ts`: `addEnemy`, `enemy`, `icon`, `maxHp`, `currentHp`, `defense`, `speed`, `damage`, `heal`, `applyDamage`, `applyWithDefense`, `duplicate`, `edit`, `remove`, `defeated`, `endEnemyTurn`, `round`, `damageApplied`, `count`, `insertPosition`, posiciones (`byInitiative`, `afterCurrent`, `atEnd`), `enemyAdded`, `enemyDefeated`, `enemyEndedTurn`.
+- Añadir botón "Ficha" en cada enemy row.
+- Añadir long-press handler.
+- Si participant es enemy y `isActive`, mostrar fila "Turno activo" con 4 botones.
+- "Pasar turno del enemigo" usa `dmEndEnemyTurn` existente + log.
 
-## 8. Archivos
+### 9. Vista pública (jugadores / espectadores)
 
-- Migración nueva.
-- Editar: `src/lib/combat.ts`, `src/components/app/CombatList.tsx`, `src/components/app/CombatDMPanel.tsx`, `src/components/app/InitiativeButton.tsx` (desactivar pasar turno si activo es enemigo), `src/lib/CampaignProvider.tsx` (si hace falta), `src/lib/locales/{es,en}.ts`, `src/integrations/supabase/types.ts` (autogenerado tras migración).
-- Crear: `src/components/app/EnemyEditorModal.tsx`, `src/components/app/EnemyDamageModal.tsx`, `src/components/app/EnemyIconPicker.tsx`.
+`CombatList` ya oculta HP/DEF/VEL. Verificar que sigue sin filtrar nada nuevo.
+Render de log enemy-skill: crear componente `LogEnemySkillSegment` o aprovechar `segments` JSON. Estilo card con icono enemigo, nombre, dados (si full), alcance, objetivos, efecto. Tipos `segment.kind = "enemy_skill"` y `"enemy_speech"` en `LogSegments.tsx`.
 
-## 9. Validaciones
+### 10. i18n (`es.ts` / `en.ts`)
 
-Nombre no vacío, HPmax > 0, HPactual ≥ 0, DEF ≥ 0, iniciativa 1–20, cantidad 1–20, bloquear acciones si encounter `ended`.
+Namespace `combat.enemy.*`:
+sheet, fullSheet, behavior, immunities, weaknesses, skills, useSkill, showSkill, speakAs, endEnemyTurn, activeTurn, rollResult, dmNote, showInLog, showNameEffectOnly, showFullDetails, keepPrivate, noImmunities, noWeaknesses, noSkills, notInTurn, defeatedWarn, numericNoDiceWarn, tier.normal/elite/boss, role.*.
 
-## Fuera de alcance
+### 11. Permisos
 
-Sin biblioteca permanente de monstruos, sin importación, sin skills enemigas, sin auto-daño desde skills de jugadores, sin drag&drop (botones subir/bajar/inicio/fin), sin drops.
+Helpers ya existentes en `CampaignProvider` (`isDM`, etc.). Todos los botones DM-only gateados. Server side: las acciones se hacen vía supabase desde cliente DM (igual que fase 2/3) — no se cambia modelo de seguridad.
+
+### 12. Realtime
+
+Suscribir a `combat_enemy_skills` cambios (insert al spawnear). Logs ya tienen realtime. Resto sin cambios.
+
+### 13. Out of scope (fases futuras)
+
+- Daño automático a jugadores.
+- IA enemiga.
+- Recompensas/drops.
+- Bloqueo automático de condiciones por inmunidad.
+- Edición de skills snapshot (en esta fase solo lectura; si se quiere editar, se edita la plantilla y el siguiente spawn lo refleja).
+
+### Archivos
+
+Nuevos:
+- `supabase/migrations/<ts>_combat_enemy_skills.sql`
+- `src/components/app/EnemyCombatSheetModal.tsx`
+- `src/components/app/EnemySkillCard.tsx`
+- `src/components/app/EnemySkillUseModal.tsx`
+- `src/components/app/EnemySpeechModal.tsx`
+- `src/hooks/useLongPress.ts`
+
+Editados:
+- `src/lib/bestiary.ts` (spawn → copia skills snapshot)
+- `src/lib/combat.ts` (helpers log + listEnemySkills)
+- `src/components/app/EnemyManagerDM.tsx` (botón Ficha, long-press, zona turno activo)
+- `src/components/app/CombatList.tsx` (long-press / botón ficha en DM view; render skill enemy en log si aplica)
+- `src/components/app/LogSegments.tsx` (renderers `enemy_skill`, `enemy_speech`)
+- `src/integrations/supabase/types.ts` (auto tras migración)
+- `src/lib/locales/es.ts`, `src/lib/locales/en.ts`
+
+### Validaciones finales
+
+- Encounter activo, DM, participante del encounter, no terminado.
+- Warning numerico-sin-dados.
+- Confirm si derrotado.
+- Todo i18n, sin strings hardcoded.

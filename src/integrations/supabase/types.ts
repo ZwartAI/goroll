@@ -567,6 +567,63 @@ export type Database = {
         }
         Relationships: []
       }
+      combat_enemy_skills: {
+        Row: {
+          campaign_id: string
+          combat_participant_id: string
+          created_at: string
+          dice: string | null
+          effect: string | null
+          encounter_id: string
+          id: string
+          name: string
+          order_index: number
+          range_text: string | null
+          rarity: Database["public"]["Enums"]["item_rarity"]
+          skill_type: string | null
+          target_shape: string | null
+          targets: string | null
+          template_skill_id: string | null
+          visual_brief: string | null
+        }
+        Insert: {
+          campaign_id: string
+          combat_participant_id: string
+          created_at?: string
+          dice?: string | null
+          effect?: string | null
+          encounter_id: string
+          id?: string
+          name: string
+          order_index?: number
+          range_text?: string | null
+          rarity?: Database["public"]["Enums"]["item_rarity"]
+          skill_type?: string | null
+          target_shape?: string | null
+          targets?: string | null
+          template_skill_id?: string | null
+          visual_brief?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          combat_participant_id?: string
+          created_at?: string
+          dice?: string | null
+          effect?: string | null
+          encounter_id?: string
+          id?: string
+          name?: string
+          order_index?: number
+          range_text?: string | null
+          rarity?: Database["public"]["Enums"]["item_rarity"]
+          skill_type?: string | null
+          target_shape?: string | null
+          targets?: string | null
+          template_skill_id?: string | null
+          visual_brief?: string | null
+        }
+        Relationships: []
+      }
       combat_participants: {
         Row: {
           campaign_id: string
