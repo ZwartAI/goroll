@@ -58,11 +58,18 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
       )}
 
       {canAddEnemy && (
-        <button className="btn-fantasy w-full text-xs"
-          style={{ background: "color-mix(in oklab, var(--loss) 45%, var(--card))", color: "white" }}
-          onClick={() => setAddingEnemy(true)}>
-          <Plus size={14} className="inline mr-1" /> {t("combat.addEnemy")}
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button className="btn-fantasy text-xs"
+            style={{ background: "color-mix(in oklab, var(--loss) 45%, var(--card))", color: "white" }}
+            onClick={() => setAddingEnemy(true)}>
+            <Plus size={12} className="inline mr-1" /> {t("combat.addEnemy")}
+          </button>
+          <button className="btn-fantasy text-xs"
+            style={{ background: "color-mix(in oklab, var(--gold) 35%, var(--card))", color: "white" }}
+            onClick={() => setPickingTemplate(true)}>
+            <BookOpen size={12} className="inline mr-1" /> {t("bestiary.addFromBestiary")}
+          </button>
+        </div>
       )}
 
       {status === "collecting" && encounter && (
