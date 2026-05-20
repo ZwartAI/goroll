@@ -1,0 +1,2 @@
+ALTER TABLE public.booster_assignments REPLICA IDENTITY FULL;
+ALTER TABLE public.boosters REPLICA IDENTITY FULL;

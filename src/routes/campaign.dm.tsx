@@ -35,7 +35,7 @@ function DM() {
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [boosters, setBoosters] = useState<Booster[]>([]);
-  const [holderCounts, setHolderCounts] = useState<Map<string, number>>(new Map());
+  const [holdersByBooster, setHoldersByBooster] = useState<Map<string, string[]>>(new Map());
   const [boosterSearch, setBoosterSearch] = useState("");
   const [selBooster, setSelBooster] = useState<Booster | null>(null);
   const [editBooster, setEditBooster] = useState<Booster | null>(null);
@@ -56,14 +56,16 @@ function DM() {
           .is("owner_character_id", null)
           .order("created_at"),
         (supabase as any).from("booster_assignments")
-          .select("booster_id").eq("campaign_id", campaign.id),
+          .select("booster_id, character_id").eq("campaign_id", campaign.id),
       ]);
       setBoosters((bs || []) as Booster[]);
-      const counts = new Map<string, number>();
+      const map = new Map<string, string[]>();
       for (const a of (assigns || []) as any[]) {
-        counts.set(a.booster_id, (counts.get(a.booster_id) || 0) + 1);
+        const arr = map.get(a.booster_id) || [];
+        arr.push(a.character_id);
+        map.set(a.booster_id, arr);
       }
-      setHolderCounts(counts);
+      setHoldersByBooster(map);
     };
     reload();
     const ch = (supabase as any).channel(`boosters:dm:${campaign.id}`)
@@ -258,7 +260,10 @@ function DM() {
           {boosters
             .filter(b => !boosterSearch || b.name.toLowerCase().includes(boosterSearch.toLowerCase()))
             .map(b => {
-              const holders = holderCounts.get(b.id) || 0;
+              const holderIds = holdersByBooster.get(b.id) || [];
+              const holders = holderIds
+                .map(id => characters.find(c => c.id === id))
+                .filter((c): c is Character => !!c);
               const checked = boosterSel.has(b.id);
               return (
                 <button key={b.id} onClick={() => {
@@ -268,17 +273,36 @@ function DM() {
                       setBoosterSel(next);
                     } else setSelBooster(b);
                   }}
-                  className="w-full ornate-card p-3 flex justify-between items-center text-left gap-2"
+                  className="w-full ornate-card p-3 flex justify-between items-start text-left gap-2"
                   style={{ borderColor: checked ? "var(--gold)" : RARITY_COLOR[b.rarity as Rarity] }}>
                   {boosterSelectMode && (
-                    <input type="checkbox" readOnly checked={checked} className="accent-[var(--gold)]" />
+                    <input type="checkbox" readOnly checked={checked} className="accent-[var(--gold)] mt-1" />
                   )}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="font-display" style={{ color: RARITY_COLOR[b.rarity as Rarity] }}>🃏 {b.name}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {t("dm.usesOwner", { uses: b.max_uses, max: b.max_uses, owner: holders > 0 ? `👥 ${holders}` : "🏛️ Vault" })}
+                      {b.max_uses}/{b.max_uses} {t("boosters.uses").toLowerCase()}
                     </p>
-
+                    {holders.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {holders.map(h => (
+                          <span
+                            key={h.id}
+                            onClick={(e) => { e.stopPropagation(); setOpenChar(h.id); }}
+                            className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded border font-display cursor-pointer hover:opacity-80"
+                            style={{
+                              borderColor: h.color,
+                              color: h.color,
+                              background: `color-mix(in oklab, ${h.color} 15%, transparent)`,
+                            }}
+                          >
+                            {h.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground mt-1">🏛️ Vault</p>
+                    )}
                   </div>
                   <RarityBadge rarity={b.rarity as Rarity} />
                 </button>
