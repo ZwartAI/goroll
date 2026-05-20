@@ -35,6 +35,7 @@ function DM() {
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [boosters, setBoosters] = useState<Booster[]>([]);
+  const [holderCounts, setHolderCounts] = useState<Map<string, number>>(new Map());
   const [boosterSearch, setBoosterSearch] = useState("");
   const [selBooster, setSelBooster] = useState<Booster | null>(null);
   const [editBooster, setEditBooster] = useState<Booster | null>(null);
@@ -49,13 +50,25 @@ function DM() {
   useEffect(() => {
     if (!campaign) return;
     const reload = async () => {
-      const { data } = await (supabase as any).from("boosters")
-        .select("*").eq("campaign_id", campaign.id).order("created_at");
-      setBoosters((data || []) as Booster[]);
+      const [{ data: bs }, { data: assigns }] = await Promise.all([
+        (supabase as any).from("boosters")
+          .select("*").eq("campaign_id", campaign.id)
+          .is("owner_character_id", null)
+          .order("created_at"),
+        (supabase as any).from("booster_assignments")
+          .select("booster_id").eq("campaign_id", campaign.id),
+      ]);
+      setBoosters((bs || []) as Booster[]);
+      const counts = new Map<string, number>();
+      for (const a of (assigns || []) as any[]) {
+        counts.set(a.booster_id, (counts.get(a.booster_id) || 0) + 1);
+      }
+      setHolderCounts(counts);
     };
     reload();
     const ch = (supabase as any).channel(`boosters:dm:${campaign.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "boosters", filter: `campaign_id=eq.${campaign.id}` }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "booster_assignments", filter: `campaign_id=eq.${campaign.id}` }, reload)
       .subscribe();
     return () => { (supabase as any).removeChannel(ch); };
   }, [campaign?.id]);
