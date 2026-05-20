@@ -20,6 +20,7 @@ export type CharacterSkill = {
   is_unlocked: boolean;
   source: string;
   order_index: number;
+  icon_key?: string | null;
 };
 
 /** Best-effort split of "Alcance / Objetivos" combined strings. */
@@ -107,7 +108,7 @@ export function SkillCard({ s, compact, locked, onClick, expandable, i18n }: Pro
         onClick={() => (isExpandable ? setOpen(o => !o) : onClick?.())}
         className="w-full text-left p-3 flex gap-3 items-start"
       >
-        <SkillIconMedallion type={s.type} rarity={s.rarity} size="md" locked={locked} />
+        <SkillIconMedallion type={s.type} rarity={s.rarity} size="md" locked={locked} iconKey={s.icon_key ?? null} />
 
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-1.5 flex-wrap">

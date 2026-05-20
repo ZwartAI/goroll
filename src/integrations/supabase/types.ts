@@ -366,6 +366,7 @@ export type Database = {
           created_at: string
           dice: string | null
           effect: string | null
+          icon_key: string | null
           id: string
           imported_row_index: number | null
           is_unlocked: boolean
@@ -387,6 +388,7 @@ export type Database = {
           created_at?: string
           dice?: string | null
           effect?: string | null
+          icon_key?: string | null
           id?: string
           imported_row_index?: number | null
           is_unlocked?: boolean
@@ -408,6 +410,7 @@ export type Database = {
           created_at?: string
           dice?: string | null
           effect?: string | null
+          icon_key?: string | null
           id?: string
           imported_row_index?: number | null
           is_unlocked?: boolean

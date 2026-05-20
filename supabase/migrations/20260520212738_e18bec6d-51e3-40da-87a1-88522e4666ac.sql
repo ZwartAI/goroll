@@ -1,0 +1,1 @@
+ALTER TABLE public.character_skills ADD COLUMN IF NOT EXISTS icon_key text;
