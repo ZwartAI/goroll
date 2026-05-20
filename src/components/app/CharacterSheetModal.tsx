@@ -36,12 +36,24 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
       supabase.from("characters").select("*").eq("id", characterId).single(),
       supabase.from("items").select("*").eq("owner_character_id", characterId),
       supabase.from("achievements").select("*").eq("character_id", characterId),
-      (supabase as any).from("boosters").select("*").eq("owner_character_id", characterId),
+      (supabase as any).from("booster_assignments")
+        .select("id, uses, max_uses, booster:boosters(*)")
+        .eq("character_id", characterId),
     ]);
     if (a.data) setCharacter(a.data as Character);
     setItems((b.data || []) as Item[]);
     setAchievements((c.data || []) as any);
-    setBoosters((d.data || []) as Booster[]);
+    const list: Booster[] = ((d.data || []) as any[])
+      .filter((row: any) => row.booster)
+      .map((row: any) => ({
+        ...row.booster,
+        uses: row.uses,
+        max_uses: row.max_uses,
+        owner_character_id: characterId,
+        in_dm_vault: false,
+        _assignmentId: row.id,
+      }));
+    setBoosters(list);
   }
   useEffect(() => { reload(); /* eslint-disable-next-line */ }, [characterId]);
 
@@ -51,6 +63,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
     const ch = (supabase as any).channel(`sheet:${characterId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "characters", filter: `id=eq.${characterId}` }, () => reload())
       .on("postgres_changes", { event: "*", schema: "public", table: "items", filter: `campaign_id=eq.${campaignId}` }, () => reload())
+      .on("postgres_changes", { event: "*", schema: "public", table: "booster_assignments", filter: `campaign_id=eq.${campaignId}` }, () => reload())
       .on("postgres_changes", { event: "*", schema: "public", table: "boosters", filter: `campaign_id=eq.${campaignId}` }, () => reload())
       .on("postgres_changes", { event: "*", schema: "public", table: "achievements", filter: `character_id=eq.${characterId}` }, () => reload())
       .subscribe();
