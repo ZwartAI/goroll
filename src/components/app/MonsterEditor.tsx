@@ -37,8 +37,8 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
   const isEdit = !!editing;
 
   const [name, setName] = useState(editing?.name || "");
-  const [tier, setTier] = useState(editing?.tier || "normal");
-  const [role, setRole] = useState(editing?.role || "damage");
+  const [tier, setTier] = useState<string>(editing?.tier || "normal");
+  const [role, setRole] = useState<string>(editing?.role || "damage");
   const [biome, setBiome] = useState(editing?.biome || "");
   const [icon, setIcon] = useState(editing?.icon_key || "skull");
   const [color, setColor] = useState(editing?.color || ENEMY_COLORS[0]);
