@@ -226,74 +226,328 @@ function ImportSection({ campaignId, target, dm, existingCount, onDone }: {
   );
 }
 
-function ManualCreate({ campaignId, target, dm, existingCount, unlockedCount, onDone }: {
-  campaignId: string; target: Character; dm: { id: string; name: string; color: string }; existingCount: number; unlockedCount: number; onDone: () => void;
+function ManualCreate({ campaignId, target, dm, players, onDone }: {
+  campaignId: string; target: Character; dm: { id: string; name: string; color: string }; players: Character[]; onDone: () => void;
 }) {
   const { t } = useT();
-  const [name, setName] = useState("");
-  const [rarity, setRarity] = useState<Rarity>("white");
-  const [effect, setEffect] = useState("");
-  const [type, setType] = useState("");
-  const [unlock, setUnlock] = useState(true);
   const [open, setOpen] = useState(false);
 
-  async function create() {
-    if (!name.trim()) return;
-    const key = skillNameKey(name);
-    const { data: existing } = await (supabase as any).from("character_skills")
-      .select("id").eq("character_id", target.id).eq("name_key", key).maybeSingle();
-    if (existing) { toast.error(t("skills.duplicateName")); return; }
-    const { error } = await (supabase as any).from("character_skills").insert({
-      campaign_id: campaignId,
-      character_id: target.id,
-      name: name.trim(),
-      name_key: key,
-      rarity,
-      type: type.trim() || null,
-      effect: effect.trim() || null,
-      cost: SKILL_RARITY_COST[rarity],
-      is_unlocked: unlock,
-      source: "dm_created",
-      order_index: existingCount + 1,
-      unlocked_at: unlock ? new Date().toISOString() : null,
-    });
-    if (error) { toast.error(error.message); return; }
-    await pushLog(campaignId, [
-      { t: "char", v: dm.name, color: dm.color, id: dm.id },
-      { t: "text", v: t("skills.logCreated") },
-      { t: "char", v: target.name, color: target.color, id: target.id },
-      { t: "text", v: `: ✨ ${name.trim()}` },
-    ]);
-    setName(""); setEffect(""); setType("");
-    onDone();
+  // Identity
+  const [name, setName] = useState("");
+  const [rarity, setRarity] = useState<Rarity>("white");
+  const [type, setType] = useState("");
+
+  // Mechanics
+  const [effect, setEffect] = useState("");
+  const [dice, setDice] = useState("");
+  const [range, setRange] = useState("");
+  const [targets, setTargets] = useState("");
+
+  // Visual
+  const [visualBrief, setVisualBrief] = useState("");
+  const [iconKey, setIconKey] = useState<string | null>(null);
+
+  // Assignment
+  const [mode, setMode] = useState<"unlock" | "acquirable">("unlock");
+  const [targetIds, setTargetIds] = useState<Set<string>>(new Set([target.id]));
+  const [submitting, setSubmitting] = useState(false);
+
+  // Keep current target preselected when DM switches character
+  useEffect(() => {
+    setTargetIds(prev => (prev.size === 0 ? new Set([target.id]) : prev));
+    // eslint-disable-next-line
+  }, [target.id]);
+
+  const QUICK_TYPES = [
+    "typeOpts.healing","typeOpts.groupHealing","typeOpts.offensiveImpact",
+    "typeOpts.protection","typeOpts.shieldSupport","typeOpts.cleanseSupport",
+    "typeOpts.control","typeOpts.debuff","typeOpts.mobility",
+    "typeOpts.terrain","typeOpts.summon","typeOpts.utility","typeOpts.role",
+  ];
+
+  const NUMERIC_HINT = /(daño|dano|damage|cura|curaci|heal|escudo|shield|reduc|control|ronda|round|duraci|duration|desventaja|ventaja|advant|disadv)/i;
+  const showDiceWarning = !!effect.trim() && !dice.trim() && NUMERIC_HINT.test(effect);
+
+  function toggleTarget(id: string) {
+    const next = new Set(targetIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setTargetIds(next);
   }
 
+  function buildRangeTargets(): string | null {
+    const r = range.trim(); const o = targets.trim();
+    if (r && o) return `${r} / ${o}`;
+    return r || o || null;
+  }
+
+  function reset() {
+    setName(""); setEffect(""); setType(""); setDice("");
+    setRange(""); setTargets(""); setVisualBrief(""); setIconKey(null);
+    setMode("unlock"); setRarity("white");
+  }
+
+  async function create() {
+    if (!name.trim()) { toast.error(t("skills.namePh")); return; }
+    if (targetIds.size === 0) { toast.error(t("skills.needTargets")); return; }
+    setSubmitting(true);
+    try {
+      const key = skillNameKey(name);
+      const cost = SKILL_RARITY_COST[rarity];
+      const unlock = mode === "unlock";
+      const rt = buildRangeTargets();
+      const baseFields = {
+        name: name.trim(),
+        name_key: key,
+        rarity,
+        type: type.trim() || null,
+        effect: effect.trim() || null,
+        dice: dice.trim() || null,
+        range_targets: rt,
+        visual_brief: visualBrief.trim() || null,
+        icon_key: iconKey,
+        cost,
+      };
+      const chosen = players.filter(p => targetIds.has(p.id));
+
+      const groups: { unlocked: typeof chosen; acquirable: typeof chosen } =
+        { unlocked: [], acquirable: [] };
+
+      for (const ch of chosen) {
+        // Dedup: check existing
+        const { data: existing } = await (supabase as any).from("character_skills")
+          .select("id, is_unlocked, order_index")
+          .eq("character_id", ch.id).eq("name_key", key).maybeSingle();
+        if (existing) {
+          // Update descriptive fields, never re-lock
+          const patch: any = { ...baseFields };
+          if (existing.is_unlocked) {
+            delete patch.is_unlocked;
+          } else if (unlock) {
+            patch.is_unlocked = true;
+            patch.unlocked_at = new Date().toISOString();
+          }
+          await (supabase as any).from("character_skills").update(patch).eq("id", existing.id);
+          if (unlock || existing.is_unlocked) groups.unlocked.push(ch); else groups.acquirable.push(ch);
+        } else {
+          // Compute next order_index for this character
+          const { data: list } = await (supabase as any).from("character_skills")
+            .select("order_index").eq("character_id", ch.id);
+          const maxOrder = ((list || []) as any[]).reduce((m, r) => Math.max(m, r.order_index ?? 0), 0);
+          const { error } = await (supabase as any).from("character_skills").insert({
+            campaign_id: campaignId,
+            character_id: ch.id,
+            ...baseFields,
+            is_unlocked: unlock,
+            source: "dm_created",
+            order_index: maxOrder + 1,
+            unlocked_at: unlock ? new Date().toISOString() : null,
+          });
+          if (error) { toast.error(error.message); continue; }
+          (unlock ? groups.unlocked : groups.acquirable).push(ch);
+        }
+      }
+
+      // Log: one entry per mode bucket
+      async function logFor(bucket: typeof chosen, msgKey: string) {
+        if (!bucket.length) return;
+        const segs: any[] = [
+          { t: "char", v: dm.name, color: dm.color, id: dm.id },
+          { t: "text", v: ` ${t(msgKey)} ` },
+        ];
+        bucket.forEach((p, i) => {
+          if (i > 0) segs.push({ t: "text", v: i === bucket.length - 1 ? " y " : ", " });
+          segs.push({ t: "char", v: p.name, color: p.color, id: p.id });
+        });
+        segs.push({ t: "text", v: `: ✨ ${name.trim()}` });
+        await pushLog(campaignId, segs);
+      }
+      await logFor(groups.unlocked, "skills.logCreatedFor");
+      await logFor(groups.acquirable, "skills.logCreatedAcquirableFor");
+
+      toast.success(t("skills.createdOk"));
+      reset();
+      onDone();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Section wrapper
+  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="space-y-2">
+      <p className="text-[10px] uppercase tracking-widest text-[var(--gold)]/80 border-b border-border/60 pb-1">{title}</p>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+
   return (
-    <div className="ornate-card p-3 space-y-2">
+    <div className="ornate-card p-3 space-y-2" style={{ borderColor: "color-mix(in oklab, var(--gold) 55%, var(--rarity-purple))" }}>
       <button onClick={() => setOpen(!open)} className="w-full font-display text-sm uppercase tracking-widest text-[var(--rarity-purple)] flex items-center justify-between">
-        <span className="flex items-center gap-1"><Plus size={14} /> {t("skills.createManual")}</span>
+        <span className="flex items-center gap-1"><Plus size={14} /> {t("skills.createManualTitle")}</span>
         <span className="text-xs text-muted-foreground">{open ? "−" : "+"}</span>
       </button>
+
       {open && (
-        <div className="space-y-2">
-          <input className="w-full bg-input border border-border rounded px-2 py-2 text-sm" placeholder={t("skills.namePh")} value={name} onChange={e => setName(e.target.value)} />
-          <div className="grid grid-cols-2 gap-2">
-            <select className="bg-input border border-border rounded px-2 py-2 text-sm" value={rarity} onChange={e => setRarity(e.target.value as Rarity)}
-              style={{ color: RARITY_COLOR[rarity] }}>
-              {(["white","blue","purple","gold"] as Rarity[]).map(r => (
-                <option key={r} value={r} style={{ color: "black" }}>{t(`rarities.${r}`)} (Cost {SKILL_RARITY_COST[r]})</option>
-              ))}
-            </select>
-            <input className="bg-input border border-border rounded px-2 py-2 text-sm" placeholder={t("skills.typePh")} value={type} onChange={e => setType(e.target.value)} />
+        <div className="space-y-4">
+          {/* Live preview header */}
+          <div className="flex items-center gap-3 p-2 rounded-lg" style={{ background: "color-mix(in oklab, var(--gold) 6%, transparent)", border: "1px solid color-mix(in oklab, var(--gold) 30%, transparent)" }}>
+            <SkillIconMedallion type={type || null} rarity={rarity} iconKey={iconKey} size="lg" />
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-base truncate" style={{ color: RARITY_COLOR[rarity] }}>
+                {name.trim() || t("skills.namePh")}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <RarityBadge rarity={rarity} />
+                <span className="text-[10px] text-muted-foreground">{type.trim() || t("skills.typeOpts.utility")}</span>
+                <span className="ml-auto text-[10px] font-display text-[var(--gold)]">{SKILL_RARITY_COST[rarity]} {t("skills.sp")}</span>
+              </div>
+            </div>
           </div>
-          <textarea className="w-full bg-input border border-border rounded px-2 py-2 text-sm" rows={3}
-            placeholder={t("skills.effectPh")} value={effect} onChange={e => setEffect(e.target.value)} />
-          <label className="flex items-center gap-2 text-xs">
-            <input type="checkbox" checked={unlock} onChange={e => setUnlock(e.target.checked)} className="accent-[var(--gold)]" />
-            {t("skills.unlockNow")} ({unlockedCount}/{FREE_UNLOCK_THRESHOLD} {t("skills.freeUnlocks")})
-          </label>
-          <button className="btn-fantasy w-full" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={create}>
-            {t("skills.create")}
+
+          {/* 1. Identity */}
+          <Section title={t("skills.sectionIdentity")}>
+            <input className="w-full bg-input border border-border rounded px-2 py-2 text-sm" placeholder={t("skills.namePh")} value={name} onChange={e => setName(e.target.value)} />
+            <div className="grid grid-cols-2 gap-2">
+              {(["white","blue","purple","gold"] as Rarity[]).map(r => (
+                <button key={r} type="button" onClick={() => setRarity(r)}
+                  className="rounded px-2 py-1.5 text-xs font-display flex items-center justify-between gap-1"
+                  style={{
+                    border: `1.5px solid ${RARITY_COLOR[r]}`,
+                    background: rarity === r ? `color-mix(in oklab, ${RARITY_COLOR[r]} 25%, transparent)` : "transparent",
+                    color: RARITY_COLOR[r],
+                  }}>
+                  <span>{t(`rarities.${r}`)}</span>
+                  <span className="opacity-80">{SKILL_RARITY_COST[r]} SP</span>
+                </button>
+              ))}
+            </div>
+            <input className="w-full bg-input border border-border rounded px-2 py-2 text-sm" placeholder={t("skills.typePh")} value={type} onChange={e => setType(e.target.value)} />
+            <div className="flex flex-wrap gap-1">
+              {QUICK_TYPES.map(k => {
+                const label = t(`skills.${k}`);
+                return (
+                  <button key={k} type="button" onClick={() => setType(label)}
+                    className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground">
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          {/* 2. Mechanics */}
+          <Section title={t("skills.sectionMechanics")}>
+            <textarea className="w-full bg-input border border-border rounded px-2 py-2 text-sm" rows={3}
+              placeholder={t("skills.effectPh")} value={effect} onChange={e => setEffect(e.target.value)} />
+            <div className="flex items-center gap-2">
+              <span className="text-[var(--gold)]"><Dices size={14} /></span>
+              <input className="flex-1 bg-input border border-border rounded px-2 py-2 text-sm" placeholder={t("skills.dicePh")} value={dice} onChange={e => setDice(e.target.value)} />
+            </div>
+            {showDiceWarning && (
+              <p className="text-[10px] text-[var(--rarity-gold)] flex items-center gap-1">
+                <AlertTriangle size={11} /> {t("skills.diceWarning")}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <input className="bg-input border border-border rounded px-2 py-2 text-sm" placeholder={t("skills.rangePh")} value={range} onChange={e => setRange(e.target.value)} />
+              <input className="bg-input border border-border rounded px-2 py-2 text-sm" placeholder={t("skills.targetsPh")} value={targets} onChange={e => setTargets(e.target.value)} />
+            </div>
+          </Section>
+
+          {/* 3. Visual */}
+          <Section title={t("skills.sectionVisual")}>
+            <textarea className="w-full bg-input border border-border rounded px-2 py-2 text-sm" rows={2}
+              placeholder={t("skills.visualBriefPh")} value={visualBrief} onChange={e => setVisualBrief(e.target.value)} />
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{t("skills.iconLabel")}</p>
+              <div className="grid grid-cols-6 gap-1.5">
+                <button type="button" onClick={() => setIconKey(null)}
+                  className="aspect-square rounded flex items-center justify-center text-[8px] text-center px-0.5"
+                  style={{
+                    border: `1.5px solid ${iconKey === null ? RARITY_COLOR[rarity] : "var(--border)"}`,
+                    background: iconKey === null ? `color-mix(in oklab, ${RARITY_COLOR[rarity]} 18%, transparent)` : "transparent",
+                  }}
+                  title={t("skills.iconAuto")}>
+                  <Sparkles size={14} />
+                </button>
+                {SKILL_ICON_OPTIONS.map(opt => {
+                  const I = opt.icon;
+                  const sel = iconKey === opt.key;
+                  return (
+                    <button key={opt.key} type="button" onClick={() => setIconKey(opt.key)}
+                      className="aspect-square rounded flex items-center justify-center"
+                      style={{
+                        border: `1.5px solid ${sel ? RARITY_COLOR[rarity] : "var(--border)"}`,
+                        background: sel ? `color-mix(in oklab, ${RARITY_COLOR[rarity]} 18%, transparent)` : "transparent",
+                      }}
+                      title={t(opt.labelKey)}>
+                      <I size={14} color={sel ? RARITY_COLOR[rarity] : undefined} />
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {iconKey === null ? t("skills.iconAuto") : t(SKILL_ICON_OPTIONS.find(o => o.key === iconKey)!.labelKey)}
+              </p>
+            </div>
+          </Section>
+
+          {/* 4. Assignment */}
+          <Section title={t("skills.sectionAssignment")}>
+            <div className="grid grid-cols-2 gap-2">
+              {(["unlock","acquirable"] as const).map(m => (
+                <button key={m} type="button" onClick={() => setMode(m)}
+                  className="rounded p-2 text-left"
+                  style={{
+                    border: `1.5px solid ${mode === m ? "var(--gold)" : "var(--border)"}`,
+                    background: mode === m ? "color-mix(in oklab, var(--gold) 12%, transparent)" : "transparent",
+                  }}>
+                  <p className="text-xs font-display" style={{ color: mode === m ? "var(--gold)" : undefined }}>
+                    {t(m === "unlock" ? "skills.modeUnlock" : "skills.modeAcquirable")}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {t(m === "unlock" ? "skills.modeUnlockHint" : "skills.modeAcquirableHint")}
+                  </p>
+                </button>
+              ))}
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{t("skills.targetsTitle")}</p>
+              <p className="text-[10px] text-muted-foreground mb-1.5">{t("skills.targetsHint")}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {players.map(p => {
+                  const sel = targetIds.has(p.id);
+                  return (
+                    <button key={p.id} type="button" onClick={() => toggleTarget(p.id)}
+                      className="text-xs px-2 py-1 rounded flex items-center gap-1.5"
+                      style={{
+                        border: `1.5px solid ${sel ? p.color : "var(--border)"}`,
+                        background: sel ? `color-mix(in oklab, ${p.color} 18%, transparent)` : "transparent",
+                        color: sel ? p.color : undefined,
+                      }}>
+                      <span className="inline-block w-2 h-2 rounded-full" style={{ background: p.color }} />
+                      {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </Section>
+
+          {/* 5. Confirmation */}
+          <div className="rounded-lg p-2 flex items-center justify-between text-xs"
+            style={{ background: "color-mix(in oklab, var(--gold) 6%, transparent)", border: "1px solid color-mix(in oklab, var(--gold) 25%, transparent)" }}>
+            <span className="text-muted-foreground">
+              {t("skills.costPreview")}: <span className="font-display text-[var(--gold)]">
+                {mode === "acquirable" ? `${SKILL_RARITY_COST[rarity]} SP` : t("skills.freeUnlocks")}
+              </span>
+              {" · "}
+              {targetIds.size} {targetIds.size === 1 ? "👤" : "👥"}
+            </span>
+          </div>
+          <button className="btn-fantasy w-full" disabled={submitting}
+            style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={create}>
+            {submitting ? t("common.saving") : t("skills.createSkill")}
           </button>
         </div>
       )}
