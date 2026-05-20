@@ -71,6 +71,9 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(async () => {
+    const s = getSession();
+    if (!s) { nav({ to: "/" }); return; }
+    const [c1, c2, c3, c4, c5, c6] = await Promise.all([
       supabase.from("campaigns").select("*").eq("id", s.campaignId).single(),
       s.characterId ? supabase.from("characters").select("*").eq("id", s.characterId).single() : Promise.resolve({ data: null }),
       supabase.from("characters").select("*").eq("campaign_id", s.campaignId),
@@ -91,8 +94,9 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
       ? await supabase.from("achievements").select("*").in("character_id", charIds)
       : { data: [] as Achievement[] };
     setAchievements((ach || []) as Achievement[]);
+    await loadCombat(s.campaignId);
     setLoading(false);
-  }, [nav]);
+  }, [nav, loadCombat]);
 
   useEffect(() => { load(); }, [load]);
 
