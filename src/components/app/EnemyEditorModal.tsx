@@ -4,7 +4,10 @@ import { toast } from "sonner";
 import { addEnemies, updateEnemy, type CombatEncounter, type CombatParticipant, type EnemyDraft, type InsertPosition } from "@/lib/combat";
 import { EnemyIconPicker, EnemyColorPicker, ENEMY_COLORS, ENEMY_ASSETS } from "@/components/app/EnemyIconPicker";
 import { NumberInput } from "@/components/app/NumberInput";
-import { PRIMARY_TIERS, TIER_VISUALS } from "@/lib/bestiary";
+import { PRIMARY_TIERS, TIER_VISUALS, ROLE_OPTIONS, BIOME_PRESETS } from "@/lib/bestiary";
+
+const CUSTOM_BIOME = "__custom__";
+
 
 type Props = {
   encounter: CombatEncounter;
