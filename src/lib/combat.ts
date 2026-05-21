@@ -73,14 +73,40 @@ export function isEnemy(p: CombatParticipant): boolean {
 }
 
 
+export type CombatTurnPin = {
+  id: string;
+  encounter_id: string;
+  campaign_id: string;
+  linked_participant_id: string;
+  label: string | null;
+  order_index: number;
+  initiative: number;
+  is_active: boolean;
+  created_at: string;
+};
+
 export type TurnBlock =
   | { kind: "solo"; key: string; initiative: number; participant: CombatParticipant }
-  | { kind: "group"; key: string; initiative: number; group: CombatTurnGroup; members: CombatParticipant[] };
+  | { kind: "group"; key: string; initiative: number; group: CombatTurnGroup; members: CombatParticipant[] }
+  | { kind: "pin"; key: string; initiative: number; pin: CombatTurnPin; linked: CombatParticipant };
 
-/** Build the ordered turn blocks (high → low initiative). */
+
+function blockOrder(b: TurnBlock): number {
+  if (b.kind === "solo") return b.participant.order_index;
+  if (b.kind === "group") return Math.min(...b.members.map(m => m.order_index));
+  return b.pin.order_index;
+}
+function blockCreated(b: TurnBlock): string {
+  if (b.kind === "solo") return b.participant.created_at;
+  if (b.kind === "group") return b.group.created_at;
+  return b.pin.created_at;
+}
+
+/** Build the ordered turn blocks (high → low initiative). Pins extend the order without HP. */
 export function buildOrderedTurns(
   participants: CombatParticipant[],
   groups: CombatTurnGroup[],
+  pins: CombatTurnPin[] = [],
 ): TurnBlock[] {
   const groupById = new Map(groups.map(g => [g.id, g]));
   const byGroup = new Map<string, CombatParticipant[]>();
@@ -103,14 +129,18 @@ export function buildOrderedTurns(
     members.sort((a, b) => (b.is_leader ? 1 : 0) - (a.is_leader ? 1 : 0) || a.created_at.localeCompare(b.created_at));
     blocks.push({ kind: "group", key: `g:${gid}`, initiative: g.group_initiative, group: g, members });
   }
+  const partById = new Map(participants.map(p => [p.id, p]));
+  for (const pin of pins) {
+    const linked = partById.get(pin.linked_participant_id);
+    if (!linked) continue;
+    blocks.push({ kind: "pin", key: `p:${pin.id}`, initiative: pin.initiative, pin, linked });
+  }
   blocks.sort((a, b) => {
     if (b.initiative !== a.initiative) return b.initiative - a.initiative;
-    const ao = a.kind === "solo" ? a.participant.order_index : Math.min(...a.members.map(m => m.order_index));
-    const bo = b.kind === "solo" ? b.participant.order_index : Math.min(...b.members.map(m => m.order_index));
+    const ao = blockOrder(a);
+    const bo = blockOrder(b);
     if (ao !== bo) return ao - bo;
-    const ak = a.kind === "solo" ? a.participant.created_at : a.group.created_at;
-    const bk = b.kind === "solo" ? b.participant.created_at : b.group.created_at;
-    return ak.localeCompare(bk);
+    return blockCreated(a).localeCompare(blockCreated(b));
   });
   return blocks;
 }
@@ -125,8 +155,10 @@ export function activeBlock(encounter: CombatEncounter | null, blocks: TurnBlock
 export function blockContainsCharacter(block: TurnBlock | null, characterId: string): boolean {
   if (!block) return false;
   if (block.kind === "solo") return block.participant.character_id === characterId;
-  return block.members.some(m => m.character_id === characterId);
+  if (block.kind === "group") return block.members.some(m => m.character_id === characterId);
+  return false;
 }
+
 
 export function participantForCharacter(
   participants: CombatParticipant[],
@@ -198,13 +230,16 @@ export async function startCombat(
   for (const b of blocks) {
     if (b.kind === "solo") {
       await supabase.from("combat_participants" as any).update({ order_index: order, has_ended_turn: false }).eq("id", b.participant.id);
-    } else {
+    } else if (b.kind === "group") {
       for (const m of b.members) {
         await supabase.from("combat_participants" as any).update({ order_index: order, has_ended_turn: false }).eq("id", m.id);
       }
+    } else {
+      await (supabase as any).from("combat_turn_pins").update({ order_index: order }).eq("id", b.pin.id);
     }
     order++;
   }
+
   const { error } = await supabase
     .from("combat_encounters" as any)
     .update({ status: "active", current_turn_index: 0, started_at: new Date().toISOString() })
@@ -423,8 +458,8 @@ export async function passTurn(
   if (!block) return { ok: false, error: "no_block" };
   if (!blockContainsCharacter(block, character.id)) return { ok: false, error: "not_your_turn" };
 
-  const ids = block.kind === "solo" ? [block.participant.id] : block.members.map(m => m.id);
-  await supabase.from("combat_participants" as any).update({ has_ended_turn: true }).in("id", ids);
+  const ids = block.kind === "solo" ? [block.participant.id] : block.kind === "group" ? block.members.map(m => m.id) : [];
+  if (ids.length) await supabase.from("combat_participants" as any).update({ has_ended_turn: true }).in("id", ids);
 
   const nextIndex = encounter.current_turn_index + 1;
   const wrapped = nextIndex >= blocks.length;
@@ -452,7 +487,7 @@ export async function passTurn(
       { t: "char", v: character.name, color: character.color, id: character.id },
       { t: "text", v: " terminó su turno." },
     ]);
-  } else {
+  } else if (block.kind === "group") {
     const leader = block.members.find(m => m.is_leader);
     await pushLog(encounter.campaign_id, [
       { t: "text", v: "El Enlace de " },
@@ -460,6 +495,7 @@ export async function passTurn(
       { t: "text", v: " terminó su turno." },
     ]);
   }
+
   return { ok: true };
 }
 
@@ -716,13 +752,16 @@ export async function moveParticipant(
   for (const b of reordered) {
     if (b.kind === "solo") {
       await (supabase as any).from("combat_participants").update({ order_index: order }).eq("id", b.participant.id);
-    } else {
+    } else if (b.kind === "group") {
       for (const m of b.members) {
         await (supabase as any).from("combat_participants").update({ order_index: order }).eq("id", m.id);
       }
+    } else {
+      await (supabase as any).from("combat_turn_pins").update({ order_index: order }).eq("id", b.pin.id);
     }
     order++;
   }
+
 
   if (encounter.status === "active") {
     // Keep current turn pointing at the same block.
@@ -762,13 +801,16 @@ export async function reorderParticipantTo(
   for (const b of reordered) {
     if (b.kind === "solo") {
       await (supabase as any).from("combat_participants").update({ order_index: order }).eq("id", b.participant.id);
-    } else {
+    } else if (b.kind === "group") {
       for (const m of b.members) {
         await (supabase as any).from("combat_participants").update({ order_index: order }).eq("id", m.id);
       }
+    } else {
+      await (supabase as any).from("combat_turn_pins").update({ order_index: order }).eq("id", b.pin.id);
     }
     order++;
   }
+
 
   if (encounter.status === "active") {
     let newCurrent = encounter.current_turn_index;

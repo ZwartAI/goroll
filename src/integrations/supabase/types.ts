@@ -890,6 +890,42 @@ export type Database = {
           },
         ]
       }
+      combat_turn_pins: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          encounter_id: string
+          id: string
+          initiative: number
+          is_active: boolean
+          label: string | null
+          linked_participant_id: string
+          order_index: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          encounter_id: string
+          id?: string
+          initiative?: number
+          is_active?: boolean
+          label?: string | null
+          linked_participant_id: string
+          order_index?: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          encounter_id?: string
+          id?: string
+          initiative?: number
+          is_active?: boolean
+          label?: string | null
+          linked_participant_id?: string
+          order_index?: number
+        }
+        Relationships: []
+      }
       condition_effects_catalog: {
         Row: {
           campaign_id: string | null

@@ -64,7 +64,10 @@ function TurnRow({
   const baseColor =
     block.kind === "solo"
       ? (block.participant.enemy_color || block.participant.color || "var(--gold)")
-      : (block.group.color || "var(--gold)");
+      : block.kind === "group"
+      ? (block.group.color || "var(--gold)")
+      : (block.linked.enemy_color || "var(--gold)");
+
 
   if (block.kind === "solo" && isEnemy(block.participant)) {
     const p = block.participant;
@@ -126,6 +129,32 @@ function TurnRow({
     );
   }
 
+  if (block.kind === "pin") {
+    const l = block.linked;
+    const inactive = l.is_defeated;
+    return (
+      <div className="ornate-card !p-2 flex items-center gap-2 transition-shadow"
+        style={{
+          ...containerStyle,
+          opacity: inactive ? 0.5 : 1,
+          borderStyle: "dashed",
+        }}>
+        <div className="w-7 h-7 rounded-full border-2 flex-shrink-0 flex items-center justify-center bg-card overflow-hidden"
+          style={{ borderColor: baseColor, color: baseColor }}>
+          <EnemyIcon name={l.enemy_icon} size={14} fill={!!getEnemyAssetUrl(l.enemy_icon)} assetScale={getEnemyAssetUrl(l.enemy_icon) ? 4 : 1} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-xs truncate" style={{ color: baseColor }}>
+            {block.pin.label || `${enemyLabel}: ${l.display_name}`}
+          </p>
+          <p className="text-[9px] uppercase tracking-widest text-muted-foreground">{activeEnemyLabel}</p>
+        </div>
+        <InitiativeChip n={block.pin.initiative} />
+        {isActive && !inactive && <ActiveBadge label={activeEnemyLabel} tone="enemy" />}
+      </div>
+    );
+  }
+
   return (
     <div className="ornate-card !p-2 transition-shadow" style={containerStyle}>
       <div className="flex items-center justify-between mb-1.5">
@@ -154,6 +183,7 @@ function TurnRow({
     </div>
   );
 }
+
 
 function Avatar({ p, small, onClick }: { p: CombatParticipant; small?: boolean; onClick?: () => void }) {
   const size = small ? "w-7 h-7" : "w-10 h-10";

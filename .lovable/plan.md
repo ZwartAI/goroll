@@ -1,37 +1,86 @@
-## Objetivo
+# Rediseño Vista Combate DM
 
-En el Escenario (visible en /campaign/dm, /campaign/profile y /campaign/spectator), cambiar el retrato redondo de cada `PlayerCard` por un retrato cuadrado, y hacer que tocar específicamente el área del retrato abra el visor de imagen de cuerpo completo (`CharacterImageViewer`). Tocar el resto de la tarjeta seguirá abriendo la ficha del personaje como hasta ahora.
+Cambios solo UI/UX + nueva entidad "turn pin". Sin tocar lógica de iniciativa, daño, curación, skills ni bestiario.
 
-## Cambios
+## 1. Exploración previa (antes de implementar)
+Leer para entender estructura actual:
+- `src/routes/campaign.dm.tsx` (zona Escena + bloques Log/Combat)
+- `src/components/app/CombatDMPanel.tsx`
+- `src/components/app/CombatList.tsx` (tarjetas enemigo + drag&drop actual)
+- `src/components/app/EnemyManagerDM.tsx`
+- `src/lib/combat.ts` (funciones turn shift, addEnemies, etc.)
+- `src/lib/locales/{es,en}.ts`
 
-### 1. `src/components/app/Escenario.tsx` — `PlayerCard`
-- Reemplazar el contenedor del retrato:
-  - De `rounded-full w-14 h-14` (círculo) → `aspect-square w-16 rounded-md` (cuadrado, esquinas suaves coherentes con `ornate-card`).
-  - Mantener borde de color del personaje, indicador online y badge de nivel; reubicarlos sobre el cuadrado.
-- Añadir prop `onOpenImage?: (id: string) => void`.
-- Envolver el bloque del retrato en un `<button>` interno con `onClick={(e) => { e.stopPropagation(); onOpenImage?.(c.id); }}` para que el tap del retrato no dispare el `onClick` exterior de la tarjeta.
-- El `<button>` exterior de la tarjeta sigue ejecutando `onClick` (abrir ficha).
+## 2. Eliminar duplicación Log/Combat ↔ Combat inferior
+- En el bloque superior del DM (Escena), quitar la pestaña/tab "Combat" que repite rounds/turnos/lista.
+- Mantener **solo Log** arriba.
+- El bloque inferior `CombatDMPanel` queda como única zona de gestión: Round, Turno activo, Orden, Añadir enemigo, Bestiario, Active Links, enemigos.
+- Si la pestaña superior tenía controles únicos, migrarlos al panel inferior.
 
-### 2. Propagar `onOpenImage` desde `Escenario` hacia consumidores
-- Añadir prop opcional `onOpenImage?: (id: string) => void` al componente `Escenario` y pasarlo al `PlayerCard`.
-- Si no se provee, hacer fallback a `onOpenChar` (comportamiento actual: abrir ficha) para no romper otras vistas.
+## 3. Drag & drop: mover al orden de turnos
+- Quitar DnD de la lista interna de enemigos en `CombatList`/`EnemyManagerDM`.
+- Activar DnD en la **representación del orden de combate** (turn order list dentro de `CombatDMPanel`): permite reordenar jugadores, enlaces, enemigos y pines.
+- Usar `@dnd-kit/core` + `sortable` (ya en el proyecto si existe; si no, instalar).
+- Al soltar: recalcular `order_index` de `combat_participants` + `combat_turn_pins`; ajustar `current_turn_index` para no romper el turno activo (mantener el id del participante activo, recalcular su nuevo índice).
 
-### 3. `src/routes/campaign.profile.tsx`
-- Pasar `onOpenImage` al `<Escenario>` para que abra `CharacterImageViewer` con el personaje correspondiente.
-- Reutilizar el modal `CharacterImageViewer` ya existente. Se necesita un estado `imgViewerCharId: string | null` (separado del actual `imgViewer` booleano que es para el propio personaje), o reusar el mismo modal cargando el personaje desde `characters.find(...)`.
+## 4. Nueva entidad: Turn Pins (pines de turno)
+**Migración DB** — nueva tabla `combat_turn_pins`:
+- `id uuid pk`
+- `encounter_id uuid`
+- `campaign_id uuid`
+- `linked_participant_id uuid` (apunta a `combat_participants` del enemigo)
+- `label text` (opcional, override)
+- `order_index int`
+- `initiative int`
+- `is_active bool default true`
+- `created_at timestamptz default now()`
+- RLS `public_all` (consistente con resto del proyecto)
 
-### 4. `src/routes/campaign.dm.tsx`
-- Localizar dónde se renderiza `<Escenario>` (tab `escenario`) y pasar `onOpenImage`.
-- Añadir estado `viewerCharId: string | null` y renderizar `<CharacterImageViewer character={characters.find(c => c.id === viewerCharId)} canEdit={false} onClose={() => setViewerCharId(null)} onEditFace={()=>{}} onEditBody={()=>{}} />`.
-- Importar `CharacterImageViewer`.
+Reglas:
+- Sin HP propio. Toda acción (daño/curación/sheet/skills) opera sobre el enemigo enlazado.
+- Si enemigo enlazado `is_defeated = true` → pin se renderiza inactivo (gris, no recibe turno) y se salta en `dmShiftTurn`.
+- Si se elimina enemigo → eliminar pines (cascade lógico desde código).
 
-### 5. `src/routes/campaign.spectator.tsx`
-- Mismo patrón que en DM: estado para id seleccionado, renderizar `CharacterImageViewer` con `canEdit={false}`.
+Funciones en `src/lib/combat.ts`:
+- `addTurnPin(encounterId, linkedParticipantId)`
+- `deleteTurnPin(pinId)`
+- `reorderTurnSequence(items)` — recibe lista mixta (participantes + pines) con nuevo orden.
+- Adaptar `dmShiftTurn` para iterar la secuencia combinada (participantes + pines activos), saltando bloques sin enemigos vivos y pines cuyo enemigo está derrotado. **No cambia la lógica base**, solo extiende el iterable.
 
-### 6. i18n
-- No hay textos nuevos visibles; `CharacterImageViewer` ya usa `useT`. No se introducen strings hardcodeados.
+## 5. Rediseño tarjeta enemigo (DM)
+Nuevo componente `EnemyCombatCardDM` (o refactor en `CombatList.tsx`):
 
-## Notas
+Layout horizontal:
+- Izquierda: círculo grande (≈96px) con asset/icono del enemigo (usar `EnemyIconPicker` con `assetScale` ya existente).
+- Centro: Nombre (h3), línea `DEF X · SPD Y`, barra HP con `HP/HPmax`.
+- Esquina sup. derecha: botón **Open Sheet** (icono pergamino).
+- Si en turno: botón amarillo grande **End Enemy Turn** centrado bajo HP.
+- Dos filas de 3 botones cuadrados compactos:
+  - Fila 1: Damage (rojo, espada) · Heal (verde, cruz) · Open Sheet (dorado, pergamino) *(o mover Sheet aquí en vez de esquina)*
+  - Fila 2: Edit (azul, lápiz) · Clone (gris, copy) · Delete (rojo oscuro, papelera)
+- Eliminar botones -1/-5/+1/+5 HP de la card.
+- Bordes dorados/rojos por tier; fondo `bg-card`/oscuro.
+- Estado derrotado: opacidad reducida + badge.
 
-- `canEdit` en DM/Spectator se pasa como `false` para evitar mostrar los botones “Editar cara/cuerpo” a quien no es dueño del personaje. En `profile`, cuando el id coincide con el personaje propio se usa `canEdit={true}`.
-- El cambio de forma (círculo → cuadrado) es solo presentacional; HP, nivel, indicador de voz y estado online se mantienen.
+## 6. Pin Card
+Componente compacto `TurnPinCard`:
+- Etiqueta horizontal slim, icono pequeño del enemigo, texto "Turno de {nombre}" + badge "Turno adicional".
+- Borde con color del tier del enemigo.
+- Acciones: End Turn (si activo), Delete pin (modal propio).
+- Click → abre sheet del enemigo enlazado.
+
+## 7. Confirmaciones
+Reemplazar `window.confirm` en acciones de enemigo/pin con `ConfirmDialog` existente.
+
+## 8. i18n
+Añadir claves en `es.ts` y `en.ts`:
+`damage, heal, openSheet, edit, clone, delete, endEnemyTurn, enemyTurn, turnPin, extraTurn, enemyTurnOf, addTurnPin, deletePin`.
+
+## 9. Validación
+- Build limpio.
+- Probar: añadir pin, reordenar mediante DnD en turn order, end turn salta pines de enemigos derrotados, daño afecta enemigo enlazado, modal de delete sin window.confirm.
+
+## Notas técnicas
+- Realtime: añadir suscripción a `combat_turn_pins` donde se suscribe a `combat_participants`.
+- Tipos: regenerados automáticamente tras migración.
+- Mantener compatibilidad: encuentros sin pines siguen funcionando idéntico.
