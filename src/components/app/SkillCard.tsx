@@ -171,7 +171,7 @@ export function SkillCard({ s, compact, locked, onClick, expandable, i18n }: Pro
           )}
           {s.visual_brief && (
             <DetailRow icon={<Eye size={13} color={VISUAL_C} />} label={i18n?.visual ?? "Visual"}>
-              <p className="text-xs italic" style={{ color: VISUAL_C }}>{s.visual_brief}</p>
+              <p className="text-xs italic" style={{ color: VISUAL_C }}><StatText>{s.visual_brief}</StatText></p>
             </DetailRow>
           )}
         </div>
