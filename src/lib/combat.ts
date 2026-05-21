@@ -61,6 +61,11 @@ export type CombatParticipant = {
   enemy_template_id: string | null;
   is_enemy_visible: boolean;
   is_defeated: boolean;
+  enemy_role: string | null;
+  enemy_biome: string | null;
+  enemy_base_damage: string | null;
+  enemy_behavior: string | null;
+
 };
 
 export function isEnemy(p: CombatParticipant): boolean {
@@ -470,7 +475,12 @@ export type EnemyDraft = {
   defense: number;
   speed: string;
   notes: string;
+  role?: string | null;
+  biome?: string | null;
+  base_damage?: string | null;
+  behavior?: string | null;
 };
+
 
 export type InsertPosition = "byInitiative" | "afterCurrent" | "end";
 
@@ -546,8 +556,13 @@ export async function addEnemies(
       enemy_instance_number: instance,
       is_enemy_visible: true,
       is_defeated: current_hp <= 0,
+      enemy_role: draft.role || null,
+      enemy_biome: draft.biome || null,
+      enemy_base_damage: draft.base_damage || null,
+      enemy_behavior: draft.behavior || null,
     });
   }
+
   const { error } = await (supabase as any).from("combat_participants").insert(rows);
   if (error) return { ok: false, error: error.message };
 
@@ -579,6 +594,11 @@ export async function updateEnemy(participant: CombatParticipant, patch: Partial
   if (patch.defense !== undefined) upd.enemy_defense = Math.max(0, Math.floor(patch.defense));
   if (patch.speed !== undefined) upd.enemy_speed = patch.speed;
   if (patch.notes !== undefined) upd.enemy_notes = patch.notes;
+  if (patch.role !== undefined) upd.enemy_role = patch.role;
+  if (patch.biome !== undefined) upd.enemy_biome = patch.biome;
+  if (patch.base_damage !== undefined) upd.enemy_base_damage = patch.base_damage;
+  if (patch.behavior !== undefined) upd.enemy_behavior = patch.behavior;
+
   const { error } = await (supabase as any).from("combat_participants").update(upd).eq("id", participant.id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };

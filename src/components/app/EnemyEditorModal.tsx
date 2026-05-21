@@ -4,7 +4,10 @@ import { toast } from "sonner";
 import { addEnemies, updateEnemy, type CombatEncounter, type CombatParticipant, type EnemyDraft, type InsertPosition } from "@/lib/combat";
 import { EnemyIconPicker, EnemyColorPicker, ENEMY_COLORS, ENEMY_ASSETS } from "@/components/app/EnemyIconPicker";
 import { NumberInput } from "@/components/app/NumberInput";
-import { PRIMARY_TIERS, TIER_VISUALS } from "@/lib/bestiary";
+import { PRIMARY_TIERS, TIER_VISUALS, ROLE_OPTIONS, BIOME_PRESETS } from "@/lib/bestiary";
+
+const CUSTOM_BIOME = "__custom__";
+
 
 type Props = {
   encounter: CombatEncounter;
@@ -27,9 +30,17 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
   const [defense, setDefense] = useState(editing?.enemy_defense ?? 0);
   const [speed, setSpeed] = useState(editing?.enemy_speed || "30");
   const [notes, setNotes] = useState(editing?.enemy_notes || "");
+  const [role, setRole] = useState<string>((editing as any)?.enemy_role || "damage");
+  const initialBiome = (editing as any)?.enemy_biome || "";
+  const isPreset = BIOME_PRESETS.includes(initialBiome);
+  const [biomeChoice, setBiomeChoice] = useState<string>(initialBiome ? (isPreset ? initialBiome : CUSTOM_BIOME) : "");
+  const [biomeCustom, setBiomeCustom] = useState(isPreset ? "" : initialBiome);
+  const [baseDamage, setBaseDamage] = useState<string>((editing as any)?.enemy_base_damage || "");
+  const [behavior, setBehavior] = useState<string>((editing as any)?.enemy_behavior || "");
   const [count, setCount] = useState(1);
   const [position, setPosition] = useState<InsertPosition>("byInitiative");
   const [busy, setBusy] = useState(false);
+
 
   const submit = async () => {
     const trimmed = name.trim();
@@ -37,11 +48,17 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
     if (maxHp <= 0) { toast.error(t("combat.errMaxHp")); return; }
     if (initiative < 1 || initiative > 20) { toast.error(t("combat.invalidInitiative")); return; }
     setBusy(true);
+    const biome = biomeChoice === CUSTOM_BIOME ? biomeCustom.trim() : (biomeChoice || "");
     const draft: EnemyDraft = {
       name: trimmed, icon, color, initiative,
       max_hp: maxHp, current_hp: curHp,
       defense, speed, notes,
+      role: role || null,
+      biome: biome || null,
+      base_damage: baseDamage.trim() || null,
+      behavior: behavior.trim() || null,
     };
+
     if (isEdit && editing) {
       const r = await updateEnemy(editing, draft);
       if (!r.ok) toast.error(t("combat.saveError"));
@@ -81,6 +98,32 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
             ))}
           </div>
         </Field>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={t("bestiary.role")}>
+            <select className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm"
+              value={role} onChange={e => setRole(e.target.value)}>
+              {ROLE_OPTIONS.map(r => (
+                <option key={r} value={r}>{t(`bestiary.role_${r}`)}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("bestiary.biome")}>
+            <select className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm"
+              value={biomeChoice} onChange={e => setBiomeChoice(e.target.value)}>
+              <option value="">{t("bestiary.biomeNone")}</option>
+              {BIOME_PRESETS.map(b => <option key={b} value={b}>{b}</option>)}
+              <option value={CUSTOM_BIOME}>{t("bestiary.addAnotherRegion")}</option>
+            </select>
+          </Field>
+        </div>
+        {biomeChoice === CUSTOM_BIOME && (
+          <Field label={t("bestiary.customRegion")}>
+            <input className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm"
+              value={biomeCustom} onChange={e => setBiomeCustom(e.target.value)} maxLength={60} />
+          </Field>
+        )}
+
 
         <Field label={t("bestiary.visualAsset")}>
           <div className="grid grid-cols-6 gap-1.5">
@@ -129,9 +172,20 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
           )}
         </div>
 
+        <Field label={t("bestiary.baseDamage")}>
+          <input className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm"
+            placeholder="1d6 + mod" value={baseDamage} onChange={e => setBaseDamage(e.target.value)} maxLength={60} />
+        </Field>
+
+        <Field label={t("bestiary.behavior")}>
+          <textarea className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm" rows={2}
+            value={behavior} onChange={e => setBehavior(e.target.value)} />
+        </Field>
+
         <Field label={t("combat.notes")}>
           <textarea className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm w-full" rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
         </Field>
+
 
         {!isEdit && (
           <Field label={t("combat.insertPosition")}>

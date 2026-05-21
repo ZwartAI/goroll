@@ -650,6 +650,9 @@ export type Database = {
           created_at: string
           display_name: string
           encounter_id: string
+          enemy_base_damage: string | null
+          enemy_behavior: string | null
+          enemy_biome: string | null
           enemy_color: string | null
           enemy_defense: number | null
           enemy_hp: number | null
@@ -658,6 +661,7 @@ export type Database = {
           enemy_max_hp: number | null
           enemy_name: string | null
           enemy_notes: string | null
+          enemy_role: string | null
           enemy_speed: string | null
           enemy_template_id: string | null
           has_ended_turn: boolean
@@ -678,6 +682,9 @@ export type Database = {
           created_at?: string
           display_name?: string
           encounter_id: string
+          enemy_base_damage?: string | null
+          enemy_behavior?: string | null
+          enemy_biome?: string | null
           enemy_color?: string | null
           enemy_defense?: number | null
           enemy_hp?: number | null
@@ -686,6 +693,7 @@ export type Database = {
           enemy_max_hp?: number | null
           enemy_name?: string | null
           enemy_notes?: string | null
+          enemy_role?: string | null
           enemy_speed?: string | null
           enemy_template_id?: string | null
           has_ended_turn?: boolean
@@ -706,6 +714,9 @@ export type Database = {
           created_at?: string
           display_name?: string
           encounter_id?: string
+          enemy_base_damage?: string | null
+          enemy_behavior?: string | null
+          enemy_biome?: string | null
           enemy_color?: string | null
           enemy_defense?: number | null
           enemy_hp?: number | null
@@ -714,6 +725,7 @@ export type Database = {
           enemy_max_hp?: number | null
           enemy_name?: string | null
           enemy_notes?: string | null
+          enemy_role?: string | null
           enemy_speed?: string | null
           enemy_template_id?: string | null
           has_ended_turn?: boolean
