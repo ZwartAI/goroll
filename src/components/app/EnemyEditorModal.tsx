@@ -18,6 +18,7 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
   const isEdit = !!editing;
 
   const [name, setName] = useState(editing?.enemy_name || "");
+  const [tier, setTier] = useState<string>("normal");
   const [icon, setIcon] = useState(editing?.enemy_icon || "skull");
   const [color, setColor] = useState(editing?.enemy_color || ENEMY_COLORS[0]);
   const [initiative, setInitiative] = useState(editing?.initiative ?? 10);
