@@ -6,7 +6,7 @@ import {
   type EnemyTemplate,
   type EnemyTemplateSkill,
 } from "@/lib/bestiary";
-import { EnemyIcon } from "@/components/app/EnemyIconPicker";
+import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { StatText } from "@/components/app/StatText";
 
