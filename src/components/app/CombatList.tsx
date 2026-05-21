@@ -75,11 +75,12 @@ function TurnRow({
       boxShadow: isActive ? `0 0 0 1px var(--loss), 0 0 18px color-mix(in oklab, ${baseColor} 50%, transparent)` : undefined,
       opacity: defeated ? 0.55 : 1,
     } as const;
+    const isTierAsset = !!getEnemyAssetUrl(p.enemy_icon);
     return (
       <div className="ornate-card !p-2 flex items-center gap-3 transition-shadow" style={containerStyle}>
-        <div className="w-10 h-10 rounded-full border-2 flex-shrink-0 flex items-center justify-center bg-card"
+        <div className="w-10 h-10 rounded-full border-2 flex-shrink-0 flex items-center justify-center bg-card overflow-hidden relative"
           style={{ borderColor: baseColor, color: baseColor }}>
-          <EnemyIcon name={p.enemy_icon} size={20} />
+          <EnemyIcon name={p.enemy_icon} size={20} fill={isTierAsset} assetScale={isTierAsset ? 4 : 1} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-display text-sm truncate" style={{ color: baseColor }}>
