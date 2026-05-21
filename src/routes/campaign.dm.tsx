@@ -16,7 +16,7 @@ import { DMConditionsCreator } from "@/components/app/ConditionsPanel";
 import { BoosterEditor } from "@/components/app/BoosterEditor";
 import { type Booster } from "@/components/app/BoosterCard";
 import { DMRequestGate } from "@/components/app/DMRequestGate";
-import { SkillsManager } from "@/components/app/SkillsManager";
+import { SkillsManager, ManualCreate as SkillManualCreate } from "@/components/app/SkillsManager";
 import { Escenario } from "@/components/app/Escenario";
 import { CombatDMPanel } from "@/components/app/CombatDMPanel";
 import { MicToggle } from "@/components/app/MicToggle";
