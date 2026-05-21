@@ -35,6 +35,7 @@ function Profile() {
   const { t } = useT();
   const [imgModal, setImgModal] = useState<null | "face" | "body">(null);
   const [imgViewer, setImgViewer] = useState(false);
+  const [imgViewerCharId, setImgViewerCharId] = useState<string | null>(null);
 
   const [hpModal, setHpModal] = useState(false);
   const [purseOpen, setPurseOpen] = useState(false);
