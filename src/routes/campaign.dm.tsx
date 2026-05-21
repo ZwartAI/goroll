@@ -460,6 +460,16 @@ function DM() {
             onOpenBooster={openBoosterFromId}
             speakingIds={voice.speakingIds}
           />
+
+          <div className="mt-3">
+            <CombatDMPanel
+              campaignId={campaign.id}
+              dm={dmCtx}
+              encounter={combat.encounter}
+              participants={combat.participants}
+              groups={combat.groups}
+            />
+          </div>
         </>
       )}
 
