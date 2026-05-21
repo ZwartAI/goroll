@@ -252,6 +252,9 @@ export async function dmShiftTurn(
     })
     .eq("id", encounter.id);
 
+  // Phase 5: any "used a white skill this turn" flag clears on turn change.
+  await resetUsedThisTurn(encounter.id);
+
   // If we landed on an enemy block via DM advance, log its turn end implicitly when shifting away.
   return { ok: true };
 }
