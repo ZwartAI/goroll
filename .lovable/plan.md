@@ -1,150 +1,74 @@
-## Fase 4 — Fichas y Skills de enemigos en combate
+## Phase 5 — Player Skills in Combat
 
-Objetivo: el DM controla enemigos durante su turno con ficha rápida, ficha completa, uso de skills, hablar como enemigo, y pasar turno. Jugadores solo ven lo que el DM publica en el log.
+Integrate unlocked player skills into active combat with rarity-based uses, target selection, damage/heal/shield resolution, and visual log.
 
-### 1. Datos / Base de datos
+### Scope decisions
 
-Migración nueva: tabla `combat_enemy_skills` (snapshot de skills al añadir enemigo al combate; editar plantilla NO altera enemigos ya activos).
+- **DM approval flow**: Use **Option B (simple)** — direct application with full log. DM can correct HP from existing controls. Rationale: faster to ship, less disruptive, matches existing pattern where DM already corrects HP via EnemyManagerDM. Approval flow can be added later if needed.
+- **Shields**: store in new `combat_temporary_effects` table, display as visual badge on participant. Manual reduction by DM (no auto-absorption).
+- **Skill uses**: lazy-create rows on first use per encounter (not eagerly on combat start) — lighter DB load.
+
+### Database
+
+New migration with two tables (RLS `public_all`, realtime enabled):
 
 ```
-combat_enemy_skills
-- id uuid pk
-- campaign_id uuid
-- encounter_id uuid
-- combat_participant_id uuid (FK lógico → combat_participants.id)
-- template_skill_id uuid nullable
-- name text
-- rarity item_rarity
-- skill_type text
-- target_shape text
-- targets text
-- dice text
-- range_text text
-- effect text
-- visual_brief text
-- order_index int
-- created_at timestamptz
+combat_skill_uses
+  id, encounter_id, campaign_id, character_id, character_skill_id,
+  rarity, max_uses (null=infinite), uses_remaining, used_this_turn bool,
+  last_turn_index int, created_at, updated_at
+  UNIQUE(encounter_id, character_skill_id)
+
+combat_temporary_effects
+  id, encounter_id, campaign_id,
+  target_character_id nullable, target_enemy_participant_id nullable,
+  source_character_id, source_skill_id nullable,
+  effect_type text (shield|buff|debuff|control|note),
+  value int, label text, duration_rounds int nullable,
+  expires_at_turn_index int nullable, created_at
 ```
 
-RLS pública (igual que resto de tablas del proyecto). Habilitar realtime.
+### Logic (`src/lib/combat-skills.ts` new)
 
-Modificar `spawnFromTemplate` en `src/lib/bestiary.ts` para que después de insertar el participant, copie las skills del template a `combat_enemy_skills` por cada instancia spawneada.
+- `getOrCreateSkillUse(encounterId, characterSkill)` — lazy init based on rarity (white: null/-1, blue:3, purple:2, gold:1).
+- `canUseSkill({ encounter, participant, skill, uses })` → `{ ok, reason }`. Checks: combat active, turn ownership (self or group leader), unlocked, uses remaining, white-once-per-turn.
+- `useSkill({ skill, encounter, character, targets, rollResult, resolution, amount, applyDefense })` — atomic flow: validate → apply effect → decrement uses → write log segment.
+- `resetTurnFlags(encounterId)` — clear `used_this_turn` when turn advances (hook into existing `passTurn`).
+- `clearEncounterSkillState(encounterId)` — called from `endCombat`.
 
-### 2. Lógica nueva (`src/lib/combat.ts` + helper)
+### Effect resolution
 
-- `listEnemySkills(participantId)` — leer skills snapshot.
-- `logEnemySkillUse(...)` — inserta en `logs` con segmentos personalizados (icono enemigo, nombre skill, dados, alcance, objetivos, efecto, visual_brief opcional según nivel de detalle: `nameAndEffect` | `full`).
-- `logEnemySpeech(enemy, text)` — log con icono+color+nombre del enemigo y la frase.
-- `logEnemyDefeated(enemy)` — log al marcar derrotado (ya parcialmente existe, asegurar formato).
-- `logEnemyEndedTurn(enemy)` — se enchufa en `dmEndEnemyTurn` ya existente.
-- Validaciones: encounter activo, es DM, enemigo pertenece al encounter, status != ended.
+- **damage**: required enemy target(s). If `applyDefense`, compute `max(0, raw - enemy.defense)`. Update `combat_participants.enemy_hp`. Mark `is_defeated` if HP≤0. Log includes raw + applied (DM-only sees DEF detail; public log shows "Damage applied: X").
+- **heal**: required player/ally target. `current_hp = min(base_hp + bonuses, current_hp + amount)` via existing character HP update path.
+- **shield**: insert row in `combat_temporary_effects`, surface badge in CombatList.
+- **narrative**: just a note + optional temp effect row.
+- **log_only**: just write log segment.
 
-### 3. UI — Ficha rápida del enemigo (DM)
+### UI Components
 
-En `EnemyManagerDM.tsx` (o `CombatList` DM view), por cada enemigo:
-- Icono circular con color.
-- Nombre + badge tier (Normal/Élite/Jefe) si hay `enemy_template_id`.
-- HP actual/máx + barra (verde/amarillo/rojo).
-- DEF, VEL, iniciativa.
-- Botón "Ficha" (también long-press en móvil) → abre `EnemyCombatSheetModal`.
-- Si está en turno: zona "Turno activo" con botones Usar skill / Hablar / Ajustar HP / Pasar turno.
-- Si no está en turno: botón principal indica "No es su turno" (deshabilitado o secundario).
+- **`PlayerCombatSkillsPanel.tsx`** (new) — embed in CharacterSheet skills section; shows combat banner ("In combat — your turn" / "Not your turn"), per-skill use counter chip, "Use" button.
+- **`SkillUseModal.tsx`** (new) — header (icon/name/rarity/uses), mechanical data, target picker (tabs: Enemies / Allies / Self / None), roll result input, resolution radio (log/damage/heal/shield/narrative), conditional fields (amount, applyDefense), submit.
+- **`SkillUseTargetPicker.tsx`** (new) — reusable, fetches active encounter participants.
+- **`LogSegments.tsx`** edit — render new `player_skill` segment type (avatar, name, skill, rarity color, dice, targets, roll, effect summary).
+- **`CombatList.tsx`** edit — show shield badge from `combat_temporary_effects` on each participant.
+- Integrate panel into existing skills UI in `campaign.profile.tsx` (or wherever character skills render).
 
-Long-press: hook `useLongPress(onLongPress, 400ms)` en `src/hooks/`.
+### Types & i18n
 
-### 4. UI — Ficha completa: `EnemyCombatSheetModal.tsx` (nuevo)
+- Extend `Segment` union in `src/lib/game.ts` with `player_skill`.
+- Add `combat.playerSkill.*` namespace in `es.ts` / `en.ts` covering all required strings.
+- Regenerate types via migration.
 
-Modal scrolleable. Secciones:
-1. Header: icono grande, nombre, tier, rol, bioma, estado activo/derrotado.
-2. Estadísticas: HP/max + barra, DEF, VEL, daño base, iniciativa.
-3. Controles HP: -1, -5, +1, +5, "Daño bruto", "Daño con defensa", "Curar", "Editar HP" (abre `EnemyDamageModal` ya existente).
-4. Conducta (privada DM): behavior_notes, description, enemy_notes.
-5. Inmunidades: chips. "Sin inmunidades registradas" si vacío.
-6. Debilidades: texto. Ocultar sección si vacío.
-7. Skills: lista de `EnemySkillCard`. "Sin skills registradas" si vacío.
+### Files
 
-Tier sólo se muestra si se puede consultar el template (cargar `enemy_templates` por id si hace falta — o copiar tier al participant en spawn; preferible cargar on-demand para no migrar más columnas).
+**New**: migration sql, `src/lib/combat-skills.ts`, `src/components/app/PlayerCombatSkillsPanel.tsx`, `src/components/app/SkillUseModal.tsx`, `src/components/app/SkillUseTargetPicker.tsx`.
 
-### 5. UI — `EnemySkillCard.tsx` (nuevo)
+**Edited**: `src/lib/combat.ts` (passTurn → resetTurnFlags, endCombat → clearEncounterSkillState), `src/lib/game.ts` (Segment), `src/components/app/LogSegments.tsx` (renderer), `src/components/app/CombatList.tsx` (shield badge), `src/routes/campaign.profile.tsx` (mount panel in skills section), `src/integrations/supabase/types.ts` (auto), `src/lib/locales/{es,en}.ts`.
 
-Card oscura "arcana", distinta a `SkillCard` de jugadores:
-- Borde/halo por rareza.
-- Icono auto por `skill_type` (sword/shield/sparkles/zap…).
-- Dados en dorado, alcance en azul, objetivos en verde/turquesa, efecto blanco, visual_brief violeta/plata.
-- Acciones: "Usar" (abre `EnemySkillUseModal`), "Mostrar" (atajo → log directo con detalles completos).
+### Out of scope (explicit)
 
-### 6. UI — `EnemySkillUseModal.tsx` (nuevo)
-
-- Muestra nombre, enemigo emisor, dados, alcance, objetivos, efecto, visual breve.
-- Selector de objetivos (multi): jugadores (de `characters` rol player), grupos Enlace (`combat_turn_groups`), otros enemigos del encounter, "todos", "sin objetivo".
-- Inputs: resultado tirada (texto libre), nota DM.
-- Radios visibility: `private` | `nameAndEffect` | `full`.
-- Confirmar:
-  - Si no es `private` → `logEnemySkillUse` con detalles según radio.
-  - No aplica daño automático.
-- Validación: si effect contiene número y dice está vacío → mostrar warning inline (no bloquea).
-- Si enemigo derrotado → confirm "Este enemigo fue derrotado. ¿Seguro?".
-
-### 7. UI — `EnemySpeechModal.tsx` (nuevo)
-
-- Textarea, validar no vacío.
-- Confirmar → `logEnemySpeech` con segmentos: `[icon+color name]: "frase"`.
-
-### 8. Integración con CombatDMPanel / EnemyManagerDM
-
-- Añadir botón "Ficha" en cada enemy row.
-- Añadir long-press handler.
-- Si participant es enemy y `isActive`, mostrar fila "Turno activo" con 4 botones.
-- "Pasar turno del enemigo" usa `dmEndEnemyTurn` existente + log.
-
-### 9. Vista pública (jugadores / espectadores)
-
-`CombatList` ya oculta HP/DEF/VEL. Verificar que sigue sin filtrar nada nuevo.
-Render de log enemy-skill: crear componente `LogEnemySkillSegment` o aprovechar `segments` JSON. Estilo card con icono enemigo, nombre, dados (si full), alcance, objetivos, efecto. Tipos `segment.kind = "enemy_skill"` y `"enemy_speech"` en `LogSegments.tsx`.
-
-### 10. i18n (`es.ts` / `en.ts`)
-
-Namespace `combat.enemy.*`:
-sheet, fullSheet, behavior, immunities, weaknesses, skills, useSkill, showSkill, speakAs, endEnemyTurn, activeTurn, rollResult, dmNote, showInLog, showNameEffectOnly, showFullDetails, keepPrivate, noImmunities, noWeaknesses, noSkills, notInTurn, defeatedWarn, numericNoDiceWarn, tier.normal/elite/boss, role.*.
-
-### 11. Permisos
-
-Helpers ya existentes en `CampaignProvider` (`isDM`, etc.). Todos los botones DM-only gateados. Server side: las acciones se hacen vía supabase desde cliente DM (igual que fase 2/3) — no se cambia modelo de seguridad.
-
-### 12. Realtime
-
-Suscribir a `combat_enemy_skills` cambios (insert al spawnear). Logs ya tienen realtime. Resto sin cambios.
-
-### 13. Out of scope (fases futuras)
-
-- Daño automático a jugadores.
-- IA enemiga.
-- Recompensas/drops.
-- Bloqueo automático de condiciones por inmunidad.
-- Edición de skills snapshot (en esta fase solo lectura; si se quiere editar, se edita la plantilla y el siguiente spawn lo refleja).
-
-### Archivos
-
-Nuevos:
-- `supabase/migrations/<ts>_combat_enemy_skills.sql`
-- `src/components/app/EnemyCombatSheetModal.tsx`
-- `src/components/app/EnemySkillCard.tsx`
-- `src/components/app/EnemySkillUseModal.tsx`
-- `src/components/app/EnemySpeechModal.tsx`
-- `src/hooks/useLongPress.ts`
-
-Editados:
-- `src/lib/bestiary.ts` (spawn → copia skills snapshot)
-- `src/lib/combat.ts` (helpers log + listEnemySkills)
-- `src/components/app/EnemyManagerDM.tsx` (botón Ficha, long-press, zona turno activo)
-- `src/components/app/CombatList.tsx` (long-press / botón ficha en DM view; render skill enemy en log si aplica)
-- `src/components/app/LogSegments.tsx` (renderers `enemy_skill`, `enemy_speech`)
-- `src/integrations/supabase/types.ts` (auto tras migración)
-- `src/lib/locales/es.ts`, `src/lib/locales/en.ts`
-
-### Validaciones finales
-
-- Encounter activo, DM, participante del encounter, no terminado.
-- Warning numerico-sin-dados.
-- Confirm si derrotado.
-- Todo i18n, sin strings hardcoded.
+- DM approval workflow (using simple direct-apply).
+- Auto-parsing skill dice text.
+- Automatic shield absorption on incoming damage.
+- Increasing max uses via items/buffs.
+- Boss phases, rewards, AI.
