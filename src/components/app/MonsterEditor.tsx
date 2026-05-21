@@ -20,7 +20,7 @@ import {
   deleteTemplateSkill,
   reorderTemplateSkill,
 } from "@/lib/bestiary";
-import { EnemyIconPicker, EnemyColorPicker, ENEMY_COLORS } from "@/components/app/EnemyIconPicker";
+import { EnemyIconPicker, EnemyColorPicker, ENEMY_COLORS, ENEMY_ASSETS } from "@/components/app/EnemyIconPicker";
 
 type Props = {
   campaignId: string;
