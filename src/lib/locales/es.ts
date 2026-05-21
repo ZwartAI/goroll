@@ -215,6 +215,8 @@ export const es = {
   headerMenu: {
     open: "Abrir menú",
     title: "Menú",
+    achievements: "Logros",
+    bestiary: "Bestiario",
     exit: "Salir / cambiar rol",
   },
   escenario: {
