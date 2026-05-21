@@ -213,6 +213,8 @@ export const en: Dict = {
   headerMenu: {
     open: "Open menu",
     title: "Menu",
+    achievements: "Achievements",
+    bestiary: "Bestiary",
     exit: "Exit / change role",
   },
   escenario: {
