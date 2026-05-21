@@ -301,7 +301,7 @@ export function useStandardHeaderItems(opts: {
       const hasPending = pending > 0;
       items.push({
         key: "mailbox", label: t("mailbox.title"),
-        icon: Inbox, onClick: opts.mailbox.onOpen,
+        icon: Mail, onClick: opts.mailbox.onOpen,
         color: hasPending ? "#ffffff" : "oklch(0.65 0.02 260)",
         trailing: hasPending ? (
           <span
