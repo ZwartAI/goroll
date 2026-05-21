@@ -288,6 +288,9 @@ export const es = {
     imgEditBody: "Editar cuerpo",
     imgViewerNone: "Aún no hay imagen — toca editar para subir.",
     imgUploadBoth: "Subir imágenes",
+    imgDeleteFace: "Eliminar rostro",
+    imgDeleteBody: "Eliminar cuerpo",
+    imgDeleteConfirm: "¿Eliminar esta imagen del personaje? El jugador deberá subir una nueva.",
   },
 
   settingsPage: {
