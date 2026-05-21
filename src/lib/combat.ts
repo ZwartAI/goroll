@@ -458,8 +458,8 @@ export async function passTurn(
   if (!block) return { ok: false, error: "no_block" };
   if (!blockContainsCharacter(block, character.id)) return { ok: false, error: "not_your_turn" };
 
-  const ids = block.kind === "solo" ? [block.participant.id] : block.members.map(m => m.id);
-  await supabase.from("combat_participants" as any).update({ has_ended_turn: true }).in("id", ids);
+  const ids = block.kind === "solo" ? [block.participant.id] : block.kind === "group" ? block.members.map(m => m.id) : [];
+  if (ids.length) await supabase.from("combat_participants" as any).update({ has_ended_turn: true }).in("id", ids);
 
   const nextIndex = encounter.current_turn_index + 1;
   const wrapped = nextIndex >= blocks.length;
@@ -487,7 +487,7 @@ export async function passTurn(
       { t: "char", v: character.name, color: character.color, id: character.id },
       { t: "text", v: " terminó su turno." },
     ]);
-  } else {
+  } else if (block.kind === "group") {
     const leader = block.members.find(m => m.is_leader);
     await pushLog(encounter.campaign_id, [
       { t: "text", v: "El Enlace de " },
@@ -495,6 +495,7 @@ export async function passTurn(
       { t: "text", v: " terminó su turno." },
     ]);
   }
+
   return { ok: true };
 }
 
