@@ -209,6 +209,15 @@ function DM() {
               />
             </div>
           )}
+
+          <div className="ornate-card p-4 space-y-2">
+            <h3 className="font-display text-sm uppercase tracking-widest text-[var(--loss)] flex items-center gap-2"><Skull size={16} /> {t("dm.createMonsterTitle")}</h3>
+            <p className="text-xs text-muted-foreground">{t("dm.createMonsterHint")}</p>
+            <Link to="/campaign/bestiary" className="btn-fantasy w-full inline-flex items-center justify-center gap-1.5"
+              style={{ background: "linear-gradient(135deg, oklch(0.45 0.18 25), oklch(0.30 0.14 25))", color: "white" }}>
+              <Plus size={14} /> {t("dm.openBestiary")}
+            </Link>
+          </div>
         </div>
       )}
 
