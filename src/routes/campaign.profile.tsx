@@ -333,6 +333,7 @@ function Profile() {
           logs={logs}
           selfId={character.id}
           onOpenChar={(id) => openCharFromLog(id, true)}
+          onOpenImage={(id) => { if (id === character.id) setImgViewer(true); else setImgViewerCharId(id); }}
           onOpenItem={(id) => setOpenItem(id)}
           onOpenBooster={(id) => setOpenBooster(id)}
           speakingIds={voice.speakingIds}
