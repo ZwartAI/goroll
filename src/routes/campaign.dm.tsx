@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useGameData } from "@/lib/useGame";
 import { PageFrame } from "@/components/app/Frame";
-import { LogOut, Plus, Send, Trophy, Pencil, Undo2, Search, Skull, ScrollText, Hammer, Vault, Sparkles, Wand2, Theater, Upload } from "lucide-react";
+import { LogOut, Plus, Send, Trophy, Pencil, Undo2, Search, Skull, ScrollText, Hammer, Sparkles, Wand2, Theater, Upload, Package } from "lucide-react";
 import { SLOTS, RARITY_BONUS, RARITY_COLOR, ITEM_CATEGORIES, isWeapon, totals, setSession, type Item, type ItemCategory, type Rarity, type Slot, type Character, type LogRow } from "@/lib/game";
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog, type UndoAction } from "@/lib/log";
