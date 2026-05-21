@@ -43,10 +43,22 @@ export function getEnemyAssetUrl(key: string | null | undefined): string | null 
   return ENEMY_ASSETS[key.slice(6)] || null;
 }
 
-export function EnemyIcon({ name, size = 24, color }: { name: string | null | undefined; size?: number; color?: string }) {
+export function EnemyIcon({ name, size = 24, color, fill = false }: { name: string | null | undefined; size?: number; color?: string; fill?: boolean }) {
   const asset = getEnemyAssetUrl(name);
   if (asset) {
-    return <img src={asset} alt="" style={{ width: size, height: size, objectFit: "cover", borderRadius: 4 }} />;
+    // When `fill` is true the image fills its parent (use inside a rounded
+    // bordered container). Otherwise render at the requested fixed size.
+    if (fill) {
+      return (
+        <img
+          src={asset}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "center" }}
+        />
+      );
+    }
+    return <img src={asset} alt="" style={{ width: size, height: size, objectFit: "cover", borderRadius: "9999px" }} />;
   }
   const Icon = ENEMY_ICONS[name || "skull"] || Skull;
   return <Icon size={size} color={color} />;

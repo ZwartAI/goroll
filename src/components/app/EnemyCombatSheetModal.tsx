@@ -17,7 +17,7 @@ import {
   type CombatTurnGroup,
 } from "@/lib/combat";
 import { loadTemplate, type EnemyTemplate } from "@/lib/bestiary";
-import { EnemyIcon } from "@/components/app/EnemyIconPicker";
+import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
 import { EnemySkillCard } from "@/components/app/EnemySkillCard";
 import { EnemySkillUseModal } from "@/components/app/EnemySkillUseModal";
 import { EnemySpeechModal } from "@/components/app/EnemySpeechModal";
@@ -72,9 +72,9 @@ export function EnemyCombatSheetModal({ participant, encounter, participants, gr
         onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full border-2 flex items-center justify-center bg-card"
+          <div className="w-14 h-14 rounded-full border-2 overflow-hidden flex items-center justify-center bg-card relative"
             style={{ borderColor: color, color }}>
-            <EnemyIcon name={participant.enemy_icon} size={28} />
+            <EnemyIcon name={participant.enemy_icon} size={28} fill={!!getEnemyAssetUrl(participant.enemy_icon)} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-display text-lg leading-tight truncate" style={{ color }}>

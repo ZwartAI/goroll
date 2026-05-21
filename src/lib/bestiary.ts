@@ -6,7 +6,7 @@ import { pushLog } from "@/lib/log";
 import type { CombatEncounter } from "@/lib/combat";
 import { clampInitiative } from "@/lib/combat";
 
-export type EnemyTier = "normal" | "elite" | "boss" | "minion" | "summon" | "hazard" | "special";
+export type EnemyTier = "normal" | "elite" | "boss" | "god" | "minion" | "summon" | "hazard" | "special";
 export type EnemyRole =
   | "damage" | "tank" | "support" | "control" | "skirmisher"
   | "summoner" | "terrain" | "hunter" | "protector";
@@ -53,7 +53,13 @@ export type EnemyTemplateSkill = {
   updated_at: string;
 };
 
-export const TIER_OPTIONS: EnemyTier[] = ["normal", "elite", "boss", "minion", "summon", "hazard", "special"];
+export const TIER_OPTIONS: EnemyTier[] = ["normal", "elite", "boss", "god", "minion", "summon", "hazard", "special"];
+/** Primary monster types shown in the simplified UI (selector + filters). */
+export const PRIMARY_TIERS: EnemyTier[] = ["normal", "elite", "boss", "god"];
+/** Curated biomes for the monster editor selector. */
+export const BIOME_PRESETS = [
+  "Praivell", "Ignivar", "Saavakar", "Arboris", "Snofell", "Silvamyr", "Pilar del pulso",
+];
 export const ROLE_OPTIONS: EnemyRole[] = [
   "damage", "tank", "support", "control", "skirmisher", "summoner", "terrain", "hunter", "protector",
 ];

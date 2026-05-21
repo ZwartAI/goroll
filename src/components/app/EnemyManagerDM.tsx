@@ -18,11 +18,12 @@ import {
   type CombatParticipant,
   type CombatTurnGroup,
 } from "@/lib/combat";
-import { EnemyIcon } from "@/components/app/EnemyIconPicker";
+import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
 import { EnemyEditorModal } from "@/components/app/EnemyEditorModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
 import { EnemyCombatSheetModal } from "@/components/app/EnemyCombatSheetModal";
 import { useLongPress } from "@/hooks/useLongPress";
+import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 
 type Props = {
   encounter: CombatEncounter;
@@ -40,6 +41,7 @@ export function EnemyManagerDM({ encounter, participants, groups, dm }: Props) {
   const [editing, setEditing] = useState<CombatParticipant | null>(null);
   const [damaging, setDamaging] = useState<CombatParticipant | null>(null);
   const [sheet, setSheet] = useState<CombatParticipant | null>(null);
+  const [removing, setRemoving] = useState<CombatParticipant | null>(null);
 
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
@@ -85,11 +87,7 @@ export function EnemyManagerDM({ encounter, participants, groups, dm }: Props) {
               const r = await duplicateEnemy(p, encounter, dm);
               if (!r.ok) toast.error(t("combat.saveError"));
             }}
-            onRemove={async () => {
-              if (!confirm(t("combat.confirmRemoveEnemy"))) return;
-              const r = await removeEnemy(p, encounter, dm);
-              if (!r.ok) toast.error(t("combat.saveError"));
-            }}
+            onRemove={() => setRemoving(p)}
           />
         );
       })}
@@ -109,6 +107,21 @@ export function EnemyManagerDM({ encounter, participants, groups, dm }: Props) {
           onClose={() => setSheet(null)}
         />
       )}
+      <ConfirmDialog
+        open={!!removing}
+        title={t("combat.confirmRemoveEnemyTitle")}
+        description={t("combat.confirmRemoveEnemy")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        variant="danger"
+        onCancel={() => setRemoving(null)}
+        onConfirm={async () => {
+          if (!removing) return;
+          const r = await removeEnemy(removing, encounter, dm);
+          if (!r.ok) toast.error(t("combat.saveError"));
+          setRemoving(null);
+        }}
+      />
     </div>
   );
 }
@@ -167,9 +180,9 @@ function EnemyRow({
         >
           <GripVertical size={14} />
         </span>
-        <div className="w-9 h-9 rounded-full border-2 flex items-center justify-center bg-card"
+        <div className="w-9 h-9 rounded-full border-2 overflow-hidden flex items-center justify-center bg-card relative"
           style={{ borderColor: baseColor, color: baseColor }}>
-          <EnemyIcon name={p.enemy_icon} size={18} />
+          <EnemyIcon name={p.enemy_icon} size={18} fill={!!getEnemyAssetUrl(p.enemy_icon)} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-display text-sm truncate" style={{ color: baseColor }}>{p.display_name}</p>

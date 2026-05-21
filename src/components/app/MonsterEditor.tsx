@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Plus, Trash2, ArrowUp, ArrowDown, Edit3 } from "lucide-react";
@@ -7,8 +7,9 @@ import {
   type EnemyTemplateDraft,
   type EnemyTemplateSkill,
   type EnemyTemplateSkillDraft,
-  TIER_OPTIONS,
+  PRIMARY_TIERS,
   ROLE_OPTIONS,
+  BIOME_PRESETS,
   SKILL_TYPES,
   SKILL_SHAPES,
   IMMUNITIES,
@@ -21,6 +22,7 @@ import {
   reorderTemplateSkill,
 } from "@/lib/bestiary";
 import { EnemyIconPicker, EnemyColorPicker, ENEMY_COLORS, ENEMY_ASSETS } from "@/components/app/EnemyIconPicker";
+import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 
 type Props = {
   campaignId: string;
@@ -32,6 +34,11 @@ type Props = {
 
 const RARITIES = ["white", "green", "blue", "purple", "orange", "red"] as const;
 
+/** Local skill draft used before the template is saved. id starts with "local-". */
+type LocalSkill = EnemyTemplateSkillDraft & { id: string; _isLocal?: boolean };
+
+const CUSTOM_BIOME = "__custom__";
+
 export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Props) {
   const { t } = useT();
   const isEdit = !!editing;
@@ -39,7 +46,15 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
   const [name, setName] = useState(editing?.name || "");
   const [tier, setTier] = useState<string>(editing?.tier || "normal");
   const [role, setRole] = useState<string>(editing?.role || "damage");
-  const [biome, setBiome] = useState(editing?.biome || "");
+
+  // Biome: selector with curated regions + "custom" fallback for free text.
+  const initialBiome = editing?.biome || "";
+  const isPreset = BIOME_PRESETS.includes(initialBiome);
+  const [biomeChoice, setBiomeChoice] = useState<string>(
+    initialBiome ? (isPreset ? initialBiome : CUSTOM_BIOME) : "",
+  );
+  const [biomeCustom, setBiomeCustom] = useState(isPreset ? "" : initialBiome);
+
   const [icon, setIcon] = useState(editing?.icon_key || "skull");
   const [color, setColor] = useState(editing?.color || ENEMY_COLORS[0]);
   const [maxHp, setMaxHp] = useState(editing?.max_hp ?? 20);
@@ -50,30 +65,34 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
   const [behavior, setBehavior] = useState(editing?.behavior_notes || "");
   const [weaknesses, setWeaknesses] = useState(editing?.weaknesses_text || "");
   const [immunities, setImmunities] = useState<string[]>(editing?.immunities || []);
-  const [isBoss, setIsBoss] = useState(editing?.is_boss || false);
-  const [isElite, setIsElite] = useState(editing?.is_elite || false);
   const [busy, setBusy] = useState(false);
-  const [createdTemplate, setCreatedTemplate] = useState<EnemyTemplate | null>(editing || null);
 
-  const [skills, setSkills] = useState<EnemyTemplateSkill[]>([]);
-  const [editingSkill, setEditingSkill] = useState<EnemyTemplateSkill | null>(null);
+  // Saved-side skills (when editing) + local-only skills (pre-save).
+  const [savedSkills, setSavedSkills] = useState<EnemyTemplateSkill[]>([]);
+  const [localSkills, setLocalSkills] = useState<LocalSkill[]>([]);
+  const [editingSkill, setEditingSkill] = useState<EnemyTemplateSkill | LocalSkill | null>(null);
   const [addingSkill, setAddingSkill] = useState(false);
+  const [confirmDeleteSkill, setConfirmDeleteSkill] = useState<EnemyTemplateSkill | LocalSkill | null>(null);
 
   useEffect(() => {
-    if (createdTemplate) {
-      listTemplateSkills(createdTemplate.id).then(setSkills);
-    }
-  }, [createdTemplate?.id]);
+    if (editing) listTemplateSkills(editing.id).then(setSavedSkills);
+  }, [editing?.id]);
 
   const toggleImmunity = (k: string) => {
     setImmunities(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]);
   };
 
+  const resolvedBiome = useMemo(() => {
+    if (!biomeChoice) return null;
+    if (biomeChoice === CUSTOM_BIOME) return biomeCustom.trim() || null;
+    return biomeChoice;
+  }, [biomeChoice, biomeCustom]);
+
   const buildDraft = (): EnemyTemplateDraft => ({
     name: name.trim(),
     tier: tier as any,
     role: role as any,
-    biome: biome.trim() || null,
+    biome: resolvedBiome,
     icon_key: icon,
     color,
     max_hp: maxHp,
@@ -84,15 +103,41 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
     behavior_notes: behavior.trim() || null,
     weaknesses_text: weaknesses.trim() || null,
     immunities,
-    is_boss: isBoss,
-    is_elite: isElite,
+    // Mirror tier onto legacy boolean flags for compatibility.
+    is_boss: tier === "boss" || tier === "god",
+    is_elite: tier === "elite",
     created_by_character_id: dm.id,
   });
+
+  /** All skills (saved + local) shown in the editor. */
+  const allSkills = useMemo<Array<EnemyTemplateSkill | LocalSkill>>(
+    () => [...savedSkills, ...localSkills].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+    [savedSkills, localSkills],
+  );
+
+  const reloadSavedSkills = async (tplId: string) => {
+    setSavedSkills(await listTemplateSkills(tplId));
+  };
+
+  const handleSkillUpsert = (draft: EnemyTemplateSkillDraft, existing: EnemyTemplateSkill | LocalSkill | null) => {
+    // Local-only path when no template yet.
+    if (!editing) {
+      if (existing && (existing as LocalSkill)._isLocal) {
+        setLocalSkills(prev => prev.map(s => (s.id === existing.id ? { ...s, ...draft } : s)));
+      } else {
+        const id = `local-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        setLocalSkills(prev => [...prev, { id, _isLocal: true, ...draft }]);
+      }
+    }
+  };
 
   const submit = async () => {
     if (!name.trim()) { toast.error(t("bestiary.errName")); return; }
     if (maxHp <= 0) { toast.error(t("bestiary.errHp")); return; }
     if (defense < 0) { toast.error(t("bestiary.errDef")); return; }
+    if (biomeChoice === CUSTOM_BIOME && !biomeCustom.trim()) {
+      toast.error(t("bestiary.errCustomBiome")); return;
+    }
     setBusy(true);
     const draft = buildDraft();
     if (isEdit && editing) {
@@ -105,15 +150,36 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
     } else {
       const r = await createTemplate(campaignId, draft, dm);
       if (!r.ok) { toast.error(t("bestiary.saveError")); setBusy(false); return; }
+      // Persist any local skills.
+      let failed = 0;
+      for (let i = 0; i < localSkills.length; i++) {
+        const s = localSkills[i];
+        const { id: _id, _isLocal: _l, ...payload } = s;
+        const res = await addTemplateSkill(r.template, { ...payload, order_index: i });
+        if (!res.ok) failed++;
+      }
+      if (failed > 0) {
+        toast.error(t("bestiary.skillsPartial"));
+        setBusy(false);
+        return; // keep modal open so the DM can retry
+      }
       toast.success(t("bestiary.saved"));
-      setCreatedTemplate(r.template);
       onSaved?.(r.template);
       setBusy(false);
+      onClose();
     }
   };
 
-  const reloadSkills = async () => {
-    if (createdTemplate) setSkills(await listTemplateSkills(createdTemplate.id));
+  const handleConfirmDeleteSkill = async () => {
+    const s = confirmDeleteSkill;
+    if (!s) return;
+    if ((s as LocalSkill)._isLocal) {
+      setLocalSkills(prev => prev.filter(x => x.id !== s.id));
+    } else {
+      await deleteTemplateSkill(s as EnemyTemplateSkill);
+      if (editing) reloadSavedSkills(editing.id);
+    }
+    setConfirmDeleteSkill(null);
   };
 
   return (
@@ -133,23 +199,26 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
           </Field>
           <div className="grid grid-cols-2 gap-2">
             <Field label={t("bestiary.tier")}>
-              <Select value={tier} onChange={setTier} options={TIER_OPTIONS.map(v => [v, t(`bestiary.tier_${v}`)])} />
+              <Select value={tier} onChange={setTier} options={PRIMARY_TIERS.map(v => [v, t(`bestiary.tier_${v}`)])} />
             </Field>
             <Field label={t("bestiary.role")}>
               <Select value={role} onChange={setRole} options={ROLE_OPTIONS.map(v => [v, t(`bestiary.role_${v}`)])} />
             </Field>
             <Field label={t("bestiary.biome")}>
-              <Input value={biome} onChange={setBiome} />
+              <Select
+                value={biomeChoice}
+                onChange={setBiomeChoice}
+                options={[
+                  ["", t("bestiary.biomeNone")],
+                  ...BIOME_PRESETS.map(b => [b, b] as [string, string]),
+                  [CUSTOM_BIOME, t("bestiary.addAnotherRegion")],
+                ]}
+              />
             </Field>
-            <div className="flex items-end gap-3">
-              <label className="flex items-center gap-1 text-xs">
-                <input type="checkbox" checked={isElite} onChange={e => setIsElite(e.target.checked)} className="accent-[var(--gold)]" />
-                {t("bestiary.isElite")}
-              </label>
-              <label className="flex items-center gap-1 text-xs">
-                <input type="checkbox" checked={isBoss} onChange={e => setIsBoss(e.target.checked)} className="accent-[var(--gold)]" />
-                {t("bestiary.isBoss")}
-              </label>
+            <div className="flex items-end">
+              {biomeChoice === CUSTOM_BIOME && (
+                <Input value={biomeCustom} onChange={setBiomeCustom} placeholder={t("bestiary.customRegion")} />
+              )}
             </div>
           </div>
           <Field label={t("combat.icon")}>
@@ -226,12 +295,14 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
           </Field>
         </Section>
 
-        {/* Skills (only after template exists / when editing) */}
-        {createdTemplate && (
-          <Section title={t("bestiary.sectionSkills")}>
-            <div className="space-y-1.5">
-              {skills.length === 0 && <p className="text-xs text-muted-foreground">{t("bestiary.noSkills")}</p>}
-              {skills.map((s, i) => (
+        {/* Skills — available before save */}
+        <Section title={t("bestiary.sectionSkills")}>
+          <div className="space-y-1.5">
+            {allSkills.length === 0 && <p className="text-xs text-muted-foreground">{t("bestiary.noSkills")}</p>}
+            {allSkills.map((s, i) => {
+              const isLocal = (s as LocalSkill)._isLocal;
+              const saved = !isLocal ? (s as EnemyTemplateSkill) : null;
+              return (
                 <div key={s.id} className="bg-secondary/40 rounded p-2 flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-display truncate">{s.name}</p>
@@ -239,56 +310,70 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
                       {s.skill_type ? t(`bestiary.skillType_${s.skill_type}`) : "—"} · {s.dice || "—"}
                     </p>
                   </div>
-                  <button className="text-muted-foreground" onClick={async () => { await reorderTemplateSkill(s, "up", skills); reloadSkills(); }} disabled={i === 0}><ArrowUp size={14} /></button>
-                  <button className="text-muted-foreground" onClick={async () => { await reorderTemplateSkill(s, "down", skills); reloadSkills(); }} disabled={i === skills.length - 1}><ArrowDown size={14} /></button>
+                  {saved && (
+                    <>
+                      <button className="text-muted-foreground" onClick={async () => { await reorderTemplateSkill(saved, "up", savedSkills); if (editing) reloadSavedSkills(editing.id); }} disabled={i === 0}><ArrowUp size={14} /></button>
+                      <button className="text-muted-foreground" onClick={async () => { await reorderTemplateSkill(saved, "down", savedSkills); if (editing) reloadSavedSkills(editing.id); }} disabled={i === allSkills.length - 1}><ArrowDown size={14} /></button>
+                    </>
+                  )}
                   <button className="text-muted-foreground" onClick={() => setEditingSkill(s)}><Edit3 size={14} /></button>
-                  <button className="text-destructive" onClick={async () => {
-                    if (!confirm(t("bestiary.confirmDeleteSkill"))) return;
-                    await deleteTemplateSkill(s); reloadSkills();
-                  }}><Trash2 size={14} /></button>
+                  <button className="text-destructive" onClick={() => setConfirmDeleteSkill(s)}><Trash2 size={14} /></button>
                 </div>
-              ))}
-              <button className="btn-fantasy w-full text-xs" onClick={() => setAddingSkill(true)}>
-                <Plus size={12} className="inline mr-1" /> {t("bestiary.addSkill")}
-              </button>
-            </div>
-            {(addingSkill || editingSkill) && createdTemplate && (
-              <SkillEditor
-                template={createdTemplate}
-                editing={editingSkill}
-                nextOrder={skills.length}
-                onClose={() => { setAddingSkill(false); setEditingSkill(null); }}
-                onSaved={reloadSkills}
-              />
-            )}
-          </Section>
-        )}
+              );
+            })}
+            <button className="btn-fantasy w-full text-xs" onClick={() => setAddingSkill(true)}>
+              <Plus size={12} className="inline mr-1" /> {t("bestiary.addSkill")}
+            </button>
+          </div>
+          {(addingSkill || editingSkill) && (
+            <SkillEditor
+              template={editing || null}
+              editing={editingSkill}
+              nextOrder={allSkills.length}
+              onClose={() => { setAddingSkill(false); setEditingSkill(null); }}
+              onLocalSave={(draft) => handleSkillUpsert(draft, editingSkill)}
+              onSavedRefresh={() => editing && reloadSavedSkills(editing.id)}
+            />
+          )}
+        </Section>
 
         <div className="grid grid-cols-2 gap-2 pt-2 sticky bottom-0 bg-card/95 -mx-4 px-4 py-2 border-t border-border">
           <button className="btn-fantasy" onClick={onClose} disabled={busy}>{t("common.cancel")}</button>
           <button className="btn-fantasy" disabled={busy}
             style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
             onClick={submit}>
-            {isEdit || createdTemplate ? t("common.save") : t("bestiary.createMonster")}
+            {isEdit ? t("common.save") : t("bestiary.createMonster")}
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDeleteSkill}
+        title={t("bestiary.confirmDeleteSkillTitle")}
+        description={t("bestiary.confirmDeleteSkill")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        variant="danger"
+        onConfirm={handleConfirmDeleteSkill}
+        onCancel={() => setConfirmDeleteSkill(null)}
+      />
     </div>
   );
 }
 
 function SkillEditor({
-  template, editing, nextOrder, onClose, onSaved,
+  template, editing, nextOrder, onClose, onLocalSave, onSavedRefresh,
 }: {
-  template: EnemyTemplate;
-  editing: EnemyTemplateSkill | null;
+  template: EnemyTemplate | null;
+  editing: EnemyTemplateSkill | LocalSkill | null;
   nextOrder: number;
   onClose: () => void;
-  onSaved: () => void;
+  onLocalSave: (draft: EnemyTemplateSkillDraft) => void;
+  onSavedRefresh: () => void;
 }) {
   const { t } = useT();
   const [name, setName] = useState(editing?.name || "");
-  const [rarity, setRarity] = useState<EnemyTemplateSkill["rarity"]>(editing?.rarity || "white");
+  const [rarity, setRarity] = useState<EnemyTemplateSkill["rarity"]>((editing?.rarity as any) || "white");
   const [skillType, setSkillType] = useState(editing?.skill_type || "impact");
   const [shape, setShape] = useState(editing?.target_shape || "point");
   const [targets, setTargets] = useState(editing?.targets || "");
@@ -300,9 +385,6 @@ function SkillEditor({
 
   const submit = async () => {
     if (!name.trim()) { toast.error(t("bestiary.errSkillName")); return; }
-    // Soft validation: numeric effects need dice
-    const needsDice = ["impact", "healing", "control", "debuff"].includes(skillType);
-    if (needsDice && !dice.trim() && !confirm(t("bestiary.warnNoDice"))) return;
     setBusy(true);
     const draft: EnemyTemplateSkillDraft = {
       name: name.trim(),
@@ -314,14 +396,23 @@ function SkillEditor({
       range_text: rangeText.trim() || null,
       effect: effect.trim() || null,
       visual_brief: visual.trim() || null,
-      order_index: editing?.order_index ?? nextOrder,
+      order_index: (editing as any)?.order_index ?? nextOrder,
     };
+    // If template not yet persisted OR editing a local skill → local save.
+    const isLocalEdit = editing && (editing as LocalSkill)._isLocal;
+    if (!template || isLocalEdit) {
+      onLocalSave(draft);
+      setBusy(false);
+      onClose();
+      return;
+    }
+    const saved = editing as EnemyTemplateSkill;
     const r = editing
-      ? await updateTemplateSkill(editing, draft)
+      ? await updateTemplateSkill(saved, draft)
       : await addTemplateSkill(template, draft);
     setBusy(false);
     if (!r.ok) { toast.error(t("bestiary.saveError")); return; }
-    onSaved();
+    onSavedRefresh();
     onClose();
   };
 
@@ -342,9 +433,9 @@ function SkillEditor({
           <Field label={t("bestiary.castShape")}>
             <Select value={shape} onChange={setShape} options={SKILL_SHAPES.map(v => [v, t(`bestiary.shape_${v}`)])} />
           </Field>
-          <Field label={t("bestiary.targets")}><Input value={targets} onChange={setTargets} /></Field>
+          <Field label={t("bestiary.targets")}><Input value={targets} onChange={setTargets} placeholder="[Usuario]" /></Field>
           <Field label={t("bestiary.dice")}><Input value={dice} onChange={setDice} placeholder="1d6" /></Field>
-          <Field label={t("bestiary.range")}><Input value={rangeText} onChange={setRangeText} /></Field>
+          <Field label={t("bestiary.range")}><Input value={rangeText} onChange={setRangeText} placeholder="[MELEE]" /></Field>
         </div>
         <Field label={t("bestiary.effect")}>
           <textarea className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 text-sm" rows={2}
