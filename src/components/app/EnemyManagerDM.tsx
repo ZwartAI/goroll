@@ -41,7 +41,8 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
   const active = activeBlock(encounter, blocks);
 
   const [editing, setEditing] = useState<CombatParticipant | null>(null);
-  const [damaging, setDamaging] = useState<CombatParticipant | null>(null);
+  const [attacking, setAttacking] = useState<CombatParticipant | null>(null);
+  const [healing, setHealing] = useState<CombatParticipant | null>(null);
   const [sheet, setSheet] = useState<CombatParticipant | null>(null);
   const [removing, setRemoving] = useState<CombatParticipant | null>(null);
   const [removingPin, setRemovingPin] = useState<CombatTurnPin | null>(null);
