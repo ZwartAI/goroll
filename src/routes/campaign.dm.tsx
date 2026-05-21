@@ -20,6 +20,7 @@ import { SkillsManager, ManualCreate as SkillManualCreate } from "@/components/a
 import { Escenario } from "@/components/app/Escenario";
 import { CombatDMPanel } from "@/components/app/CombatDMPanel";
 import { MicToggle } from "@/components/app/MicToggle";
+import { MailboxButton } from "@/components/app/MailboxButton";
 import { MicSettingsModal } from "@/components/app/MicSettingsModal";
 import { useVoice } from "@/lib/useVoice";
 import { useEffect, useState } from "react";
@@ -99,16 +100,17 @@ function DM() {
   return (
     <PageFrame>
       <DMRequestGate campaignId={campaign.id} ownerUserId={(campaign as any).owner_user_id ?? null} />
-      <header className="flex items-start justify-between gap-2 mb-3">
-        <button onClick={logout} className="text-muted-foreground"><LogOut size={18}/></button>
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{campaign.name}</p>
-          <h1 className="font-display text-xl rune-glow text-[var(--gold)]">👑 {character.name}</h1>
+      <header className="relative mb-3 min-h-[64px]">
+        <button onClick={logout} className="absolute left-0 top-0 text-muted-foreground p-1"><LogOut size={18}/></button>
+        <div className="text-center px-12">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{campaign.name}</p>
+          <h1 className="font-display text-xl rune-glow text-[var(--gold)] truncate">👑 {character.name}</h1>
           <p className="text-xs text-muted-foreground">{t("dm.dungeonMaster")}</p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="absolute right-0 top-0 flex items-center gap-1.5">
           <MicToggle enabled={voice.enabled} onToggle={voice.toggle} onLongPress={() => setMicSettingsOpen(true)} />
           <MicSettingsModal open={micSettingsOpen} onOpenChange={setMicSettingsOpen} />
+          <MailboxButton className="text-muted-foreground" />
           <Link to="/campaign/bestiary" className="text-muted-foreground" title={t("bestiary.title")}><Skull size={20}/></Link>
           <Link to="/campaign/achievements" className="text-muted-foreground"><Trophy size={20}/></Link>
         </div>
