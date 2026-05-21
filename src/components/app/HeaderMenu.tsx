@@ -13,7 +13,7 @@ export type HeaderMenuItem = {
   key: string;
   label: string;
   /** Lucide-style icon component. */
-  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string; style?: any }>;
   /** Optional accent color for the icon (subtle). */
   color?: string;
   /** Navigate to a route, or run an action. */
