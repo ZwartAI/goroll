@@ -22,6 +22,7 @@ import { EnemySkillCard } from "@/components/app/EnemySkillCard";
 import { EnemySkillUseModal } from "@/components/app/EnemySkillUseModal";
 import { EnemySpeechModal } from "@/components/app/EnemySpeechModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
+import { StatText } from "@/components/app/StatText";
 
 type Props = {
   participant: CombatParticipant;
