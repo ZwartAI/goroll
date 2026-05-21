@@ -32,6 +32,7 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
   const [addingEnemy, setAddingEnemy] = useState(false);
   const [pickingTemplate, setPickingTemplate] = useState(false);
   const [templates, setTemplates] = useState<EnemyTemplate[]>([]);
+  const [confirmState, setConfirmState] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     if (pickingTemplate) listTemplates(campaignId).then(setTemplates);
@@ -79,11 +80,13 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
           <EnemyManagerDM encounter={encounter} participants={participants} groups={groups} dm={dm} />
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button className="btn-fantasy" style={{ background: "var(--loss)", color: "white" }}
-              onClick={async () => {
-                if (!confirm(t("combat.confirmCancel"))) return;
-                const r = await cancelInitiative(encounter, dm);
-                if (!r.ok) toast.error(t("combat.cancelError"));
-              }}>
+              onClick={() => setConfirmState({
+                message: t("combat.confirmCancel"),
+                onConfirm: async () => {
+                  const r = await cancelInitiative(encounter, dm);
+                  if (!r.ok) toast.error(t("combat.cancelError"));
+                },
+              })}>
               <X size={14} className="inline mr-1" /> {t("combat.cancel")}
             </button>
             <button className="btn-fantasy" disabled={participants.length === 0}
@@ -114,11 +117,13 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
             </button>
             <button className="btn-fantasy text-xs"
               style={{ background: "var(--loss)", color: "white" }}
-              onClick={async () => {
-                if (!confirm(t("combat.confirmEnd"))) return;
-                const r = await endCombat(encounter, dm);
-                if (!r.ok) toast.error(t("combat.endError"));
-              }}>
+              onClick={() => setConfirmState({
+                message: t("combat.confirmEnd"),
+                onConfirm: async () => {
+                  const r = await endCombat(encounter, dm);
+                  if (!r.ok) toast.error(t("combat.endError"));
+                },
+              })}>
               <X size={14} className="inline mr-1" /> {t("combat.end")}
             </button>
           </div>
@@ -150,6 +155,28 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
               </button>
             ))}
             <button className="btn-fantasy w-full text-xs" onClick={() => setPickingTemplate(false)}>{t("common.close")}</button>
+          </div>
+        </div>
+      )}
+
+      {confirmState && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-3" onClick={() => setConfirmState(null)}>
+          <div className="ornate-card max-w-sm w-full p-4 space-y-3" onClick={e => e.stopPropagation()}>
+            <p className="text-sm text-foreground">{confirmState.message}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn-fantasy text-xs" onClick={() => setConfirmState(null)}>
+                {t("common.cancel")}
+              </button>
+              <button className="btn-fantasy text-xs"
+                style={{ background: "var(--loss)", color: "white" }}
+                onClick={() => {
+                  const fn = confirmState.onConfirm;
+                  setConfirmState(null);
+                  fn();
+                }}>
+                {t("common.confirm")}
+              </button>
+            </div>
           </div>
         </div>
       )}
