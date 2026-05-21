@@ -148,18 +148,7 @@ function Profile() {
 
       {activeTab === "personaje" && (
         <>
-          {/* Primary combat action — initiative / pass turn */}
-          <div className="mb-3">
-            <InitiativeButton
-              character={character}
-              encounter={combat.encounter}
-              participants={combat.participants}
-              groups={combat.groups}
-              online={characters.filter(c => onlineIds.has(c.id))}
-            />
-          </div>
-
-          {/* Top: image (left) + key stats (right) */}
+          {/* Top: image (left) + compact stats + initiative (right) */}
           <div className="grid grid-cols-5 gap-2 mb-3">
             <button
               onClick={() => setImgModal(true)}
@@ -181,44 +170,57 @@ function Profile() {
               )}
             </button>
 
-            <div className="col-span-3 grid grid-cols-2 gap-2">
-              <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.life")}</p>
-                <p className="font-display text-sm">{character.current_hp}/{stats.maxHp}</p>
+            <div className="col-span-3 flex flex-col gap-1.5">
+              {/* Row 1: Level, Defense, Damage */}
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="ornate-card !p-1.5 text-center">
+                  <p className="text-[8px] uppercase tracking-wide text-muted-foreground leading-tight">{t("level.label")}</p>
+                  <p className="font-display text-base leading-tight text-[var(--gold)]">{(character as any).level ?? 1}</p>
+                </div>
+                <div className="ornate-card !p-1.5 text-center">
+                  <p className="text-[8px] uppercase tracking-wide text-muted-foreground leading-tight">{t("profile.defense")}</p>
+                  <p className="font-display text-base leading-tight text-[var(--gold)]">{stats.defense}</p>
+                </div>
+                <div className="ornate-card !p-1.5 text-center">
+                  <p className="text-[8px] uppercase tracking-wide text-muted-foreground leading-tight">{t("profile.damage")}</p>
+                  <p className="font-display text-base leading-tight text-[var(--loss)]">{stats.damage > 0 ? `+${stats.damage}` : stats.damage}</p>
+                </div>
               </div>
-              <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.defense")}</p>
-                <p className="font-display text-sm text-[var(--gold)]">{stats.defense}</p>
+
+              {/* Row 2: Velocity (1) + Coins (2) */}
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="ornate-card !p-1.5 text-center">
+                  <p className="text-[8px] uppercase tracking-wide text-muted-foreground leading-tight">{t("profile.velocity")}</p>
+                  <p className="font-display text-base leading-tight">{character.velocity}<span className="text-[9px]">ft</span></p>
+                </div>
+                <button
+                  type="button"
+                  {...coinsPress}
+                  onContextMenu={(e) => { e.preventDefault(); setPurseOpen(true); }}
+                  onDoubleClick={() => setPurseOpen(true)}
+                  aria-label={t("purse.openHint")}
+                  title={t("purse.openHint")}
+                  className="ornate-card !p-1.5 col-span-2 flex items-center justify-center gap-2 select-none transition-transform active:scale-95"
+                >
+                  <Coins size={18} className="text-[var(--gold)] shrink-0" />
+                  <span className="font-display text-lg text-[var(--gold)] leading-none">{character.coins}</span>
+                  <span className="text-[8px] uppercase tracking-wide text-muted-foreground leading-tight ml-1">{t("profile.coins")}</span>
+                </button>
               </div>
-              <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.velocity")}</p>
-                <p className="font-display text-sm">{character.velocity}<span className="text-[9px]">ft</span></p>
-              </div>
-              <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">{t("level.label")}</p>
-                <p className="font-display text-sm text-[var(--gold)]">{(character as any).level ?? 1}</p>
-              </div>
-              <button
-                type="button"
-                {...coinsPress}
-                onContextMenu={(e) => { e.preventDefault(); setPurseOpen(true); }}
-                onDoubleClick={() => setPurseOpen(true)}
-                aria-label={t("purse.openHint")}
-                title={t("purse.openHint")}
-                className="ornate-card p-2 text-center select-none transition-transform active:scale-95"
-              >
-                <p className="text-[9px] uppercase text-muted-foreground flex items-center justify-center gap-1">
-                  <Coins size={10} className="text-[var(--gold)]" />
-                  {t("profile.coins")}
-                </p>
-                <p className="font-display text-sm text-[var(--gold)]">{character.coins}</p>
-              </button>
-              <div className="ornate-card p-2 text-center">
-                <p className="text-[9px] uppercase text-muted-foreground">{t("profile.damage")}</p>
-                <p className="font-display text-sm text-[var(--loss)]">{stats.damage > 0 ? `+${stats.damage}` : stats.damage}</p>
+
+              {/* Initiative / Pass Turn — primary combat action */}
+              <div className="mt-0.5">
+                <InitiativeButton
+                  character={character}
+                  encounter={combat.encounter}
+                  participants={combat.participants}
+                  groups={combat.groups}
+                  online={characters.filter(c => onlineIds.has(c.id))}
+                />
               </div>
             </div>
           </div>
+
 
           {/* HP bar */}
           <div className="ornate-card p-2 mb-3">
