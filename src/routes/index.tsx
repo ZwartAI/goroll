@@ -636,13 +636,28 @@ function Home() {
           <h2 className="text-center font-display text-lg">{campaign.name}</h2>
           <p className="text-center text-xs uppercase tracking-widest text-muted-foreground">{t("home.yourCharacters")}</p>
           <div className="space-y-2">
-            {myChars.map(c => (
-              <button key={c.id} onClick={() => enterCampaign(campaign, c)}
-                className="w-full rounded-lg border border-border bg-card px-3 py-3 text-left hover:border-[var(--gold)]/60 transition flex justify-between items-center">
-                <span className="font-display text-base" style={{ color: c.color }}>{c.name}</span>
-                <span className="text-xs text-muted-foreground">{c.race || "—"} / {c.class || "—"}</span>
-              </button>
-            ))}
+            {myChars.map(c => {
+              const max = (c as any).base_hp || 1;
+              const cur = (c as any).current_hp ?? max;
+              const pct = Math.max(0, Math.min(100, (cur / max) * 100));
+              return (
+                <button key={c.id} onClick={() => enterCampaign(campaign, c)}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-left hover:border-[var(--gold)]/60 transition flex items-center gap-3">
+                  <CharacterPortrait character={c as any} className="w-12 h-12 shrink-0 border-2"
+                    rounded="rounded-full" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-display text-base truncate" style={{ color: c.color }}>{c.name}</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{c.race || "—"} / {c.class || "—"}</span>
+                    </div>
+                    <p className="text-[11px] mt-0.5">❤️ {cur}/{max}</p>
+                    <div className="h-1 rounded-full bg-secondary overflow-hidden mt-1">
+                      <div className="h-full" style={{ width: `${pct}%`, background: pct > 50 ? "var(--gain)" : pct > 25 ? "var(--gold)" : "var(--loss)" }} />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
             {!myChars.length && <p className="text-center text-xs text-muted-foreground py-2">{t("home.noCharacters")}</p>}
           </div>
           <div className="gem-divider" />
