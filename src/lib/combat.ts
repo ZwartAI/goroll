@@ -91,10 +91,22 @@ export type TurnBlock =
   | { kind: "pin"; key: string; initiative: number; pin: CombatTurnPin; linked: CombatParticipant };
 
 
-/** Build the ordered turn blocks (high → low initiative). */
+function blockOrder(b: TurnBlock): number {
+  if (b.kind === "solo") return b.participant.order_index;
+  if (b.kind === "group") return Math.min(...b.members.map(m => m.order_index));
+  return b.pin.order_index;
+}
+function blockCreated(b: TurnBlock): string {
+  if (b.kind === "solo") return b.participant.created_at;
+  if (b.kind === "group") return b.group.created_at;
+  return b.pin.created_at;
+}
+
+/** Build the ordered turn blocks (high → low initiative). Pins extend the order without HP. */
 export function buildOrderedTurns(
   participants: CombatParticipant[],
   groups: CombatTurnGroup[],
+  pins: CombatTurnPin[] = [],
 ): TurnBlock[] {
   const groupById = new Map(groups.map(g => [g.id, g]));
   const byGroup = new Map<string, CombatParticipant[]>();
@@ -117,14 +129,18 @@ export function buildOrderedTurns(
     members.sort((a, b) => (b.is_leader ? 1 : 0) - (a.is_leader ? 1 : 0) || a.created_at.localeCompare(b.created_at));
     blocks.push({ kind: "group", key: `g:${gid}`, initiative: g.group_initiative, group: g, members });
   }
+  const partById = new Map(participants.map(p => [p.id, p]));
+  for (const pin of pins) {
+    const linked = partById.get(pin.linked_participant_id);
+    if (!linked) continue;
+    blocks.push({ kind: "pin", key: `p:${pin.id}`, initiative: pin.initiative, pin, linked });
+  }
   blocks.sort((a, b) => {
     if (b.initiative !== a.initiative) return b.initiative - a.initiative;
-    const ao = a.kind === "solo" ? a.participant.order_index : Math.min(...a.members.map(m => m.order_index));
-    const bo = b.kind === "solo" ? b.participant.order_index : Math.min(...b.members.map(m => m.order_index));
+    const ao = blockOrder(a);
+    const bo = blockOrder(b);
     if (ao !== bo) return ao - bo;
-    const ak = a.kind === "solo" ? a.participant.created_at : a.group.created_at;
-    const bk = b.kind === "solo" ? b.participant.created_at : b.group.created_at;
-    return ak.localeCompare(bk);
+    return blockCreated(a).localeCompare(blockCreated(b));
   });
   return blocks;
 }
@@ -139,8 +155,10 @@ export function activeBlock(encounter: CombatEncounter | null, blocks: TurnBlock
 export function blockContainsCharacter(block: TurnBlock | null, characterId: string): boolean {
   if (!block) return false;
   if (block.kind === "solo") return block.participant.character_id === characterId;
-  return block.members.some(m => m.character_id === characterId);
+  if (block.kind === "group") return block.members.some(m => m.character_id === characterId);
+  return false;
 }
+
 
 export function participantForCharacter(
   participants: CombatParticipant[],
