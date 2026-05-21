@@ -17,10 +17,21 @@ export type UndoAction =
   | { kind: "achievement.delete"; id: string }
   | { kind: "achievement.recreate"; row: Record<string, any> };
 
-export async function pushLog(campaignId: string, segments: Segment[], undo?: UndoAction) {
+/**
+ * pushLog inserts a log row visible to all players by default.
+ * Pass `dmOnly: true` for spoilery DM-side events (creating an item, booster,
+ * skill, or monster template) so only the DM sees the entry in the log feed.
+ */
+export async function pushLog(
+  campaignId: string,
+  segments: Segment[],
+  undo?: UndoAction,
+  opts?: { dmOnly?: boolean },
+) {
   await supabase.from("logs").insert({
     campaign_id: campaignId,
     segments: segments as any,
     undo: (undo as any) ?? null,
+    dm_only: !!opts?.dmOnly,
   } as any);
 }
