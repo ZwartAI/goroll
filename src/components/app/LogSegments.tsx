@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { RARITY_COLOR, type Segment } from "@/lib/game";
 import { EnemyIcon } from "@/components/app/EnemyIconPicker";
+import { StatText } from "@/components/app/StatText";
 
 type Override = { name: string; color: string };
 
@@ -21,7 +22,7 @@ export function LogSegments({
   const out: ReactNode[] = [];
   segments.forEach((s, i) => {
     if (i > 0 && s.t !== "enemy_skill" && s.t !== "enemy_speech" && s.t !== "player_skill") out.push(<span key={`sp${i}`}> </span>);
-    if (s.t === "text") out.push(<span key={i} className="text-foreground/85">{s.v}</span>);
+    if (s.t === "text") out.push(<span key={i} className="text-foreground/85"><StatText>{s.v}</StatText></span>);
     else if (s.t === "char") {
       const clickable = onChar && s.id;
       const ov = s.id ? nameOverrides?.[s.id] : undefined;
@@ -57,7 +58,7 @@ export function LogSegments({
             </span>
             <strong style={{ color }}>{p.enemyName}:</strong>
           </span>
-          <span className="ml-1 italic text-foreground/90">"{p.text}"</span>
+          <span className="ml-1 italic text-foreground/90">"<StatText>{p.text}</StatText>"</span>
         </span>
       );
     }
@@ -88,9 +89,9 @@ export function LogSegments({
               {p.rollResult && <span className="block"><span className="text-muted-foreground">Tirada: </span><span style={{ color: "var(--gold)" }}>{p.rollResult}</span></span>}
             </span>
           )}
-          {p.effect && <span className="block mt-1 text-[11px] text-foreground/90">{p.effect}</span>}
-          {full && p.visualBrief && <span className="block mt-0.5 text-[10px] italic" style={{ color: "#c4b5fd" }}>{p.visualBrief}</span>}
-          {full && p.dmNote && <span className="block mt-0.5 text-[10px] text-muted-foreground">— {p.dmNote}</span>}
+          {p.effect && <span className="block mt-1 text-[11px] text-foreground/90"><StatText>{p.effect}</StatText></span>}
+          {full && p.visualBrief && <span className="block mt-0.5 text-[10px] italic" style={{ color: "#c4b5fd" }}><StatText>{p.visualBrief}</StatText></span>}
+          {full && p.dmNote && <span className="block mt-0.5 text-[10px] text-muted-foreground">— <StatText>{p.dmNote}</StatText></span>}
         </span>
       );
     }
@@ -135,7 +136,7 @@ export function LogSegments({
             </span>
           )}
           {p.defeated.length > 0 && <span className="block text-[10px] text-muted-foreground">💀 {p.defeated.join(", ")}</span>}
-          {p.note && <span className="block mt-0.5 text-[10px] italic text-foreground/80">{p.note}</span>}
+          {p.note && <span className="block mt-0.5 text-[10px] italic text-foreground/80"><StatText>{p.note}</StatText></span>}
         </span>
       );
     }

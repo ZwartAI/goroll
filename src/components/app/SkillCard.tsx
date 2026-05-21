@@ -3,6 +3,7 @@ import { ChevronDown, Dices, Crosshair, Users, Eye, Sparkles } from "lucide-reac
 import { RARITY_COLOR, type Rarity } from "@/lib/game";
 import { RarityBadge } from "./RarityBadge";
 import { SkillIconMedallion } from "./SkillIconMedallion";
+import { StatText } from "./StatText";
 
 export type CharacterSkill = {
   id: string;
@@ -164,13 +165,13 @@ export function SkillCard({ s, compact, locked, onClick, expandable, i18n }: Pro
             <DetailRow icon={<Sparkles size={13} color={color} />} label={i18n?.effect ?? "Efecto"}>
               <p className="text-xs whitespace-pre-wrap"
                 style={{ color: "color-mix(in oklab, var(--foreground) 88%, transparent)" }}>
-                {s.effect}
+                <StatText>{s.effect}</StatText>
               </p>
             </DetailRow>
           )}
           {s.visual_brief && (
             <DetailRow icon={<Eye size={13} color={VISUAL_C} />} label={i18n?.visual ?? "Visual"}>
-              <p className="text-xs italic" style={{ color: VISUAL_C }}>{s.visual_brief}</p>
+              <p className="text-xs italic" style={{ color: VISUAL_C }}><StatText>{s.visual_brief}</StatText></p>
             </DetailRow>
           )}
         </div>

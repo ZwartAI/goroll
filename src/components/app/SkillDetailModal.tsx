@@ -2,6 +2,7 @@ import { RARITY_COLOR, type Rarity } from "@/lib/game";
 import { RarityBadge } from "./RarityBadge";
 import { useT } from "@/lib/i18n";
 import type { CharacterSkill } from "./SkillCard";
+import { StatText } from "./StatText";
 
 type Props = {
   skill: CharacterSkill;
@@ -84,7 +85,7 @@ function Field({ label, value, italic }: { label: string; value: string; italic?
   return (
     <div>
       <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">{label}</p>
-      <p className={`text-xs whitespace-pre-wrap ${italic ? "italic text-muted-foreground" : ""}`}>{value}</p>
+      <p className={`text-xs whitespace-pre-wrap ${italic ? "italic text-muted-foreground" : ""}`}><StatText>{value}</StatText></p>
     </div>
   );
 }

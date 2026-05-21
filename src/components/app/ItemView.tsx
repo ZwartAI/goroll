@@ -1,6 +1,7 @@
 import { SLOTS, RARITY_COLOR, RARITY_BONUS, ITEM_CATEGORIES, isWeapon, type Item, type Rarity } from "@/lib/game";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { useT } from "@/lib/i18n";
+import { StatText } from "@/components/app/StatText";
 
 export function ItemView({ item }: { item: Item }) {
   const isEq = item.category === "equipo" || !item.category;
@@ -31,7 +32,7 @@ export function ItemView({ item }: { item: Item }) {
       {item.description && (
         <div className="mt-2 rounded-md border border-[var(--gold)]/30 bg-[var(--card)]/60 p-2">
           <p className="text-[10px] uppercase tracking-widest text-[var(--gold)]/80 mb-1">{t("itemEditor.description")}</p>
-          <p className="text-xs italic text-muted-foreground whitespace-pre-wrap">"{item.description}"</p>
+          <p className="text-xs italic text-muted-foreground whitespace-pre-wrap">"<StatText>{item.description}</StatText>"</p>
         </div>
       )}
     </div>

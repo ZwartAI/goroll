@@ -8,6 +8,7 @@ import {
   type EnemySkillVisibility,
 } from "@/lib/combat";
 import { EnemyIcon } from "@/components/app/EnemyIconPicker";
+import { StatText } from "@/components/app/StatText";
 
 export function EnemySkillUseModal({
   participant, skill, onClose,
@@ -57,8 +58,8 @@ export function EnemySkillUseModal({
           {skill.dice && <p><span className="text-muted-foreground">{t("bestiary.dice")}: </span><span style={{ color: "var(--gold)" }}>{skill.dice}</span></p>}
           {skill.range_text && <p><span className="text-muted-foreground">{t("bestiary.range")}: </span><span style={{ color: "#60a5fa" }}>{skill.range_text}</span></p>}
           {skill.targets && <p><span className="text-muted-foreground">{t("bestiary.targets")}: </span><span style={{ color: "#34d399" }}>{skill.targets}</span></p>}
-          {skill.effect && <p className="text-foreground/85">{skill.effect}</p>}
-          {skill.visual_brief && <p className="italic" style={{ color: "#c4b5fd" }}>{skill.visual_brief}</p>}
+          {skill.effect && <p className="text-foreground/85"><StatText>{skill.effect}</StatText></p>}
+          {skill.visual_brief && <p className="italic" style={{ color: "#c4b5fd" }}><StatText>{skill.visual_brief}</StatText></p>}
         </div>
 
         {numericNoDice && (

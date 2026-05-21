@@ -22,6 +22,7 @@ import { EnemySkillCard } from "@/components/app/EnemySkillCard";
 import { EnemySkillUseModal } from "@/components/app/EnemySkillUseModal";
 import { EnemySpeechModal } from "@/components/app/EnemySpeechModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
+import { StatText } from "@/components/app/StatText";
 
 type Props = {
   participant: CombatParticipant;
@@ -157,9 +158,9 @@ export function EnemyCombatSheetModal({ participant, encounter, participants, gr
         {/* Behavior */}
         {(template?.behavior_notes || template?.description || participant.enemy_notes) && (
           <Section title={t("combat.enemy.behavior")}>
-            {template?.description && <p className="text-[11px] text-foreground/85 leading-snug">{template.description}</p>}
-            {template?.behavior_notes && <p className="text-[11px] text-foreground/70 leading-snug italic">{template.behavior_notes}</p>}
-            {participant.enemy_notes && <p className="text-[11px] text-muted-foreground leading-snug">{participant.enemy_notes}</p>}
+            {template?.description && <p className="text-[11px] text-foreground/85 leading-snug"><StatText>{template.description}</StatText></p>}
+            {template?.behavior_notes && <p className="text-[11px] text-foreground/70 leading-snug italic"><StatText>{template.behavior_notes}</StatText></p>}
+            {participant.enemy_notes && <p className="text-[11px] text-muted-foreground leading-snug"><StatText>{participant.enemy_notes}</StatText></p>}
           </Section>
         )}
 

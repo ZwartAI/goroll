@@ -8,6 +8,7 @@ import {
 } from "@/lib/bestiary";
 import { EnemyIcon } from "@/components/app/EnemyIconPicker";
 import { RarityBadge } from "@/components/app/RarityBadge";
+import { StatText } from "@/components/app/StatText";
 
 type Props = {
   template: EnemyTemplate;
@@ -124,7 +125,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="space-y-1">
       <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{title}</p>
-      <div className="text-xs whitespace-pre-wrap">{children}</div>
+      <div className="text-xs whitespace-pre-wrap">{typeof children === "string" ? <StatText>{children}</StatText> : children}</div>
     </div>
   );
 }

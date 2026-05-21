@@ -2,6 +2,7 @@ import { useT } from "@/lib/i18n";
 import { RARITY_COLOR } from "@/lib/game";
 import { Sword, Sparkles, Shield, Zap, Wind, Eye, Skull, Heart, type LucideIcon } from "lucide-react";
 import type { EnemyTemplateSkill } from "@/lib/bestiary";
+import { StatText } from "./StatText";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
   impact: Sword,
@@ -64,10 +65,10 @@ export function EnemySkillCard({
       </div>
 
       {skill.effect && (
-        <p className="text-[11px] text-foreground/90 leading-snug">{skill.effect}</p>
+        <p className="text-[11px] text-foreground/90 leading-snug"><StatText>{skill.effect}</StatText></p>
       )}
       {skill.visual_brief && (
-        <p className="text-[10px] italic" style={{ color: "#c4b5fd" }}>{skill.visual_brief}</p>
+        <p className="text-[10px] italic" style={{ color: "#c4b5fd" }}><StatText>{skill.visual_brief}</StatText></p>
       )}
 
       {(onUse || onShow) && (

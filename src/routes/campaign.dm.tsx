@@ -9,6 +9,7 @@ import { clampHpForOwner } from "@/lib/hp";
 import { LogSegments } from "@/components/app/LogSegments";
 import { LogList } from "@/components/app/LogList";
 import { RarityBadge } from "@/components/app/RarityBadge";
+import { StatText } from "@/components/app/StatText";
 import { ItemEditor } from "@/components/app/ItemEditor";
 import { CharacterSheetModal } from "@/components/app/CharacterSheetModal";
 import { DMConditionsCreator } from "@/components/app/ConditionsPanel";
@@ -676,7 +677,7 @@ function ItemActions({ item, players, dm, campaignId, allItems, allCharacters, o
         ) : (item.uses ?? 0) > 0 && (
           <p className="text-sm">{tr("inventory.usesRemaining")} {item.uses}{item.max_uses ? `/${item.max_uses}` : ""}</p>
         )}
-        {item.description && <p className="text-xs text-muted-foreground italic">"{item.description}"</p>}
+        {item.description && <p className="text-xs text-muted-foreground italic">"<StatText>{item.description}</StatText>"</p>}
         <div className="grid grid-cols-2 gap-2">
           <button className="btn-fantasy flex items-center justify-center gap-1" onClick={onEdit}><Pencil size={13}/> {tr("common.edit")}</button>
           <button className="btn-fantasy" onClick={reclaim}>{tr("dm.reclaim")}</button>
