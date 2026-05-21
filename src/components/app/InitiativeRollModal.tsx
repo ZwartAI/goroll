@@ -36,7 +36,11 @@ export function InitiativeRollModal({ encounter, character, linkCandidates, onCl
     if (link && picked.size > 0) {
       const members = linkCandidates.filter(c => picked.has(c.id));
       const res = await createLink(encounter, character, members, n);
-      if (!res.ok) { toast.error(t("combat.linkError")); setBusy(false); return; }
+      if (!res.ok) {
+        toast.error(res.error === "already_linked" ? t("combat.linkAlreadyError") : t("combat.linkError"));
+        setBusy(false);
+        return;
+      }
     } else {
       const res = await submitInitiative(encounter, character, n);
       if (!res.ok) { toast.error(t("combat.submitError")); setBusy(false); return; }

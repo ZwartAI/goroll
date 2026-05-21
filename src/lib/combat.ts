@@ -292,6 +292,19 @@ export async function submitInitiative(
   return { ok: true };
 }
 
+export function groupForCharacter(
+  participants: CombatParticipant[],
+  groups: CombatTurnGroup[],
+  characterId: string,
+): { group: CombatTurnGroup; members: CombatParticipant[] } | null {
+  const me = participants.find(p => p.character_id === characterId);
+  if (!me || !me.turn_group_id) return null;
+  const group = groups.find(g => g.id === me.turn_group_id);
+  if (!group) return null;
+  const members = participants.filter(p => p.turn_group_id === group.id);
+  return { group, members };
+}
+
 export async function createLink(
   encounter: CombatEncounter,
   leader: Character,
@@ -302,6 +315,17 @@ export async function createLink(
   if (members.length === 0) return { ok: false, error: "no_members" };
   if (members.length + 1 > 3) return { ok: false, error: "too_many" };
   const value = clampInitiative(initiative);
+
+  // Guard: refuse if any of the chosen characters is already in a link for this encounter.
+  const allIds = [leader.id, ...members.map(m => m.id)];
+  const { data: existing } = await (supabase as any)
+    .from("combat_participants")
+    .select("character_id,turn_group_id")
+    .eq("encounter_id", encounter.id)
+    .in("character_id", allIds);
+  if ((existing || []).some((r: any) => r.turn_group_id)) {
+    return { ok: false, error: "already_linked" };
+  }
 
   const { data: group, error: gErr } = await supabase
     .from("combat_turn_groups" as any)
@@ -342,6 +366,30 @@ export async function createLink(
       ...(i < members.length - 1 ? [{ t: "text" as const, v: ", " }] : []),
     ]),
     { t: "text", v: `. (Iniciativa ${value})` },
+  ]);
+  return { ok: true };
+}
+
+/**
+ * Dissolve an Enlace: clear turn_group_id / is_leader on its members and delete the group row.
+ * DM-only in practice (UI gates this).
+ */
+export async function dissolveLink(
+  group: CombatTurnGroup,
+  dm: { id: string; name: string; color: string },
+) {
+  await (supabase as any)
+    .from("combat_participants")
+    .update({ turn_group_id: null, is_leader: false })
+    .eq("turn_group_id", group.id);
+  const { error } = await (supabase as any)
+    .from("combat_turn_groups")
+    .delete()
+    .eq("id", group.id);
+  if (error) return { ok: false, error: error.message };
+  await pushLog(group.campaign_id, [
+    { t: "char", v: dm.name, color: dm.color, id: dm.id },
+    { t: "text", v: ` disolvió un Enlace${group.name ? ` (${group.name})` : ""}.` },
   ]);
   return { ok: true };
 }

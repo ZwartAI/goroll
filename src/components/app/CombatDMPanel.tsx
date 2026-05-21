@@ -6,6 +6,7 @@ import { listTemplates, spawnFromTemplate, type EnemyTemplate } from "@/lib/best
 import {
   buildOrderedTurns,
   cancelInitiative,
+  dissolveLink,
   dmShiftTurn,
   endCombat,
   requestInitiative,
@@ -15,6 +16,7 @@ import {
   type CombatTurnGroup,
 } from "@/lib/combat";
 import { CombatList } from "@/components/app/CombatList";
+import { Crown, Link as LinkIcon } from "lucide-react";
 import { EnemyEditorModal } from "@/components/app/EnemyEditorModal";
 import { EnemyManagerDM } from "@/components/app/EnemyManagerDM";
 
@@ -73,8 +75,48 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
         </div>
       )}
 
+      {encounter && groups.length > 0 && status !== "ended" && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <LinkIcon size={12} className="text-[var(--gold)]" />
+            <span className="text-[10px] font-display uppercase tracking-widest text-[var(--gold)]">{t("combat.linkActiveTitle")}</span>
+          </div>
+          {groups.map(g => {
+            const members = participants.filter(p => p.turn_group_id === g.id);
+            return (
+              <div key={g.id} className="ornate-card !p-2 flex items-center gap-2"
+                style={{ borderColor: `color-mix(in oklab, ${g.color || "var(--gold)"} 55%, transparent)` }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1">
+                    {members.map(m => (
+                      <span key={m.id} className="text-[11px] flex items-center gap-0.5" style={{ color: m.color || undefined }}>
+                        {m.is_leader && <Crown size={10} className="text-[var(--gold)]" />}
+                        {m.display_name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button className="text-[10px] px-2 py-1 rounded border border-[var(--loss)]/60 text-[var(--loss)]"
+                  onClick={() => setConfirmState({
+                    message: t("combat.linkConfirmDissolve"),
+                    onConfirm: async () => {
+                      const r = await dissolveLink(g, dm);
+                      if (!r.ok) toast.error(t("combat.linkError"));
+                      else toast.success(t("combat.linkDissolved"));
+                    },
+                  })}>
+                  {t("combat.linkDissolve")}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+
       {status === "collecting" && encounter && (
         <>
+
           <p className="text-[11px] text-muted-foreground">{t("combat.collectingHint", { n: participants.length })}</p>
           <CombatList encounter={encounter} participants={participants} groups={groups} />
           <EnemyManagerDM encounter={encounter} participants={participants} groups={groups} dm={dm} />

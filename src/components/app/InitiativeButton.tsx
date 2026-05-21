@@ -33,6 +33,8 @@ export function InitiativeButton({ character, encounter, participants, groups, o
   const active = activeBlock(encounter, blocks);
   const myTurn = active ? blockContainsCharacter(active, character.id) : false;
 
+  const inLink = !!myPart?.turn_group_id;
+
   let label = t("combat.btnInitiative");
   let onClick: (() => void) | null = null;
   let style: React.CSSProperties = { opacity: 0.45, cursor: "not-allowed" };
@@ -40,7 +42,7 @@ export function InitiativeButton({ character, encounter, participants, groups, o
 
   if (status === "collecting") {
     if (myPart) {
-      label = t("combat.btnWaitingDm");
+      label = inLink ? t("combat.btnInLink") : t("combat.btnWaitingDm");
       disabled = true;
       style = { opacity: 0.6 };
     } else {
@@ -65,7 +67,13 @@ export function InitiativeButton({ character, encounter, participants, groups, o
     }
   }
 
-  const linkCandidates = online.filter(c => c.id !== character.id && c.role === "player");
+  // Exclude self, non-players, and characters already in a link in this encounter.
+  const linkedIds = new Set(
+    participants.filter(p => p.turn_group_id && p.character_id).map(p => p.character_id as string),
+  );
+  const linkCandidates = online.filter(
+    c => c.id !== character.id && c.role === "player" && !linkedIds.has(c.id),
+  );
 
   return (
     <>

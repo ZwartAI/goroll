@@ -66,6 +66,12 @@ export type ResolvePayload = {
   rollResult?: string;
   note?: string;
   durationRounds?: number;
+  /** Link synergy bonus added to damage amount. 0, 2 or 3. */
+  linkBonus?: 0 | 2 | 3;
+  /** Names of link members credited with the synergy (for the log). */
+  linkBonusMembers?: string[];
+  /** Required short justification when linkBonus > 0. */
+  linkBonusJustification?: string;
 };
 
 // ───────────────────────── Validation ─────────────────────────
@@ -305,7 +311,8 @@ export async function useSkill(args: {
   if (payload.resolution === "damage") {
     const enemies = targets.filter(t => t.kind === "enemy") as Extract<SkillTarget, { kind: "enemy" }>[];
     if (enemies.length === 0) return { ok: false, error: "no_enemy_target" as const };
-    const raw = Math.max(0, Math.floor(payload.amount || 0));
+    const bonus = (payload.linkBonus === 2 || payload.linkBonus === 3) ? payload.linkBonus : 0;
+    const raw = Math.max(0, Math.floor(payload.amount || 0)) + bonus;
     for (const tg of enemies) {
       const r = await applyDamageToEnemy(tg.participant, raw, !!payload.applyDefense);
       damageDetail.push({ raw, applied: r.applied, def: r.def, targetName: tg.participant.display_name });
@@ -407,6 +414,16 @@ export async function useSkill(args: {
       },
     } as any,
   ]);
+
+  // Optional synergy log right after the skill log.
+  if ((payload.linkBonus === 2 || payload.linkBonus === 3) && (payload.linkBonusMembers?.length ?? 0) > 0) {
+    const memberList = (payload.linkBonusMembers || []).join(", ");
+    const just = (payload.linkBonusJustification || "").trim();
+    await pushLog(encounter.campaign_id, [
+      { t: "char", v: source.name, color: source.color, id: source.id },
+      { t: "text", v: ` activó sinergia de Enlace (+${payload.linkBonus}) con ${memberList}${just ? `. Justificación: ${just}` : ""}.` },
+    ]);
+  }
 
   return { ok: true as const };
 }
