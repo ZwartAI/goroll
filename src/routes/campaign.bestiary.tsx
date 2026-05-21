@@ -52,6 +52,13 @@ function Bestiary() {
     return () => { (supabase as any).removeChannel(ch); };
   }, [campaign?.id]);
 
+  // Auto-open the Excel import modal when navigated with ?import=1 (DM Create shortcut).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("import") === "1") setImporting(true);
+  }, []);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return templates.filter(tpl => {
