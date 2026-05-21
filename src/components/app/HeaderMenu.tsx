@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   ChevronLeft, ChevronRight, X,
-  Inbox, Trophy, Skull, Mic, MicOff, Maximize2, Minimize2, LogOut,
+  Mail, Trophy, Skull, Mic, MicOff, Maximize2, Minimize2, LogOut,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
