@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession, setSession, type Campaign, type Character, type Item, type LogRow, type Achievement } from "./game";
@@ -12,6 +12,8 @@ export type CombatState = {
   participants: CombatParticipant[];
   groups: CombatTurnGroup[];
 };
+
+const LOGS_INITIAL_LIMIT = 50;
 
 type GameData = {
   campaign: Campaign | null;
@@ -30,9 +32,28 @@ type GameData = {
   /** Active or collecting combat for this campaign (null when none). */
   combat: CombatState;
   reload: () => Promise<void>;
+  loadMoreLogs: (extra?: number) => Promise<void>;
 };
 
 const Ctx = createContext<GameData | null>(null);
+
+/** Generic targeted patcher for INSERT / UPDATE / DELETE realtime payloads. */
+function applyChange<T extends { id: string }>(prev: T[], payload: any): T[] {
+  const ev = payload?.eventType;
+  const nu = payload?.new as T | null;
+  const old = payload?.old as Partial<T> | null;
+  if (ev === "INSERT" && nu) {
+    if (prev.some(x => x.id === nu.id)) return prev;
+    return [...prev, nu];
+  }
+  if (ev === "UPDATE" && nu) {
+    return prev.map(x => (x.id === nu.id ? { ...x, ...nu } : x));
+  }
+  if (ev === "DELETE" && old?.id) {
+    return prev.filter(x => x.id !== old.id);
+  }
+  return prev;
+}
 
 export function CampaignProvider({ children }: { children: ReactNode }) {
   const nav = useNavigate();
@@ -49,6 +70,10 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Array<{ user_id: string; role: string; created_at: string }>>([]);
 
   const [combat, setCombat] = useState<CombatState>({ encounter: null, participants: [], groups: [] });
+  const logsLimitRef = useRef(LOGS_INITIAL_LIMIT);
+  const charIdsRef = useRef<string[]>([]);
+
+  // -------- Targeted loaders --------
 
   const loadCombat = useCallback(async (campaignId: string) => {
     const { data: encs } = await (supabase as any)
@@ -71,15 +96,42 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const loadCharacters = useCallback(async (campaignId: string) => {
+    const { data } = await supabase.from("characters").select("*").eq("campaign_id", campaignId);
+    const chars = (data || []) as Character[];
+    setCharacters(chars);
+    charIdsRef.current = chars.map(c => c.id);
+    return chars;
+  }, []);
+
+  const loadAchievements = useCallback(async (charIds: string[]) => {
+    if (!charIds.length) { setAchievements([]); return; }
+    const { data } = await supabase.from("achievements").select("*").in("character_id", charIds);
+    setAchievements((data || []) as Achievement[]);
+  }, []);
+
+  const loadLogs = useCallback(async (campaignId: string, limit = LOGS_INITIAL_LIMIT) => {
+    const { data } = await supabase
+      .from("logs").select("*").eq("campaign_id", campaignId)
+      .order("created_at", { ascending: false }).limit(limit);
+    logsLimitRef.current = limit;
+    setLogs((data || []) as LogRow[]);
+  }, []);
+
+  const loadMoreLogs = useCallback(async (extra = 50) => {
+    const s = getSession(); if (!s) return;
+    await loadLogs(s.campaignId, logsLimitRef.current + extra);
+  }, [loadLogs]);
+
   const load = useCallback(async () => {
     const s = getSession();
     if (!s) { nav({ to: "/" }); return; }
-    const [c1, c2, c3, c4, c5, c6] = await Promise.all([
+
+    // Critical first paint: campaign + current character + characters list + combat.
+    const [c1, c2, c3, c6] = await Promise.all([
       supabase.from("campaigns").select("*").eq("id", s.campaignId).single(),
       s.characterId ? supabase.from("characters").select("*").eq("id", s.characterId).single() : Promise.resolve({ data: null }),
       supabase.from("characters").select("*").eq("campaign_id", s.campaignId),
-      supabase.from("items").select("*").eq("campaign_id", s.campaignId),
-      supabase.from("logs").select("*").eq("campaign_id", s.campaignId).order("created_at", { ascending: false }).limit(100),
       (supabase as any).from("campaign_members").select("user_id,role,created_at").eq("campaign_id", s.campaignId).order("created_at"),
     ]);
     if (!c1.data) { setSession(null); nav({ to: "/" }); return; }
@@ -87,43 +139,77 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     setCharacter((c2.data as Character) || null);
     const chars = (c3.data || []) as Character[];
     setCharacters(chars);
-    setItems((c4.data || []) as Item[]);
-    setLogs((c5.data || []) as LogRow[]);
+    charIdsRef.current = chars.map(c => c.id);
     setMembers((c6.data || []) as any);
-    const charIds = chars.map(c => c.id);
-    const { data: ach } = charIds.length
-      ? await supabase.from("achievements").select("*").in("character_id", charIds)
-      : { data: [] as Achievement[] };
-    setAchievements((ach || []) as Achievement[]);
-    await loadCombat(s.campaignId);
+
+    // Reveal UI as soon as core data is ready.
     setLoading(false);
-  }, [nav, loadCombat]);
+
+    // Secondary data in parallel — UI can render partial while these arrive.
+    void loadCombat(s.campaignId);
+    void loadLogs(s.campaignId, LOGS_INITIAL_LIMIT);
+    void supabase.from("items").select("*").eq("campaign_id", s.campaignId)
+      .then(({ data }) => setItems((data || []) as Item[]));
+    void loadAchievements(chars.map(c => c.id));
+  }, [nav, loadCombat, loadAchievements, loadLogs]);
 
   useEffect(() => { load(); }, [load]);
 
   // Single shared realtime channel for the entire campaign session.
+  // Realtime handlers apply TARGETED patches to local state instead of triggering
+  // a full reload — that keeps the app snappy when many events fire.
   useEffect(() => {
     const s = getSession(); if (!s) return;
-    const channel = supabase.channel(`campaign:${s.campaignId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "items", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "logs", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "achievements" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "boosters", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "booster_assignments", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "character_conditions" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "campaign_members", filter: `campaign_id=eq.${s.campaignId}` }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns", filter: `id=eq.${s.campaignId}` }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "combat_encounters", filter: `campaign_id=eq.${s.campaignId}` }, () => loadCombat(s.campaignId))
-      .on("postgres_changes", { event: "*", schema: "public", table: "combat_participants", filter: `campaign_id=eq.${s.campaignId}` }, () => loadCombat(s.campaignId))
-      .on("postgres_changes", { event: "*", schema: "public", table: "combat_turn_groups", filter: `campaign_id=eq.${s.campaignId}` }, () => loadCombat(s.campaignId))
+    const campaignId = s.campaignId;
+    const channel = supabase.channel(`campaign:${campaignId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${campaignId}` }, (payload: any) => {
+        setCharacters(prev => {
+          const next = applyChange(prev, payload);
+          charIdsRef.current = next.map(c => c.id);
+          return next;
+        });
+        const nu = payload?.new as Character | null;
+        if (nu && s.characterId && nu.id === s.characterId) setCharacter(nu);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "items", filter: `campaign_id=eq.${campaignId}` }, (payload: any) => {
+        setItems(prev => applyChange(prev, payload));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "logs", filter: `campaign_id=eq.${campaignId}` }, (payload: any) => {
+        const ev = payload?.eventType;
+        if (ev === "INSERT" && payload.new) {
+          setLogs(prev => prev.some(l => l.id === payload.new.id) ? prev : [payload.new as LogRow, ...prev].slice(0, Math.max(logsLimitRef.current, 100)));
+        } else if (ev === "UPDATE" && payload.new) {
+          setLogs(prev => prev.map(l => l.id === payload.new.id ? { ...l, ...payload.new } : l));
+        } else if (ev === "DELETE" && payload.old?.id) {
+          setLogs(prev => prev.filter(l => l.id !== payload.old.id));
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "achievements" }, (payload: any) => {
+        const nu = payload?.new as Achievement | null;
+        const oldRow = payload?.old as Partial<Achievement> | null;
+        const targetId = nu?.character_id ?? oldRow?.character_id;
+        if (!targetId || !charIdsRef.current.includes(targetId)) return;
+        setAchievements(prev => applyChange(prev, payload));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "campaign_members", filter: `campaign_id=eq.${campaignId}` }, async () => {
+        const { data } = await (supabase as any).from("campaign_members").select("user_id,role,created_at").eq("campaign_id", campaignId).order("created_at");
+        setMembers((data || []) as any);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns", filter: `id=eq.${campaignId}` }, (payload: any) => {
+        if (payload?.new) setCampaign(payload.new as Campaign);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "combat_encounters", filter: `campaign_id=eq.${campaignId}` }, () => loadCombat(campaignId))
+      .on("postgres_changes", { event: "*", schema: "public", table: "combat_participants", filter: `campaign_id=eq.${campaignId}` }, (payload: any) => {
+        setCombat(prev => ({ ...prev, participants: applyChange(prev.participants, payload) as CombatParticipant[] }));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "combat_turn_groups", filter: `campaign_id=eq.${campaignId}` }, (payload: any) => {
+        setCombat(prev => ({ ...prev, groups: applyChange(prev.groups, payload) as CombatTurnGroup[] }));
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [load, loadCombat]);
+  }, [loadCombat]);
 
   // Presence: track which characters are currently connected.
-  // Spectators (no characterId) still subscribe so they can SEE who is online,
-  // but use a unique non-character key and don't expose themselves in onlineIds.
   useEffect(() => {
     const s = getSession(); if (!s) return;
     const isSpectator = !s.characterId;
@@ -133,7 +219,6 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     });
     const sync = () => {
       const state = ch.presenceState() as Record<string, any[]>;
-      // Only keys that correspond to actual character ids count as "online characters".
       const ids = Object.keys(state).filter(k => !k.startsWith("spectator:"));
       setOnlineIds(new Set(ids));
     };
@@ -150,12 +235,8 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  // Compute DM/Co-DM display labels for the log + figure out which character ids
-  // belong to DM-role users (those characters should not appear in the player table
-  // and should not be exposed as online in the "Mesa de jugadores").
   const { dmLabels, dmCharacterIds } = useMemo(() => {
     const ownerId = (campaign as any)?.owner_user_id as string | null | undefined;
-    // Order DM members by created_at; owner first, then co-DMs in join order.
     const dmMembers = members
       .filter(m => m.role === "dm")
       .sort((a, b) => {
@@ -175,8 +256,6 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     const labels: Record<string, DmLabel> = {};
     const ids = new Set<string>();
     for (const c of characters) {
-      // A character is treated as DM-controlled when EITHER the character row says role='dm'
-      // OR its owning user currently has the DM role in this campaign.
       const uid = (c as any).user_id as string | null;
       const userIsDm = uid && labelByUserId[uid];
       if (c.role === "dm" || userIsDm) {
@@ -189,7 +268,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
   }, [members, characters, campaign]);
 
   return (
-    <Ctx.Provider value={{ campaign, character, characters, items, logs, achievements, loading, onlineIds, dmLabels, dmCharacterIds, combat, reload: load }}>
+    <Ctx.Provider value={{ campaign, character, characters, items, logs, achievements, loading, onlineIds, dmLabels, dmCharacterIds, combat, reload: load, loadMoreLogs }}>
       {loading && <CampaignLoadingOverlay onCancel={() => { setSession(null); nav({ to: "/" }); }} />}
       {children}
     </Ctx.Provider>
@@ -220,7 +299,8 @@ export function useGameData(): GameData {
   if (v) return v;
   return {
     campaign: null, character: null, characters: [], items: [], logs: [], achievements: [],
-    loading: true, onlineIds: new Set(), dmLabels: {}, dmCharacterIds: new Set(), combat: { encounter: null, participants: [], groups: [] }, reload: async () => {},
+    loading: true, onlineIds: new Set(), dmLabels: {}, dmCharacterIds: new Set(),
+    combat: { encounter: null, participants: [], groups: [] },
+    reload: async () => {}, loadMoreLogs: async () => {},
   };
 }
-
