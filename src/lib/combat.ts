@@ -280,6 +280,7 @@ export async function dmShiftTurn(
   // so passing the turn of a downed enemy lands on the next live combatant.
   const isAllDefeated = (b: TurnBlock) => {
     if (b.kind === "solo") return isEnemy(b.participant) && b.participant.is_defeated;
+    if (b.kind === "pin") return !b.pin.is_active || b.linked.is_defeated;
     return false;
   };
   let cur = encounter.current_turn_index;
