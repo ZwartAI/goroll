@@ -300,7 +300,7 @@ function PinRow({
           {pin.label || `${t("combat.enemyTurnOf")} ${linked.display_name}`}
         </p>
         <p className="text-[9px] uppercase tracking-widest text-muted-foreground">
-          {t("combat.extraTurn")} · INI {pin.initiative}
+          {t("combat.extraTurn")}
         </p>
       </div>
       {isActive && !inactive && (
