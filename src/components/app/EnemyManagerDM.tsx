@@ -87,7 +87,6 @@ export function EnemyManagerDM({ encounter, participants, groups, dm }: Props) {
               const r = await duplicateEnemy(p, encounter, dm);
               if (!r.ok) toast.error(t("combat.saveError"));
             }}
-            onRemove={async () => {
             onRemove={() => setRemoving(p)}
           />
         );
