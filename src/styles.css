@@ -306,12 +306,22 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-body);
+    min-height: 100vh;
+  }
+  /* Fixed background layer — avoids the mobile URL-bar jitter that
+     `background-attachment: fixed` produces on iOS/Android while scrolling. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       radial-gradient(ellipse at top, color-mix(in oklab, var(--blood) 25%, transparent), transparent 60%),
       radial-gradient(ellipse at bottom, color-mix(in oklab, var(--gold) 8%, transparent), transparent 70%);
-    background-attachment: fixed;
-    min-height: 100vh;
+    background-color: var(--color-background);
   }
+
 
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-display);
