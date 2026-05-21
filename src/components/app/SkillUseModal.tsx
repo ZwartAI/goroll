@@ -10,7 +10,7 @@ import { EnemyIcon } from "./EnemyIconPicker";
 import type { CharacterSkill } from "./SkillCard";
 import { useSkill, type SkillTarget, type SkillResolution, type CombatSkillUse, RARITY_MAX_USES } from "@/lib/combat-skills";
 import type { CombatEncounter, CombatParticipant, CombatTurnGroup } from "@/lib/combat";
-import { isEnemy } from "@/lib/combat";
+import { isEnemy, groupForCharacter } from "@/lib/combat";
 
 type Props = {
   encounter: CombatEncounter;
