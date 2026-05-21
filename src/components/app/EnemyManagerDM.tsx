@@ -18,7 +18,7 @@ import {
   type CombatParticipant,
   type CombatTurnGroup,
 } from "@/lib/combat";
-import { EnemyIcon } from "@/components/app/EnemyIconPicker";
+import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
 import { EnemyEditorModal } from "@/components/app/EnemyEditorModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
 import { EnemyCombatSheetModal } from "@/components/app/EnemyCombatSheetModal";
