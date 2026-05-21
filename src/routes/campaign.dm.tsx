@@ -140,18 +140,31 @@ function DM() {
 
       {tab === "log" && (
         <>
-          <div className="mb-3">
-            <CombatDMPanel
-              campaignId={campaign.id}
-              dm={dmCtx}
-              encounter={combat.encounter}
-              participants={combat.participants}
-              groups={combat.groups}
-            />
-          </div>
+          <LogList rows={logs} initial={20} maxH="max-h-[70vh]"
+            renderRow={(l: LogRow) => (
+              <div key={l.id} className={`text-sm bg-secondary/40 rounded px-3 py-2 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
+                <LogSegments segments={l.segments as any}
+                  onItem={openItemFromId}
+                  onBooster={openBoosterFromId}
+                  onChar={(id) => {
+                    if (!characters.find(c => c.id === id)) toast.error(t("dm.playerNotFound"));
+                    else setOpenChar(id);
+                  }} />
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-[10px] text-muted-foreground">{new Date(l.created_at).toLocaleTimeString()}</p>
+                  {l.undo && !l.undone && (
+                    <button className="text-[10px] text-[var(--gold)] inline-flex items-center gap-1 hover:underline"
+                      onClick={() => undoLog(l, campaign.id, dmCtx, t)}>
+                      <Undo2 size={11}/> {t("dm.undo")}
+
+                    </button>
+                  )}
+                </div>
+              </div>
+            )} />
 
           <button
-            className="btn-fantasy w-full text-xs mb-2"
+            className="btn-fantasy w-full text-xs mt-3"
             style={{ background: "var(--gradient-blood, var(--loss))", color: "white" }}
             onClick={async () => {
               if (!confirm(t("dm.wipeConfirm"))) return;
@@ -166,29 +179,6 @@ function DM() {
               }
             }}
           >{t("dm.wipeLog")}</button>
-
-        <LogList rows={logs} initial={20} maxH="max-h-[70vh]"
-          renderRow={(l: LogRow) => (
-            <div key={l.id} className={`text-sm bg-secondary/40 rounded px-3 py-2 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>
-              <LogSegments segments={l.segments as any}
-                onItem={openItemFromId}
-                onBooster={openBoosterFromId}
-                onChar={(id) => {
-                  if (!characters.find(c => c.id === id)) toast.error(t("dm.playerNotFound"));
-                  else setOpenChar(id);
-                }} />
-              <div className="flex justify-between items-center mt-1">
-                <p className="text-[10px] text-muted-foreground">{new Date(l.created_at).toLocaleTimeString()}</p>
-                {l.undo && !l.undone && (
-                  <button className="text-[10px] text-[var(--gold)] inline-flex items-center gap-1 hover:underline"
-                    onClick={() => undoLog(l, campaign.id, dmCtx, t)}>
-                    <Undo2 size={11}/> {t("dm.undo")}
-
-                  </button>
-                )}
-              </div>
-            </div>
-          )} />
         </>
       )}
 
