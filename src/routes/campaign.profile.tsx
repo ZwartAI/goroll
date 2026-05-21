@@ -108,23 +108,16 @@ function Profile() {
 
   return (
     <PageFrame>
-      <header className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-1.5">
-          <button onClick={logout} className="text-muted-foreground hover:text-foreground" aria-label={t("profile.logoutAria")}><LogOut size={18} /></button>
-          <FullscreenButton />
-          <MailboxButton />
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{campaign.name}</p>
-          <h1 className="font-display text-xl rune-glow">{character.name}</h1>
-          <p className="text-xs text-muted-foreground">{character.race || t("profile.defaultRace")} / {character.class || t("profile.defaultClass")}</p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <MicToggle enabled={voice.enabled} onToggle={voice.toggle} onLongPress={() => setMicSettingsOpen(true)} />
-          <MicSettingsModal open={micSettingsOpen} onOpenChange={setMicSettingsOpen} />
-          <Link to="/campaign/settings" className="text-muted-foreground hover:text-foreground" aria-label={t("profile.statsAria")}><User size={20} /></Link>
-        </div>
-      </header>
+      <ProfileHeader
+        campaignName={campaign.name}
+        characterName={character.name}
+        subtitle={`${character.race || t("profile.defaultRace")} / ${character.class || t("profile.defaultClass")}`}
+        voice={voice}
+        onLogout={logout}
+        settingsAria={t("profile.statsAria")}
+      />
+      <MicSettingsModal open={micSettingsOpen} onOpenChange={setMicSettingsOpen} />
+
       <div className="gem-divider mb-4" />
 
       {/* Tabs: Personaje / Escenario */}
