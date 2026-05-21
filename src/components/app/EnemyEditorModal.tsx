@@ -99,6 +99,32 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
           </div>
         </Field>
 
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={t("bestiary.role")}>
+            <select className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm"
+              value={role} onChange={e => setRole(e.target.value)}>
+              {ROLE_OPTIONS.map(r => (
+                <option key={r} value={r}>{t(`bestiary.role_${r}`)}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("bestiary.biome")}>
+            <select className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm"
+              value={biomeChoice} onChange={e => setBiomeChoice(e.target.value)}>
+              <option value="">{t("bestiary.biomeNone")}</option>
+              {BIOME_PRESETS.map(b => <option key={b} value={b}>{b}</option>)}
+              <option value={CUSTOM_BIOME}>{t("bestiary.addAnotherRegion")}</option>
+            </select>
+          </Field>
+        </div>
+        {biomeChoice === CUSTOM_BIOME && (
+          <Field label={t("bestiary.customRegion")}>
+            <input className="w-full bg-secondary/40 border border-border rounded-md px-2 py-1.5 outline-none focus:border-[var(--gold)] text-sm"
+              value={biomeCustom} onChange={e => setBiomeCustom(e.target.value)} maxLength={60} />
+          </Field>
+        )}
+
+
         <Field label={t("bestiary.visualAsset")}>
           <div className="grid grid-cols-6 gap-1.5">
             {(["normal","elite","boss","god","hero_female","hero_male"] as const).map(k => {
