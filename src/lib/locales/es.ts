@@ -212,6 +212,13 @@ export const es = {
     enterFs: "Pantalla completa",
     exitFs: "Salir de pantalla completa",
   },
+  headerMenu: {
+    open: "Abrir menú",
+    title: "Menú",
+    achievements: "Logros",
+    bestiary: "Bestiario",
+    exit: "Salir / cambiar rol",
+  },
   escenario: {
     title: "✦ Mesa de jugadores ✦",
     online: "En línea",

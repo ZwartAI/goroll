@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useGameData } from "@/lib/useGame";
 import { PageFrame } from "@/components/app/Frame";
-import { LogOut } from "lucide-react";
+import { HeaderMenu, MailboxInlineModal, useStandardHeaderItems } from "@/components/app/HeaderMenu";
 import { setSession, type LogRow } from "@/lib/game";
 import { LogSegments } from "@/components/app/LogSegments";
 import { LogList } from "@/components/app/LogList";
@@ -34,14 +34,8 @@ function Spectator() {
 
   return (
     <PageFrame>
-      <header className="flex items-start justify-between gap-2 mb-3">
-        <button onClick={logout} className="text-muted-foreground"><LogOut size={18}/></button>
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{campaign.name}</p>
-          <h1 className="font-display text-xl rune-glow">{t("spectator.title")}</h1>
-        </div>
-        <div className="w-5"/>
-      </header>
+      <SpectatorHeader campaignName={campaign.name} title={t("spectator.title")} onLogout={logout} voice={voice} />
+
       <div className="gem-divider mb-4"/>
 
       <div className="grid grid-cols-3 gap-1 mb-4">
@@ -132,3 +126,35 @@ function Spectator() {
     </PageFrame>
   );
 }
+
+function SpectatorHeader({
+  campaignName, title, onLogout, voice,
+}: {
+  campaignName: string;
+  title: string;
+  onLogout: () => void;
+  voice: { enabled: boolean; toggle: () => void };
+}) {
+  const [mailboxOpen, setMailboxOpen] = useState(false);
+  const items = useStandardHeaderItems({
+    achievements: true,
+    bestiary: true,
+    mailbox: { onOpen: () => setMailboxOpen(true) },
+    mic: { enabled: voice.enabled, toggle: voice.toggle },
+    fullscreen: true,
+    exit: { onExit: onLogout },
+  });
+  return (
+    <header className="relative mb-3 min-h-[56px]">
+      <div className="text-center px-2">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{campaignName}</p>
+        <h1 className="font-display text-xl rune-glow">{title}</h1>
+      </div>
+      <div className="absolute right-0 top-1 flex items-center">
+        <HeaderMenu items={items} />
+      </div>
+      <MailboxInlineModal open={mailboxOpen} onClose={() => setMailboxOpen(false)} />
+    </header>
+  );
+}
+

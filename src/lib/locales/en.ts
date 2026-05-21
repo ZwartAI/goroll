@@ -210,6 +210,13 @@ export const en: Dict = {
     enterFs: "Fullscreen",
     exitFs: "Exit fullscreen",
   },
+  headerMenu: {
+    open: "Open menu",
+    title: "Menu",
+    achievements: "Achievements",
+    bestiary: "Bestiary",
+    exit: "Exit / change role",
+  },
   escenario: {
     title: "✦ Player Table ✦",
     online: "Online",
