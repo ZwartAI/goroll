@@ -537,6 +537,7 @@ function CreateItem({ campaignId, dm, players }: { campaignId: string; dm: { id:
       max_uses: isEquipo ? null : Math.max(1, uses),
       owner_character_id: send && target ? target : null,
       in_dm_vault: !send,
+      description: description.trim() || null,
     };
     const { data: it } = await supabase.from("items").insert(payload).select().single();
     if (it) {
