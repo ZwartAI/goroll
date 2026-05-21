@@ -884,6 +884,7 @@ export const es = {
     },
   },
   combat: {
+    cancelRollHint: "Si abriste esto por error, pulsa Cancelar para volver.",
     dmTitle: "Combate",
     requestInitiative: "Pedir iniciativa",
     requested: "Iniciativa solicitada",
