@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useGameData } from "@/lib/useGame";
 import { PageFrame } from "@/components/app/Frame";
-import { LogOut, Plus, Send, Trophy, Pencil, Undo2, Search, Skull, ScrollText, Hammer, Sparkles, Wand2, Theater, Upload } from "lucide-react";
+import { Plus, Send, Pencil, Undo2, Search, Skull, ScrollText, Hammer, Sparkles, Wand2, Theater, Upload } from "lucide-react";
 
 function ChestIcon({ size = 24, color = "currentColor", strokeWidth = 1.75 }: { size?: number; color?: string; strokeWidth?: number }) {
   return (
