@@ -1131,7 +1131,7 @@ export const es = {
     errDef: "La defensa no puede ser negativa",
     errSkillName: "Nombre de skill requerido",
     warnNoDice: "Esta skill produce un efecto numérico pero no tiene dados definidos. ¿Continuar?",
-    tier_normal: "Normal", tier_elite: "Élite", tier_boss: "Jefe",
+    tier_normal: "Normal", tier_elite: "Élite", tier_boss: "Jefe", tier_god: "Dios",
     tier_minion: "Esbirro", tier_summon: "Invocación", tier_hazard: "Trampa/Peligro", tier_special: "Especial",
     role_damage: "Daño", role_tank: "Tanque", role_support: "Soporte", role_control: "Control",
     role_skirmisher: "Hostigador", role_summoner: "Invocador", role_terrain: "Terreno",
