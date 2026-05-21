@@ -356,6 +356,19 @@ function Profile() {
           onEditBody={() => { setImgViewer(false); setImgModal("body"); }}
         />
       )}
+      {imgViewerCharId && (() => {
+        const c = characters.find(ch => ch.id === imgViewerCharId);
+        if (!c) return null;
+        return (
+          <CharacterImageViewer
+            character={c}
+            canEdit={false}
+            onClose={() => setImgViewerCharId(null)}
+            onEditFace={() => {}}
+            onEditBody={() => {}}
+          />
+        );
+      })()}
 
       {hpModal && (
         <HpModal
