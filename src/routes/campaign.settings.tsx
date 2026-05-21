@@ -43,9 +43,14 @@ function Settings() {
     toastSaved();
   }
 
-  const num = (k: string, label: string) => (
-    <label className="stat-pill gap-1 min-w-0 !items-center">
-      <span className="min-w-0 flex-1 whitespace-normal break-words leading-tight text-[10px]">{label}</span>
+  const num = (k: string, label: string, color?: string) => (
+    <label className="stat-pill gap-1 min-w-0 !items-center"
+      style={color ? {
+        borderColor: `color-mix(in oklab, ${color} 55%, transparent)`,
+        background: `linear-gradient(180deg, color-mix(in oklab, ${color} 10%, var(--card)), var(--card))`,
+      } : undefined}>
+      <span className="min-w-0 flex-1 whitespace-normal break-words leading-tight text-[10px]"
+        style={color ? { color, fontWeight: 600 } : undefined}>{label}</span>
       <input type="number" className="w-14 flex-shrink-0 bg-transparent text-right outline-none text-[var(--gold)]"
         value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} />
     </label>
@@ -101,8 +106,8 @@ function Settings() {
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">{t("settingsPage.baseAttrs")}</p>
           <div className="grid grid-cols-2 gap-2">
-            {num("fue",t("attr.fue"))}{num("des",t("attr.des"))}{num("con",t("attr.con"))}
-            {num("int_stat",t("attr.int"))}{num("wis",t("attr.wis"))}{num("car",t("attr.car"))}
+            {num("fue",t("attr.fue"),"var(--stat-fue)")}{num("des",t("attr.des"),"var(--stat-des)")}{num("con",t("attr.con"),"var(--stat-con)")}
+            {num("int_stat",t("attr.int"),"var(--stat-int)")}{num("wis",t("attr.wis"),"var(--stat-sab)")}{num("car",t("attr.car"),"var(--stat-car)")}
           </div>
         </div>
         <div className="gem-divider"/>
@@ -113,7 +118,6 @@ function Settings() {
             {num("base_hp", t("settingsPage.baseHp"))}
             {num("base_defense", t("settingsPage.baseDefense"))}
             {num("velocity", t("settingsPage.velocity"))}
-            {num("initiative", t("settingsPage.initiative"))}
             {num("damage_boost", t("settingsPage.damageBoost"))}
           </div>
           <div className="mt-2 flex items-center justify-between gap-2 ornate-card !p-2">

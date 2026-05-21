@@ -20,6 +20,48 @@ type Props = {
 
 const COLORS = ["#e8e0c8", "#f5d76e", "#e74c3c", "#5dade2", "#58d68d", "#bb8fce", "#f1948a", "#ffffff"];
 
+const STAT_COLORS: Record<string, string> = {
+  FUE: "var(--stat-fue)", DES: "var(--stat-des)", CON: "var(--stat-con)",
+  INT: "var(--stat-int)", SAB: "var(--stat-sab)", CAR: "var(--stat-car)",
+  STR: "var(--stat-fue)", DEX: "var(--stat-des)", WIS: "var(--stat-sab)", CHA: "var(--stat-car)",
+};
+const STAT_RE = /\b(FUE|DES|CON|INT|SAB|CAR|STR|DEX|WIS|CHA)\b/g;
+
+/** Wrap stat tokens (FUE, DES, ...) inside text nodes of `root` with colored spans. Idempotent. */
+function highlightStats(root: HTMLElement | null) {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.dataset?.stat) return NodeFilter.FILTER_REJECT;
+      return STAT_RE.test(node.nodeValue || "") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    },
+  });
+  const targets: Text[] = [];
+  let n: Node | null;
+  while ((n = walker.nextNode())) targets.push(n as Text);
+  for (const text of targets) {
+    const value = text.nodeValue || "";
+    STAT_RE.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = STAT_RE.exec(value)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(value.slice(last, m.index)));
+      const span = document.createElement("span");
+      span.dataset.stat = m[1];
+      span.style.color = STAT_COLORS[m[1]];
+      span.style.fontWeight = "600";
+      span.textContent = m[1];
+      frag.appendChild(span);
+      last = m.index + m[1].length;
+    }
+    if (last < value.length) frag.appendChild(document.createTextNode(value.slice(last)));
+    text.replaceWith(frag);
+  }
+}
+
 export function NotesEditor({ characterId, characterName, characterColor, readOnly, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +93,7 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
       const raw = (data?.content as string) || "";
       const html = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
       initialRef.current = html;
-      if (ref.current) ref.current.innerHTML = html;
+      if (ref.current) { ref.current.innerHTML = html; highlightStats(ref.current); }
       setLoading(false);
     })();
 
@@ -147,6 +189,7 @@ export function NotesEditor({ characterId, characterName, characterColor, readOn
           contentEditable={!readOnly}
           suppressContentEditableWarning
           onInput={() => setDirty(true)}
+          onBlur={() => highlightStats(ref.current)}
           className="flex-1 overflow-y-auto rounded-md border border-border bg-input p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--gold)] notes-editor"
           style={{ minHeight: "40vh" }}
         />
