@@ -33,7 +33,7 @@ type Props = {
  * Shared "Escenario" view: shows the party (online first, offline collapsible)
  * and an optional log of the scene below. Used by Player profile, DM, and Spectator.
  */
-export function Escenario({ characters, items, onlineIds, logs, selfId, onOpenChar, onOpenItem, onOpenBooster, dmCharacterIds, nameOverrides, showLog = true, speakingIds }: Props) {
+export function Escenario({ characters, items, onlineIds, logs, selfId, onOpenChar, onOpenItem, onOpenBooster, onOpenImage, dmCharacterIds, nameOverrides, showLog = true, speakingIds }: Props) {
   const [openOffline, setOpenOffline] = useState(false);
   const { t } = useT();
   const { combat } = useGameData();
