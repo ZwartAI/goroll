@@ -145,6 +145,28 @@ export type EnemySpeechLogPayload = {
   text: string;
 };
 
+export type PlayerSkillLogPayload = {
+  charId: string;
+  charName: string;
+  charColor: string | null;
+  charImage: string | null;
+  skillName: string;
+  rarity: Rarity;
+  type?: string | null;
+  dice?: string | null;
+  rangeTargets?: string | null;
+  effect?: string | null;
+  visualBrief?: string | null;
+  rollResult?: string | null;
+  resolution: "log" | "damage" | "heal" | "shield" | "narrative";
+  targetNames: string[];
+  damage: { raw: number; applied: number; def: number; targetName: string }[];
+  heal: { amount: number; targetName: string }[];
+  shield: { amount: number; targetName: string }[];
+  defeated: string[];
+  note?: string | null;
+};
+
 export type Segment =
   | { t: "text"; v: string }
   | { t: "char"; v: string; color: string; id?: string }
@@ -153,7 +175,8 @@ export type Segment =
   | { t: "gain"; v: string }
   | { t: "loss"; v: string }
   | { t: "enemy_skill"; v: EnemySkillLogPayload }
-  | { t: "enemy_speech"; v: EnemySpeechLogPayload };
+  | { t: "enemy_speech"; v: EnemySpeechLogPayload }
+  | { t: "player_skill"; v: PlayerSkillLogPayload };
 
 export const SESSION_KEY = "codice.session";
 export type Session = {
