@@ -108,17 +108,7 @@ export function SkillsManager({ campaignId, dm, players, onlineIds }: Props) {
                     background: "color-mix(in oklab, var(--background) 60%, transparent)",
                   }}
                 >
-                  {(target as any).image_url ? (
-                    <img
-                      src={(target as any).image_url}
-                      alt={target.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="font-display text-2xl" style={{ color: target.color }}>
-                      {target.name.charAt(0)}
-                    </span>
-                  )}
+                  <CharacterPortrait character={target as any} className="w-full h-full text-2xl" showBorder={false} />
                 </div>
               </button>
               <button
