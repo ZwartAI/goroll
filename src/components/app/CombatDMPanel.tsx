@@ -121,7 +121,11 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups,
         <>
 
           <p className="text-[11px] text-muted-foreground">{t("combat.collectingHint", { n: participants.length })}</p>
-          <CombatList encounter={encounter} participants={participants} groups={groups} pins={pins} />
+          <CombatList encounter={encounter} participants={participants} groups={groups} pins={pins}
+            onReorder={async (key, toIndex) => {
+              const r = await reorderBlockWithAutoInitiative(encounter, buildOrderedTurns(participants, groups, pins), key, toIndex);
+              if (!r.ok) toast.error(t("combat.reorderError") || "Reorder failed");
+            }} />
           <EnemyManagerDM encounter={encounter} participants={participants} groups={groups} pins={pins} dm={dm} />
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button className="btn-fantasy" style={{ background: "var(--loss)", color: "white" }}
