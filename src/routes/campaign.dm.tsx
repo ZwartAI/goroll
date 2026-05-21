@@ -19,6 +19,7 @@ import { type Booster } from "@/components/app/BoosterCard";
 import { DMRequestGate } from "@/components/app/DMRequestGate";
 import { SkillsManager, ManualCreate as SkillManualCreate } from "@/components/app/SkillsManager";
 import { Escenario } from "@/components/app/Escenario";
+import { CharacterImageViewer } from "@/components/app/CharacterImageViewer";
 import { CombatDMPanel } from "@/components/app/CombatDMPanel";
 import { MicSettingsModal } from "@/components/app/MicSettingsModal";
 import { HeaderMenu, MailboxInlineModal, useStandardHeaderItems } from "@/components/app/HeaderMenu";
