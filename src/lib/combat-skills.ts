@@ -415,6 +415,16 @@ export async function useSkill(args: {
     } as any,
   ]);
 
+  // Optional synergy log right after the skill log.
+  if ((payload.linkBonus === 2 || payload.linkBonus === 3) && (payload.linkBonusMembers?.length ?? 0) > 0) {
+    const memberList = (payload.linkBonusMembers || []).join(", ");
+    const just = (payload.linkBonusJustification || "").trim();
+    await pushLog(encounter.campaign_id, [
+      { t: "char", v: source.name, color: source.color, id: source.id },
+      { t: "text", v: ` activó sinergia de Enlace (+${payload.linkBonus}) con ${memberList}${just ? `. Justificación: ${just}` : ""}.` },
+    ]);
+  }
+
   return { ok: true as const };
 }
 
