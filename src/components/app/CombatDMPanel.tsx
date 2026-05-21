@@ -43,20 +43,20 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
   const canAddEnemy = encounter && status !== "ended";
 
   return (
-    <div className="ornate-card p-3 space-y-2">
-      <div className="flex items-center gap-2">
-        <Swords size={16} className="text-[var(--gold)]" />
-        <h3 className="font-display text-sm uppercase tracking-widest text-[var(--gold)]">{t("combat.dmTitle")}</h3>
+    <div className="ornate-card p-2 space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <Swords size={14} className="text-[var(--gold)]" />
+        <h3 className="font-display text-xs uppercase tracking-widest text-[var(--gold)]">{t("combat.dmTitle")}</h3>
       </div>
 
       {(!encounter || status === "ended") && (
-        <button className="btn-fantasy w-full" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
+        <button className="btn-fantasy w-full text-xs py-1.5" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
           onClick={async () => {
             const r = await requestInitiative(campaignId, dm);
             if (!r.ok) toast.error(t("combat.requestError"));
             else toast.success(t("combat.requested"));
           }}>
-          <Flag size={14} className="inline mr-1" /> {t("combat.requestInitiative")}
+          <Flag size={12} className="inline mr-1" /> {t("combat.requestInitiative")}
         </button>
       )}
 
