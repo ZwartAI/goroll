@@ -311,7 +311,8 @@ export async function useSkill(args: {
   if (payload.resolution === "damage") {
     const enemies = targets.filter(t => t.kind === "enemy") as Extract<SkillTarget, { kind: "enemy" }>[];
     if (enemies.length === 0) return { ok: false, error: "no_enemy_target" as const };
-    const raw = Math.max(0, Math.floor(payload.amount || 0));
+    const bonus = (payload.linkBonus === 2 || payload.linkBonus === 3) ? payload.linkBonus : 0;
+    const raw = Math.max(0, Math.floor(payload.amount || 0)) + bonus;
     for (const tg of enemies) {
       const r = await applyDamageToEnemy(tg.participant, raw, !!payload.applyDefense);
       damageDetail.push({ raw, applied: r.applied, def: r.def, targetName: tg.participant.display_name });
