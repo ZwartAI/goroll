@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { addEnemies, updateEnemy, type CombatEncounter, type CombatParticipant, type EnemyDraft, type InsertPosition } from "@/lib/combat";
-import { EnemyIconPicker, EnemyColorPicker, ENEMY_COLORS } from "@/components/app/EnemyIconPicker";
+import { EnemyIconPicker, EnemyColorPicker, ENEMY_COLORS, ENEMY_ASSETS } from "@/components/app/EnemyIconPicker";
+import { NumberInput } from "@/components/app/NumberInput";
+import { PRIMARY_TIERS, TIER_VISUALS } from "@/lib/bestiary";
 
 type Props = {
   encounter: CombatEncounter;
