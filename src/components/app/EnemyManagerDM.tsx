@@ -114,12 +114,20 @@ export function EnemyManagerDM({ encounter, participants, groups, dm }: Props) {
 }
 
 function EnemyRow({
-  p, isActive, encounter, blocks, onEdit, onDamage, onSheet, onDuplicate, onRemove,
+  p, isActive, encounter, blocks,
+  isDragging, isDragOver, onDragStart, onDragOver, onDragEnd, onDropOn,
+  onEdit, onDamage, onSheet, onDuplicate, onRemove,
 }: {
   p: CombatParticipant;
   isActive: boolean;
   encounter: CombatEncounter;
   blocks: ReturnType<typeof buildOrderedTurns>;
+  isDragging: boolean;
+  isDragOver: boolean;
+  onDragStart: () => void;
+  onDragOver: () => void;
+  onDragEnd: () => void;
+  onDropOn: () => void;
   onEdit: () => void; onDamage: () => void; onSheet: () => void;
   onDuplicate: () => void; onRemove: () => void;
 }) {
@@ -129,21 +137,36 @@ function EnemyRow({
   const pct = Math.max(0, Math.min(100, (cur / max) * 100));
   const hpBg = pct > 60 ? "var(--gain)" : pct > 30 ? "#eab308" : "var(--loss)";
   const baseColor = p.enemy_color || "var(--loss)";
-  const blockKey = `s:${p.id}`;
   const lp = useLongPress(onSheet, 450);
+  const blueBg = "color-mix(in oklab, oklch(0.55 0.18 240) 60%, var(--card))";
 
   return (
     <div
-      className="ornate-card !p-2 space-y-1.5"
+      className="ornate-card !p-2 space-y-1.5 transition"
       style={{
-        borderColor: isActive ? "var(--loss)" : `color-mix(in oklab, ${baseColor} 55%, transparent)`,
-        opacity: p.is_defeated ? 0.55 : 1,
+        borderColor: isDragOver
+          ? "var(--gold)"
+          : isActive ? "var(--loss)" : `color-mix(in oklab, ${baseColor} 55%, transparent)`,
+        opacity: isDragging ? 0.5 : (p.is_defeated ? 0.55 : 1),
+        boxShadow: isDragOver ? "0 0 0 2px var(--gold)" : undefined,
       }}
+      onDragOver={(e) => { e.preventDefault(); onDragOver(); }}
+      onDrop={(e) => { e.preventDefault(); onDropOn(); }}
     >
       <div className="flex items-center gap-2 select-none cursor-pointer"
         {...{ onMouseDown: lp.onMouseDown, onMouseUp: lp.onMouseUp, onMouseLeave: lp.onMouseLeave, onTouchStart: lp.onTouchStart, onTouchEnd: lp.onTouchEnd, onTouchCancel: lp.onTouchCancel }}
         onClick={() => { if (!lp.didLongPress()) onSheet(); }}
         title={t("combat.enemy.openSheet")}>
+        <span
+          className="text-muted-foreground hover:text-[var(--gold)] cursor-grab active:cursor-grabbing px-0.5"
+          draggable
+          onDragStart={(e) => { e.stopPropagation(); onDragStart(); try { e.dataTransfer.setData("text/plain", p.id); e.dataTransfer.effectAllowed = "move"; } catch {} }}
+          onDragEnd={(e) => { e.stopPropagation(); onDragEnd(); }}
+          onClick={(e) => e.stopPropagation()}
+          title={t("combat.reorderHint")}
+        >
+          <GripVertical size={14} />
+        </span>
         <div className="w-9 h-9 rounded-full border-2 flex items-center justify-center bg-card"
           style={{ borderColor: baseColor, color: baseColor }}>
           <EnemyIcon name={p.enemy_icon} size={18} />
@@ -192,8 +215,8 @@ function EnemyRow({
       </div>
 
       <div className="grid grid-cols-4 gap-1">
-        <IconBtn icon={<Edit3 size={12} />} onClick={onEdit} />
-        <IconBtn icon={<Copy size={12} />} onClick={onDuplicate} />
+        <IconBtn icon={<Edit3 size={12} />} onClick={onEdit} bg={blueBg} />
+        <IconBtn icon={<Copy size={12} />} onClick={onDuplicate} bg={blueBg} />
         <IconBtn icon={<Trash2 size={12} />} danger onClick={onRemove} />
         {isActive ? (
           <button className="btn-fantasy text-[10px] py-1"
@@ -205,13 +228,6 @@ function EnemyRow({
         ) : (
           <span />
         )}
-      </div>
-
-      <div className="grid grid-cols-4 gap-1">
-        <IconBtn icon={<ChevronsUp size={12} />} onClick={() => moveParticipant(encounter, blocks, blockKey, "first")} />
-        <IconBtn icon={<ArrowUp size={12} />} onClick={() => moveParticipant(encounter, blocks, blockKey, "up")} />
-        <IconBtn icon={<ArrowDown size={12} />} onClick={() => moveParticipant(encounter, blocks, blockKey, "down")} />
-        <IconBtn icon={<ChevronsDown size={12} />} onClick={() => moveParticipant(encounter, blocks, blockKey, "last")} />
       </div>
     </div>
   );
