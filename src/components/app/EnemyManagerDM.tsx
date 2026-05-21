@@ -21,6 +21,7 @@ import {
 import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
 import { EnemyEditorModal } from "@/components/app/EnemyEditorModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
+import { EnemyAttackPlayersModal } from "@/components/app/EnemyAttackPlayersModal";
 import { EnemyCombatSheetModal } from "@/components/app/EnemyCombatSheetModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
