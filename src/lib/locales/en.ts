@@ -286,6 +286,9 @@ export const en: Dict = {
     imgEditBody: "Edit body",
     imgViewerNone: "No image yet — tap edit to upload.",
     imgUploadBoth: "Upload images",
+    imgDeleteFace: "Remove face",
+    imgDeleteBody: "Remove body",
+    imgDeleteConfirm: "Remove this character image? The player will need to upload a new one.",
   },
 
   settingsPage: {
