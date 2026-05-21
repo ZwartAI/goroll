@@ -2,6 +2,7 @@ import { useT } from "@/lib/i18n";
 import { RARITY_COLOR } from "@/lib/game";
 import { Sword, Sparkles, Shield, Zap, Wind, Eye, Skull, Heart, type LucideIcon } from "lucide-react";
 import type { EnemyTemplateSkill } from "@/lib/bestiary";
+import { StatText } from "./StatText";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
   impact: Sword,
