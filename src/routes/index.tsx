@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageFrame } from "@/components/app/Frame";
 import {
-  setSession, setStoredUser, getStoredUser,
-  type Campaign, type Character, type Role, type StoredUser,
+  setSession, setStoredUser, getStoredUser, totals,
+  type Campaign, type Character, type Item, type Role, type StoredUser,
 } from "@/lib/game";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -61,6 +61,7 @@ function Home() {
 
   // character
   const [myChars, setMyChars] = useState<Character[]>([]);
+  const [myCharItems, setMyCharItems] = useState<Record<string, Item[]>>({});
   const [newCharName, setNewCharName] = useState("");
 
   useEffect(() => {
@@ -81,14 +82,34 @@ function Home() {
     })();
   }, [step, user]);
 
-  // Load my characters when entering character step (player)
+  // Load my characters + their equipped items when entering character step (player)
   useEffect(() => {
     if (step !== "character" || !user || !campaign || role !== "player") return;
-    (async () => {
-      const { data } = await (supabase as any).from("characters")
+    let cancelled = false;
+    const reload = async () => {
+      const { data: chars } = await (supabase as any).from("characters")
         .select("*").eq("campaign_id", campaign.id).eq("user_id", user.id);
-      setMyChars((data || []) as Character[]);
-    })();
+      const list = (chars || []) as Character[];
+      if (cancelled) return;
+      setMyChars(list);
+      const ids = list.map(c => c.id);
+      if (!ids.length) { setMyCharItems({}); return; }
+      const { data: its } = await (supabase as any).from("items")
+        .select("*").in("owner_character_id", ids).eq("equipped", true);
+      if (cancelled) return;
+      const map: Record<string, Item[]> = {};
+      for (const it of (its || []) as Item[]) {
+        const k = (it as any).owner_character_id as string;
+        (map[k] = map[k] || []).push(it);
+      }
+      setMyCharItems(map);
+    };
+    reload();
+    const ch = (supabase as any).channel(`home-chars:${campaign.id}:${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${campaign.id}` }, () => reload())
+      .on("postgres_changes", { event: "*", schema: "public", table: "items", filter: `campaign_id=eq.${campaign.id}` }, () => reload())
+      .subscribe();
+    return () => { cancelled = true; (supabase as any).removeChannel(ch); };
   }, [step, user, campaign, role]);
 
   const loginFn = useServerFn(attemptLogin);
@@ -637,7 +658,8 @@ function Home() {
           <p className="text-center text-xs uppercase tracking-widest text-muted-foreground">{t("home.yourCharacters")}</p>
           <div className="space-y-2">
             {myChars.map(c => {
-              const max = (c as any).base_hp || 1;
+              const equipped = myCharItems[c.id] || [];
+              const max = totals(c, equipped).maxHp || 1;
               const cur = (c as any).current_hp ?? max;
               const pct = Math.max(0, Math.min(100, (cur / max) * 100));
               return (
