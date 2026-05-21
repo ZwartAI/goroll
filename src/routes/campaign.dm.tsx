@@ -550,7 +550,7 @@ function CreateItem({ campaignId, dm, players }: { campaignId: string; dm: { id:
       ] as any, { kind: "item.recreate", item: it as any });
     }
 
-    setName(""); setDamage(0); setUses(1);
+    setName(""); setDamage(0); setUses(1); setDescription("");
   }
 
   const isCoins = category === "monedas";
