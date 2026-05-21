@@ -570,6 +570,14 @@ export const es = {
     receiveAria: "Recibir monedas",
     payAria: "Pagar / quitar monedas",
   },
+  purse: {
+    title: "Monedero",
+    subtitle: "¿Quieres añadir / pagar monedas?",
+    add: "Añadir monedas",
+    spend: "Pagar monedas",
+    notEnough: "No tienes suficientes monedas.",
+    openHint: "Mantén pulsado para abrir el monedero",
+  },
   itemEditor: {
     title: "Editar objeto",
     name: "Nombre",

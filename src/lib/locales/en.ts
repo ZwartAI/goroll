@@ -568,6 +568,14 @@ export const en: Dict = {
     receiveAria: "Receive coins",
     payAria: "Pay / remove coins",
   },
+  purse: {
+    title: "Purse",
+    subtitle: "Add or spend coins?",
+    add: "Add coins",
+    spend: "Spend coins",
+    notEnough: "Not enough coins.",
+    openHint: "Long-press to open purse",
+  },
   itemEditor: {
     title: "Edit item",
     name: "Name",
