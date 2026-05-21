@@ -107,6 +107,21 @@ export function EnemyManagerDM({ encounter, participants, groups, dm }: Props) {
           onClose={() => setSheet(null)}
         />
       )}
+      <ConfirmDialog
+        open={!!removing}
+        title={t("combat.confirmRemoveEnemyTitle")}
+        description={t("combat.confirmRemoveEnemy")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        variant="danger"
+        onCancel={() => setRemoving(null)}
+        onConfirm={async () => {
+          if (!removing) return;
+          const r = await removeEnemy(removing, encounter, dm);
+          if (!r.ok) toast.error(t("combat.saveError"));
+          setRemoving(null);
+        }}
+      />
     </div>
   );
 }
