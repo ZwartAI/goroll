@@ -158,6 +158,28 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups 
           </div>
         </div>
       )}
+
+      {confirmState && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-3" onClick={() => setConfirmState(null)}>
+          <div className="ornate-card max-w-sm w-full p-4 space-y-3" onClick={e => e.stopPropagation()}>
+            <p className="text-sm text-foreground">{confirmState.message}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn-fantasy text-xs" onClick={() => setConfirmState(null)}>
+                {t("common.cancel")}
+              </button>
+              <button className="btn-fantasy text-xs"
+                style={{ background: "var(--loss)", color: "white" }}
+                onClick={() => {
+                  const fn = confirmState.onConfirm;
+                  setConfirmState(null);
+                  fn();
+                }}>
+                {t("common.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
