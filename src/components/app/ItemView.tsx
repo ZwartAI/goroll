@@ -1,6 +1,7 @@
 import { SLOTS, RARITY_COLOR, RARITY_BONUS, ITEM_CATEGORIES, isWeapon, type Item, type Rarity } from "@/lib/game";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { useT } from "@/lib/i18n";
+import { StatText } from "@/components/app/StatText";
 
 export function ItemView({ item }: { item: Item }) {
   const isEq = item.category === "equipo" || !item.category;
