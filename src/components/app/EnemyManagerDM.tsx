@@ -50,6 +50,7 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
   const enemies = participants.filter(isEnemy).sort((a, b) => a.order_index - b.order_index);
   const blocks = buildOrderedTurns(participants, groups, pins);
   const active = activeBlock(encounter, blocks);
+  const { byEnemyParticipant: shieldByEnemy } = useEncounterShields(encounter.id);
 
   const [editing, setEditing] = useState<CombatParticipant | null>(null);
   const [attacking, setAttacking] = useState<CombatParticipant | null>(null);
