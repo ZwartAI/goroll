@@ -612,14 +612,17 @@ export async function addEnemies(
     });
   }
 
-  const { error } = await (supabase as any).from("combat_participants").insert(rows);
-  if (error) return { ok: false, error: error.message };
+  const { data: inserted, error } = await (supabase as any)
+    .from("combat_participants")
+    .insert(rows)
+    .select("id");
+  if (error) return { ok: false as const, error: error.message };
 
   await pushLog(encounter.campaign_id, [
     { t: "char", v: dm.name, color: dm.color, id: dm.id },
     { t: "text", v: qty > 1 ? ` añadió ${qty} enemigos al combate: ${name}.` : ` añadió enemigo al combate: ${name}.` },
   ]);
-  return { ok: true };
+  return { ok: true as const, ids: ((inserted as any[]) || []).map(r => r.id as string) };
 }
 
 export async function updateEnemy(participant: CombatParticipant, patch: Partial<EnemyDraft>) {
