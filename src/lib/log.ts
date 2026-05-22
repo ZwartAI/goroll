@@ -15,7 +15,8 @@ export type UndoAction =
   | { kind: "item.recreate"; item: Record<string, any> }
   | { kind: "character.update"; id: string; prev: Record<string, any> }
   | { kind: "achievement.delete"; id: string }
-  | { kind: "achievement.recreate"; row: Record<string, any> };
+  | { kind: "achievement.recreate"; row: Record<string, any> }
+  | { kind: "combat.duplicate.remove"; participantIds: string[] };
 
 /**
  * pushLog inserts a log row visible to all players by default.
