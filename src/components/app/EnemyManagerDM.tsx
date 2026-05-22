@@ -139,6 +139,7 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
           await Promise.all(myPins.map(p => deleteTurnPin(p)));
           const r = await removeEnemy(removing, encounter, dm);
           if (!r.ok) toast.error(t("combat.saveError"));
+          else toast.success(t(r.archived ? "combat.enemyArchivedToBestiary" : "combat.enemyRemoved"));
           setRemoving(null);
         }}
       />

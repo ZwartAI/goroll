@@ -724,9 +724,81 @@ export async function duplicateEnemy(participant: CombatParticipant, encounter: 
 }
 
 export async function removeEnemy(participant: CombatParticipant, encounter: CombatEncounter, dm: { id: string; name: string; color: string }) {
-  if (!isEnemy(participant)) return { ok: false };
+  if (!isEnemy(participant)) return { ok: false as const };
+
+  // Archive to bestiary BEFORE deleting so the enemy can be reused later.
+  // Strategy:
+  //   1. If the participant was spawned from an existing template (enemy_template_id), skip — the template already lives in the bestiary.
+  //   2. Otherwise look for a template in this campaign with the same base name (case-insensitive). If found, skip duplicate.
+  //   3. Otherwise create a new template from the participant's stats + snapshot its combat skills as template skills.
+  let archived = false;
+  try {
+    if (!participant.enemy_template_id) {
+      const baseName = (participant.enemy_name || participant.display_name || "").trim();
+      if (baseName) {
+        const { data: existing } = await (supabase as any)
+          .from("enemy_templates")
+          .select("id")
+          .eq("campaign_id", participant.campaign_id)
+          .ilike("name", baseName)
+          .limit(1);
+        if (!existing || existing.length === 0) {
+          const tplRow: any = {
+            campaign_id: participant.campaign_id,
+            name: baseName,
+            tier: "normal",
+            role: (participant as any).enemy_role || "damage",
+            biome: (participant as any).enemy_biome || null,
+            icon_key: participant.enemy_icon || "skull",
+            color: participant.enemy_color || "#ef4444",
+            max_hp: Math.max(1, Math.floor(participant.enemy_max_hp || 1)),
+            defense: Math.max(0, Math.floor(participant.enemy_defense || 0)),
+            speed: participant.enemy_speed || "30",
+            base_damage: (participant as any).enemy_base_damage || null,
+            description: null,
+            behavior_notes: (participant as any).enemy_behavior || null,
+            weaknesses_text: null,
+            immunities: [],
+            is_boss: false,
+            is_elite: false,
+            created_by_character_id: dm.id,
+          };
+          const { data: tpl } = await (supabase as any)
+            .from("enemy_templates")
+            .insert(tplRow)
+            .select("id")
+            .single();
+          if (tpl) {
+            archived = true;
+            // Copy combat enemy skills (if any) as template skills.
+            const skills = await listEnemySkills(participant.id);
+            if (skills.length) {
+              const rows = skills.map(s => ({
+                enemy_template_id: (tpl as any).id,
+                campaign_id: participant.campaign_id,
+                name: s.name,
+                rarity: s.rarity,
+                skill_type: s.skill_type,
+                target_shape: s.target_shape,
+                targets: s.targets,
+                dice: s.dice,
+                range_text: s.range_text,
+                effect: s.effect,
+                visual_brief: s.visual_brief,
+                order_index: s.order_index,
+              }));
+              await (supabase as any).from("enemy_template_skills").insert(rows);
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // Archival is best-effort — never block the removal itself.
+  }
+
   const { error } = await (supabase as any).from("combat_participants").delete().eq("id", participant.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false as const, error: error.message };
   // If the removed participant was before/at the current turn, adjust current_turn_index.
   if (encounter.status === "active") {
     const removedOrder = participant.order_index;
@@ -738,9 +810,11 @@ export async function removeEnemy(participant: CombatParticipant, encounter: Com
   }
   await pushLog(encounter.campaign_id, [
     { t: "char", v: dm.name, color: dm.color, id: dm.id },
-    { t: "text", v: ` eliminó enemigo: ${participant.display_name}.` },
+    { t: "text", v: archived
+        ? ` eliminó enemigo: ${participant.display_name}. Guardado en el Bestiario.`
+        : ` eliminó enemigo: ${participant.display_name}.` },
   ]);
-  return { ok: true };
+  return { ok: true as const, archived };
 }
 
 export async function moveParticipant(
