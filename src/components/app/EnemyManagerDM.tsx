@@ -10,7 +10,6 @@ import {
   buildOrderedTurns,
   deleteTurnPin,
   dmEndEnemyTurn,
-  duplicateEnemy,
   isEnemy,
   removeEnemy,
   type CombatEncounter,
@@ -23,6 +22,7 @@ import { EnemyEditorModal } from "@/components/app/EnemyEditorModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
 import { EnemyAttackPlayersModal } from "@/components/app/EnemyAttackPlayersModal";
 import { EnemyCombatSheetModal } from "@/components/app/EnemyCombatSheetModal";
+import { EnemyDuplicateModal } from "@/components/app/EnemyDuplicateModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 
@@ -44,6 +44,7 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
   const [attacking, setAttacking] = useState<CombatParticipant | null>(null);
   const [healing, setHealing] = useState<CombatParticipant | null>(null);
   const [sheet, setSheet] = useState<CombatParticipant | null>(null);
+  const [duplicating, setDuplicating] = useState<CombatParticipant | null>(null);
   const [removing, setRemoving] = useState<CombatParticipant | null>(null);
   const [removingPin, setRemovingPin] = useState<CombatTurnPin | null>(null);
 
@@ -76,10 +77,7 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
               onDamage={() => setAttacking(p)}
               onHeal={() => setHealing(p)}
               onSheet={() => setSheet(p)}
-              onDuplicate={async () => {
-                const r = await duplicateEnemy(p, encounter, dm);
-                if (!r.ok) toast.error(t("combat.saveError"));
-              }}
+              onDuplicate={() => setDuplicating(p)}
               onRemove={() => setRemoving(p)}
               onAddPin={async () => {
                 const r = await addTurnPin(encounter, p);
@@ -122,6 +120,17 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
           participants={participants}
           groups={groups}
           onClose={() => setSheet(null)}
+        />
+      )}
+      {duplicating && (
+        <EnemyDuplicateModal
+          enemy={duplicating}
+          encounter={encounter}
+          participants={participants}
+          groups={groups}
+          pins={pins}
+          dm={dm}
+          onClose={() => setDuplicating(null)}
         />
       )}
       <ConfirmDialog
@@ -240,7 +249,7 @@ function EnemyRow({
             <IconBtn label={t("combat.damage")} icon={<Sword className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--loss) 70%, var(--card))" onClick={onDamage} />
             <IconBtn label={t("combat.heal")} icon={<Heart className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--gain) 70%, var(--card))" onClick={onHeal} />
             <IconBtn label={t("combat.edit")} icon={<Edit3 className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.55 0.12 240) 55%, var(--card))" onClick={onEdit} />
-            <IconBtn label={t("combat.duplicate")} icon={<Copy className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.45 0.10 240) 60%, var(--card))" onClick={onDuplicate} />
+            <IconBtn label={t("combat.duplicate.label")} icon={<Copy className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.45 0.10 240) 60%, var(--card))" onClick={onDuplicate} />
             <IconBtn label={t("combat.remove")} icon={<Trash2 className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--loss) 55%, black)" onClick={onRemove} />
           </div>
 
