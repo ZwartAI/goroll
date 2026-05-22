@@ -6,7 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog } from "@/lib/log";
 import type { Character } from "@/lib/game";
-import { resetUsedThisTurn, clearEncounterSkillState, tickPlayerTurnEnd } from "@/lib/combat-skills";
+import { resetUsedThisTurn, clearEncounterSkillState, tickPlayerTurnEnd, tickEnemyTurnEnd } from "@/lib/combat-skills";
 
 export type EncounterStatus = "collecting" | "active" | "ended";
 
@@ -461,6 +461,107 @@ export async function dissolveLink(
   return { ok: true };
 }
 
+// ─────────────── Centralized end-of-turn ───────────────
+// Single source of truth for "finish the active turn". All end-turn buttons
+// (player Pasar turno, DM Terminar turno, yellow End Enemy Turn, pin) call
+// endActiveTurn so behavior stays identical.
+
+const _endingTurns = new Set<string>();
+
+export async function endActiveTurn(
+  encounter: CombatEncounter,
+  blocks: TurnBlock[],
+  actor?: { id: string; name: string; color: string } | null,
+): Promise<{ ok: boolean; error?: string }> {
+  if (encounter.status !== "active") return { ok: false, error: "not_active" };
+  const block = activeBlock(encounter, blocks);
+  if (!block) return { ok: false, error: "no_block" };
+
+  const guardKey = `${encounter.id}:${encounter.current_turn_index}`;
+  if (_endingTurns.has(guardKey)) return { ok: false, error: "busy" };
+  _endingTurns.add(guardKey);
+
+  try {
+    const { data: fresh } = await (supabase as any)
+      .from("combat_encounters")
+      .select("current_turn_index,status")
+      .eq("id", encounter.id)
+      .maybeSingle();
+    if (!fresh || fresh.status !== "active" || fresh.current_turn_index !== encounter.current_turn_index) {
+      return { ok: false, error: "stale" };
+    }
+
+    const playerIds = block.kind === "solo"
+      ? (block.participant.character_id ? [block.participant.id] : [])
+      : block.kind === "group" ? block.members.map(m => m.id) : [];
+    if (playerIds.length) {
+      await supabase.from("combat_participants" as any).update({ has_ended_turn: true }).in("id", playerIds);
+    }
+
+    const i18nTpl = {
+      damaged: "{effect} hizo {amount} de da\u00f1o a {target}.",
+      shieldAbsorbed: "Escudo absorbi\u00f3 {absorbed}. {target} recibi\u00f3 {applied} de da\u00f1o.",
+      expired: "{effect} expir\u00f3 sobre {target}.",
+    };
+    if (block.kind === "solo") {
+      if (isEnemy(block.participant)) {
+        if (!block.participant.is_defeated) await tickEnemyTurnEnd(block.participant.id);
+      } else if (block.participant.character_id) {
+        await tickPlayerTurnEnd({
+          characterId: block.participant.character_id,
+          campaignId: encounter.campaign_id,
+          encounterId: encounter.id,
+          i18n: i18nTpl,
+        });
+      }
+    } else if (block.kind === "group") {
+      for (const m of block.members) {
+        if (!m.character_id) continue;
+        await tickPlayerTurnEnd({
+          characterId: m.character_id,
+          campaignId: encounter.campaign_id,
+          encounterId: encounter.id,
+          i18n: i18nTpl,
+        });
+      }
+    } else if (block.kind === "pin") {
+      if (block.pin.is_active && !block.linked.is_defeated) {
+        await tickEnemyTurnEnd(block.linked.id);
+      }
+    }
+
+    if (block.kind === "solo" && isEnemy(block.participant)) {
+      await pushLog(encounter.campaign_id, [
+        { t: "text", v: `${block.participant.display_name} termin\u00f3 su turno.` },
+      ]);
+    } else if (block.kind === "solo") {
+      const name = actor?.name || block.participant.display_name;
+      const color = actor?.color || block.participant.color || "#cccccc";
+      const id = actor?.id || block.participant.character_id || block.participant.id;
+      await pushLog(encounter.campaign_id, [
+        { t: "char", v: name, color, id },
+        { t: "text", v: " termin\u00f3 su turno." },
+      ]);
+    } else if (block.kind === "group") {
+      const leader = block.members.find(m => m.is_leader) || block.members[0];
+      await pushLog(encounter.campaign_id, [
+        { t: "text", v: "El Enlace de " },
+        { t: "char", v: leader?.display_name || "?", color: leader?.color || "#cccccc", id: leader?.character_id || leader?.id || "" },
+        { t: "text", v: " termin\u00f3 su turno." },
+      ]);
+    } else if (block.kind === "pin") {
+      await pushLog(encounter.campaign_id, [
+        { t: "text", v: `${block.linked.display_name} termin\u00f3 un turno adicional.` },
+      ]);
+    }
+
+    await dmShiftTurn(encounter, blocks, 1);
+    return { ok: true };
+  } finally {
+    _endingTurns.delete(guardKey);
+  }
+}
+
 export async function passTurn(
   encounter: CombatEncounter,
   blocks: TurnBlock[],
@@ -470,68 +571,7 @@ export async function passTurn(
   const block = activeBlock(encounter, blocks);
   if (!block) return { ok: false, error: "no_block" };
   if (!blockContainsCharacter(block, character.id)) return { ok: false, error: "not_your_turn" };
-
-  const ids = block.kind === "solo" ? [block.participant.id] : block.kind === "group" ? block.members.map(m => m.id) : [];
-  if (ids.length) await supabase.from("combat_participants" as any).update({ has_ended_turn: true }).in("id", ids);
-
-  const nextIndex = encounter.current_turn_index + 1;
-  const wrapped = nextIndex >= blocks.length;
-  if (wrapped) {
-    await supabase.from("combat_participants" as any)
-      .update({ has_ended_turn: false })
-      .eq("encounter_id", encounter.id);
-  }
-  await supabase
-    .from("combat_encounters" as any)
-    .update({
-      current_turn_index: wrapped ? 0 : nextIndex,
-      ...(wrapped ? { round_number: (encounter.round_number || 1) + 1 } : {}),
-    })
-    .eq("id", encounter.id);
-
-  // Phase 5: clear white-skill-used-this-turn flags.
-  await resetUsedThisTurn(encounter.id);
-
-  // Phase 6: auto-tick condition effects on the character(s) whose turn just ended.
-  const affectedCharIds: string[] =
-    block.kind === "solo"
-      ? (block.participant.character_id ? [block.participant.character_id] : [])
-      : block.kind === "group"
-        ? block.members.map(m => m.character_id).filter((x): x is string => !!x)
-        : [];
-  const i18nTpl = {
-    damaged: "{effect} hizo {amount} de daño a {target}.",
-    shieldAbsorbed: "Escudo absorbió {absorbed}. {target} recibió {applied} de daño.",
-    expired: "{effect} expiró sobre {target}.",
-  };
-  for (const cid of affectedCharIds) {
-    await tickPlayerTurnEnd({
-      characterId: cid,
-      campaignId: encounter.campaign_id,
-      encounterId: encounter.id,
-      i18n: i18nTpl,
-    });
-  }
-
-
-
-
-
-  if (block.kind === "solo") {
-    await pushLog(encounter.campaign_id, [
-      { t: "char", v: character.name, color: character.color, id: character.id },
-      { t: "text", v: " terminó su turno." },
-    ]);
-  } else if (block.kind === "group") {
-    const leader = block.members.find(m => m.is_leader);
-    await pushLog(encounter.campaign_id, [
-      { t: "text", v: "El Enlace de " },
-      { t: "char", v: leader?.display_name || character.name, color: leader?.color || character.color, id: leader?.character_id || character.id },
-      { t: "text", v: " terminó su turno." },
-    ]);
-  }
-
-  return { ok: true };
+  return endActiveTurn(encounter, blocks, { id: character.id, name: character.name, color: character.color });
 }
 
 // ─────────────────────── Enemy actions (DM) ───────────────────────────
@@ -1030,18 +1070,11 @@ export async function dmEndEnemyTurn(
 ) {
   const block = activeBlock(encounter, blocks);
   if (!block) return { ok: false };
-  if (block.kind === "solo" && isEnemy(block.participant)) {
-    await pushLog(encounter.campaign_id, [
-      { t: "text", v: `${block.participant.display_name} terminó su turno.` },
-    ]);
-  } else if (block.kind === "pin") {
-    await pushLog(encounter.campaign_id, [
-      { t: "text", v: `${block.linked.display_name} terminó un turno adicional.` },
-    ]);
-  } else {
-    return { ok: false };
-  }
-  return dmShiftTurn(encounter, blocks, 1);
+  // Only valid when the active block is an enemy or an enemy turn pin.
+  const isEnemyActive =
+    (block.kind === "solo" && isEnemy(block.participant)) || block.kind === "pin";
+  if (!isEnemyActive) return { ok: false };
+  return endActiveTurn(encounter, blocks);
 }
 
 // ─────────────── Turn pins (extra turns for an existing enemy) ───────────────

@@ -951,7 +951,7 @@ export const en: Dict = {
     end: "End combat",
     endError: "Could not end combat",
     prevTurn: "Previous",
-    nextTurn: "Next",
+    nextTurn: "End Turn",
     empty: "No participants.",
     btnInitiative: "Initiative",
     btnWaitingDm: "Waiting for DM",

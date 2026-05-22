@@ -713,6 +713,23 @@ export async function tickEnemyEffect(effectId: string): Promise<void> {
   }
 }
 
+/**
+ * Tick ALL temporary effects attached to a given enemy participant.
+ * Used by the centralized end-of-turn flow when the active block is an enemy
+ * (or an enemy turn pin). Each effect applies its per-turn damage, then has
+ * its duration reduced by 1 (expiring at 0). Safe to call when there are
+ * no effects (no-op).
+ */
+export async function tickEnemyTurnEnd(participantId: string): Promise<void> {
+  const { data } = await (supabase as any)
+    .from("combat_temporary_effects")
+    .select("id")
+    .eq("target_enemy_participant_id", participantId);
+  for (const row of (data || []) as Array<{ id: string }>) {
+    await tickEnemyEffect(row.id);
+  }
+}
+
 // ─────────────────────── DOT / turn-end tick (Phase 6) ───────────────────────
 
 /**

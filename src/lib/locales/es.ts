@@ -953,7 +953,7 @@ export const es = {
     end: "Terminar combate",
     endError: "No se pudo terminar el combate",
     prevTurn: "Anterior",
-    nextTurn: "Siguiente",
+    nextTurn: "Terminar turno",
     empty: "Sin inscritos.",
     btnInitiative: "Iniciativa",
     btnWaitingDm: "Esperando al DM",

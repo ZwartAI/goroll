@@ -8,6 +8,7 @@ import {
   cancelInitiative,
   dissolveLink,
   dmShiftTurn,
+  endActiveTurn,
   endCombat,
   requestInitiative,
   reorderBlockWithAutoInitiative,
@@ -183,7 +184,7 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups,
             </button>
             <button className="btn-fantasy text-xs"
               style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
-              onClick={() => dmShiftTurn(encounter, buildOrderedTurns(participants, groups, pins), 1)}>
+              onClick={() => endActiveTurn(encounter, buildOrderedTurns(participants, groups, pins), dm)}>
               {t("combat.nextTurn")} <ChevronRight size={14} className="inline" />
             </button>
             <button className="btn-fantasy text-xs"
