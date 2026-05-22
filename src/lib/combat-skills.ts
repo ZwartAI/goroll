@@ -208,6 +208,52 @@ async function applyHealToCharacter(targetId: string, amount: number): Promise<{
   return { applied, newHp, max };
 }
 
+/**
+ * Apply damage to a character: consume temporary shields first, then HP.
+ * If applyDefense, subtract the character's total defense (from gear) before applying.
+ */
+async function applyDamageToCharacter(
+  targetId: string,
+  raw: number,
+  applyDefense: boolean,
+  encounterId: string,
+): Promise<{ applied: number; def: number; absorbed: number } | null> {
+  const [{ data: ch }, { data: its }, { data: shields }] = await Promise.all([
+    supabase.from("characters").select("*").eq("id", targetId).maybeSingle(),
+    supabase.from("items").select("*").eq("owner_character_id", targetId).eq("equipped", true),
+    (supabase as any).from("combat_temporary_effects")
+      .select("*")
+      .eq("encounter_id", encounterId)
+      .eq("target_character_id", targetId)
+      .eq("effect_type", "shield")
+      .order("created_at", { ascending: true }),
+  ]);
+  if (!ch) return null;
+  const t = totals(ch as Character, (its || []) as Item[]);
+  const def = applyDefense ? t.defense : 0;
+  let remaining = Math.max(0, Math.floor(raw) - def);
+  const totalRaw = remaining;
+  let absorbed = 0;
+  // Consume shields FIFO.
+  for (const sh of (shields || []) as CombatTemporaryEffect[]) {
+    if (remaining <= 0) break;
+    const take = Math.min(sh.value || 0, remaining);
+    if (take <= 0) continue;
+    absorbed += take;
+    remaining -= take;
+    const next = (sh.value || 0) - take;
+    if (next <= 0) {
+      await (supabase as any).from("combat_temporary_effects").delete().eq("id", sh.id);
+    } else {
+      await (supabase as any).from("combat_temporary_effects").update({ value: next }).eq("id", sh.id);
+    }
+  }
+  const cur = (ch as Character).current_hp;
+  const newHp = Math.max(0, cur - remaining);
+  await supabase.from("characters").update({ current_hp: newHp } as any).eq("id", targetId);
+  return { applied: totalRaw, def, absorbed };
+}
+
 async function createShield(args: {
   encounter: CombatEncounter;
   source: Character;
