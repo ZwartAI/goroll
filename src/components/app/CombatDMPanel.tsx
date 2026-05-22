@@ -221,6 +221,14 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups,
           onClose={() => setPickingTemplate(false)}
         />
       )}
+      {applyingEffect && encounter && (
+        <DMApplyEffectModal
+          encounter={encounter}
+          participants={participants}
+          dm={dm}
+          onClose={() => setApplyingEffect(false)}
+        />
+      )}
 
       {confirmState && (
         <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-3" onClick={() => setConfirmState(null)}>
