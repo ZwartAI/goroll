@@ -6,6 +6,14 @@ import { SLOTS, RARITY_COLOR, RARITY_BONUS, isWeapon, totals, ITEM_CATEGORIES, t
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog } from "@/lib/log";
 import { clampHpForOwner } from "@/lib/hp";
+import {
+  equipItem,
+  unequipItem,
+  normalBackpackItems,
+  temporaryBackpackItems,
+  getMaxSlots,
+  getSlotKind,
+} from "@/lib/inventory";
 import { RarityBadge } from "@/components/app/RarityBadge";
 import { StatText } from "@/components/app/StatText";
 import { useState } from "react";
@@ -29,30 +37,20 @@ function Inventory() {
     return SLOTS.find(s => s.key === it.slot)?.icon || "📦";
   };
 
-  async function syncHpAfter(nextEquipped: Item[], isEquipping: boolean) {
-    const oldMax = totals(character!, owned.filter(i => i.equipped)).maxHp;
-    const newMax = totals(character!, nextEquipped).maxHp;
-    const { nextHpOnEquipChange } = await import("@/lib/hp");
-    const nextHp = nextHpOnEquipChange(character!.current_hp, oldMax, newMax, isEquipping);
-    if (nextHp !== character!.current_hp) {
-      await supabase.from("characters").update({ current_hp: nextHp }).eq("id", character!.id);
-    }
-  }
-
   async function equip(it: Item) {
-    const cur = owned.find(o => o.equipped && o.slot === it.slot);
-    if (cur) await supabase.from("items").update({ equipped: false }).eq("id", cur.id);
-    await supabase.from("items").update({ equipped: true }).eq("id", it.id);
-    const next = owned.filter(i => i.equipped && i.id !== cur?.id && i.id !== it.id).concat([{ ...it, equipped: true }]);
-    await syncHpAfter(next, true);
+    await equipItem(it, character!, owned);
     await pushLog(campaign!.id, [{t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:t("inventory.logEquipped")},{t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id}]);
     setSel(null);
   }
   async function unequip(it: Item) {
-    await supabase.from("items").update({ equipped: false }).eq("id", it.id);
-    const next = owned.filter(i => i.equipped && i.id !== it.id);
-    await syncHpAfter(next, false);
-    await pushLog(campaign!.id, [{t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:t("inventory.logUnequipped")},{t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id}]);
+    const kind = await unequipItem(it, character!, owned);
+    const segs: any[] = [
+      {t:"char",v:character!.name,color:character!.color,id:character!.id},
+      {t:"text",v:t("inventory.logUnequipped")},
+      {t:"item",v:it.name,rarity:it.rarity as Rarity,id:it.id},
+    ];
+    if (kind === "temporary") segs.push({ t: "text", v: t("inventory.logToTemp") });
+    await pushLog(campaign!.id, segs);
     setSel(null);
   }
   async function useItem(it: Item) {
@@ -78,7 +76,7 @@ function Inventory() {
   }
   async function discard(it: Item) {
     const oldMax = totals(character!, owned.filter(i => i.equipped)).maxHp;
-    await supabase.from("items").update({ owner_character_id: null, equipped: false, in_dm_vault: true }).eq("id", it.id);
+    await supabase.from("items").update({ owner_character_id: null, equipped: false, in_dm_vault: true, inventory_slot_type: "normal" } as any).eq("id", it.id);
     await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaign!.id, [
       {t:"char",v:character!.name,color:character!.color,id:character!.id},
@@ -91,7 +89,7 @@ function Inventory() {
     if (!transferTo) return;
     const target = characters.find(c => c.id === transferTo);
     const oldMax = totals(character!, owned.filter(i => i.equipped)).maxHp;
-    await supabase.from("items").update({ owner_character_id: transferTo, equipped: false }).eq("id", it.id);
+    await supabase.from("items").update({ owner_character_id: transferTo, equipped: false, inventory_slot_type: "normal" } as any).eq("id", it.id);
     await clampHpForOwner(character!.id, oldMax);
     await pushLog(campaign!.id, [
       {t:"char",v:character!.name,color:character!.color,id:character!.id},{t:"text",v:t("inventory.logGave")},
@@ -101,25 +99,54 @@ function Inventory() {
     setSel(null); setTransferTo("");
   }
 
-  const maxSlots = (character as any).backpack_slots ?? 20;
-  const slots = Array.from({ length: maxSlots }, (_, i) => owned[i] ?? null);
+  const maxSlots = getMaxSlots(character);
+  const normalItems = normalBackpackItems(owned);
+  const tempItems = temporaryBackpackItems(owned);
+  const normalSlots = Array.from({ length: maxSlots }, (_, i) => normalItems[i] ?? null);
 
   return (
-    <PageFrame title={t("inventory.title")} subtitle={t("inventory.slots", { used: owned.length, max: maxSlots })} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
+    <PageFrame title={t("inventory.title")} subtitle={t("inventory.slots", { used: normalItems.length, max: maxSlots })} right={<Link to="/campaign/profile" className="text-muted-foreground"><ArrowLeft size={20}/></Link>}>
       <div className="grid grid-cols-4 gap-2">
-        {slots.map((it, i) => (
-          <button key={i} onClick={() => it && setSel(it)}
+        {normalSlots.map((it, i) => (
+          <button key={`n-${i}`} onClick={() => it && setSel(it)}
             className="aspect-square ornate-card flex flex-col items-center justify-center p-1 relative"
             style={it && it.category === "equipo" ? { borderColor: RARITY_COLOR[it.rarity as Rarity] } : undefined}>
             {it ? <>
               <span className="text-xl">{slotIcon(it)}</span>
               <span className="text-[8px] truncate w-full text-center" style={it.category === "equipo" ? { color: RARITY_COLOR[it.rarity as Rarity] } : undefined}>{it.name}</span>
               {it.category !== "equipo" && (it.uses ?? 0) > 0 && <span className="absolute bottom-0 right-0 text-[8px] bg-secondary px-1 rounded">x{it.uses}</span>}
-              {it.equipped && <span className="absolute top-0 right-0 text-[8px] bg-[var(--gold)] text-black px-1 rounded">{t("inventory.equippedTag")}</span>}
             </> : <span className="text-muted-foreground text-xs">·</span>}
           </button>
         ))}
       </div>
+
+      {tempItems.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              {t("inventory.temporarySlots")} · {tempItems.length}
+            </p>
+          </div>
+          <p className="text-[10px] text-amber-400/80 italic">{t("inventory.temporaryWarning")}</p>
+          <div className="grid grid-cols-4 gap-2">
+            {tempItems.map(it => (
+              <button key={it.id} onClick={() => setSel(it)}
+                className="aspect-square ornate-card flex flex-col items-center justify-center p-1 relative animate-pulse-slow"
+                style={{
+                  borderStyle: "dashed",
+                  borderColor: it.category === "equipo" ? RARITY_COLOR[it.rarity as Rarity] : "var(--gold)",
+                  boxShadow: "0 0 8px color-mix(in oklab, var(--gold) 35%, transparent)",
+                  background: "color-mix(in oklab, var(--gold) 6%, transparent)",
+                }}>
+                <span className="text-xl">{slotIcon(it)}</span>
+                <span className="text-[8px] truncate w-full text-center" style={it.category === "equipo" ? { color: RARITY_COLOR[it.rarity as Rarity] } : undefined}>{it.name}</span>
+                <span className="absolute top-0 right-0 text-[8px] bg-[var(--gold)] text-black px-1 rounded font-bold uppercase">{t("inventory.tempTag")}</span>
+                {it.category !== "equipo" && (it.uses ?? 0) > 0 && <span className="absolute bottom-0 right-0 text-[8px] bg-secondary px-1 rounded">x{it.uses}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {sel && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setSel(null)}>
@@ -131,6 +158,7 @@ function Inventory() {
                   {sel.category === "equipo"
                     ? (SLOTS.find(s=>s.key===sel.slot) ? t(`slots.${sel.slot}`) : "")
                     : (ITEM_CATEGORIES.find(c => c.key === sel.category) ? t(`categories.${sel.category}`) : t("inventory.object"))}
+                  {getSlotKind(sel) === "temporary" && <span className="ml-2 text-[10px] text-[var(--gold)] uppercase">· {t("inventory.tempTag")}</span>}
                 </p>
               </div>
               {sel.category === "equipo" && <RarityBadge rarity={sel.rarity as Rarity} />}
@@ -147,9 +175,7 @@ function Inventory() {
             {sel.description && <p className="text-xs text-muted-foreground italic">"<StatText>{sel.description}</StatText>"</p>}
             <div className="grid grid-cols-2 gap-2">
               {sel.category === "equipo" ? (
-                sel.equipped
-                  ? <button className="btn-fantasy" onClick={() => unequip(sel)}>{t("inventory.unequip")}</button>
-                  : <button className="btn-fantasy" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={() => equip(sel)}>{t("inventory.equip")}</button>
+                <button className="btn-fantasy" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }} onClick={() => equip(sel)}>{t("inventory.equip")}</button>
               ) : (
                 <button className="btn-fantasy" style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
                   disabled={(sel.uses ?? 0) <= 0}
