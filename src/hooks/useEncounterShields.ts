@@ -49,19 +49,19 @@ export function useEncounterShields(encounterId: string | null | undefined) {
     };
 
     load();
-    const ch = supabase
-      .channel(`shields-${encounterId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "combat_temporary_effects",
-          filter: `encounter_id=eq.${encounterId}`,
-        },
-        () => load(),
-      )
-      .subscribe();
+    const ch = supabase.channel(
+      `shields-${encounterId}-${Math.random().toString(36).slice(2)}`,
+    );
+    ch.on(
+      "postgres_changes" as any,
+      {
+        event: "*",
+        schema: "public",
+        table: "combat_temporary_effects",
+        filter: `encounter_id=eq.${encounterId}`,
+      },
+      () => load(),
+    ).subscribe();
 
     return () => {
       alive = false;
