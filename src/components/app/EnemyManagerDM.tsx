@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import {
-  Edit3, Copy, Trash2, FastForward, Sword, Heart, Pin,
+  Edit3, Copy, Trash2, FastForward, Sword, Heart, Pin, FileText, ChevronDown, X,
 } from "lucide-react";
 import {
   activeBlock,
@@ -17,6 +17,13 @@ import {
   type CombatTurnGroup,
   type CombatTurnPin,
 } from "@/lib/combat";
+import {
+  listEffectsForEnemy,
+  decrementEffectDuration,
+  removeEffect,
+} from "@/lib/combat-skills";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
 import { EnemyEditorModal } from "@/components/app/EnemyEditorModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
@@ -25,6 +32,8 @@ import { EnemyCombatSheetModal } from "@/components/app/EnemyCombatSheetModal";
 import { EnemyDuplicateModal } from "@/components/app/EnemyDuplicateModal";
 import { useLongPress } from "@/hooks/useLongPress";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+
+type EffectRow = Tables<"combat_temporary_effects">;
 
 type Props = {
   encounter: CombatEncounter;
@@ -47,6 +56,8 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
   const [duplicating, setDuplicating] = useState<CombatParticipant | null>(null);
   const [removing, setRemoving] = useState<CombatParticipant | null>(null);
   const [removingPin, setRemovingPin] = useState<CombatTurnPin | null>(null);
+  // Only one card has the action strip open at a time.
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
 
   if (enemies.length === 0 && pins.length === 0) return null;
 
@@ -73,6 +84,8 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
               isActive={isActive}
               encounter={encounter}
               blocks={blocks}
+              actionsOpen={openActionsId === p.id}
+              onToggleActions={() => setOpenActionsId(prev => (prev === p.id ? null : p.id))}
               onEdit={() => setEditing(p)}
               onDamage={() => setAttacking(p)}
               onHeal={() => setHealing(p)}
@@ -172,13 +185,15 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
 }
 
 function EnemyRow({
-  p, isActive, encounter, blocks,
+  p, isActive, encounter, blocks, actionsOpen, onToggleActions,
   onEdit, onDamage, onHeal, onSheet, onDuplicate, onRemove, onAddPin,
 }: {
   p: CombatParticipant;
   isActive: boolean;
   encounter: CombatEncounter;
   blocks: ReturnType<typeof buildOrderedTurns>;
+  actionsOpen: boolean;
+  onToggleActions: () => void;
   onEdit: () => void; onDamage: () => void; onHeal: () => void; onSheet: () => void;
   onDuplicate: () => void; onRemove: () => void; onAddPin: () => void;
 }) {
@@ -225,7 +240,6 @@ function EnemyRow({
             </div>
           </div>
 
-
           <div className="space-y-0.5">
             <div className="relative h-2.5 rounded-full bg-card border border-border overflow-hidden">
               <div className="h-full transition-all" style={{ width: `${pct}%`, background: hpBg }} />
@@ -234,6 +248,9 @@ function EnemyRow({
               {cur} / {max} HP
             </p>
           </div>
+
+          {/* Active effects strip (Phase 1) */}
+          <EnemyEffectsStrip participantId={p.id} encounterId={encounter.id} />
 
           {isActive && !p.is_defeated && (
             <button
@@ -244,14 +261,43 @@ function EnemyRow({
             </button>
           )}
 
-          {/* Single row: 5 compact icon-only action buttons */}
-          <div className="grid grid-cols-5 gap-1.5">
-            <IconBtn label={t("combat.damage")} icon={<Sword className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--loss) 70%, var(--card))" onClick={onDamage} />
-            <IconBtn label={t("combat.heal")} icon={<Heart className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--gain) 70%, var(--card))" onClick={onHeal} />
-            <IconBtn label={t("combat.edit")} icon={<Edit3 className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.55 0.12 240) 55%, var(--card))" onClick={onEdit} />
-            <IconBtn label={t("combat.duplicate.label")} icon={<Copy className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.45 0.10 240) 60%, var(--card))" onClick={onDuplicate} />
-            <IconBtn label={t("combat.remove")} icon={<Trash2 className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--loss) 55%, black)" onClick={onRemove} />
-          </div>
+          {/* Compact "Actions" toggle (Phase 1): hidden by default to reduce visual noise */}
+          {!actionsOpen ? (
+            <button
+              type="button"
+              className="btn-fantasy w-full text-xs py-1.5 flex items-center justify-center gap-1.5 font-display uppercase tracking-wider"
+              style={{
+                background: "linear-gradient(180deg, oklch(0.32 0.10 250), oklch(0.22 0.08 250))",
+                color: "white",
+                borderColor: "oklch(0.45 0.10 240)",
+              }}
+              onClick={onToggleActions}
+              title={t("combat.actions")}
+              aria-expanded={false}
+            >
+              <ChevronDown size={14} /> {t("combat.actions")}
+            </button>
+          ) : (
+            <div className="space-y-1">
+              <div className="grid grid-cols-6 gap-1.5">
+                <IconBtn label={t("combat.damage")} icon={<Sword className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--loss) 70%, var(--card))" onClick={onDamage} />
+                <IconBtn label={t("combat.heal")} icon={<Heart className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--gain) 70%, var(--card))" onClick={onHeal} />
+                <IconBtn label={t("combat.sheet")} icon={<FileText className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.55 0.12 260) 55%, var(--card))" onClick={onSheet} />
+                <IconBtn label={t("combat.edit")} icon={<Edit3 className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.55 0.12 240) 55%, var(--card))" onClick={onEdit} />
+                <IconBtn label={t("combat.duplicate.label")} icon={<Copy className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, oklch(0.45 0.10 240) 60%, var(--card))" onClick={onDuplicate} />
+                <IconBtn label={t("combat.remove")} icon={<Trash2 className="w-[55%] h-[55%]" strokeWidth={2.2} />} bg="color-mix(in oklab, var(--loss) 55%, black)" onClick={onRemove} />
+              </div>
+              <button
+                type="button"
+                className="btn-fantasy w-full text-[10px] py-1 flex items-center justify-center gap-1 font-display uppercase tracking-wider"
+                style={{ background: "transparent", borderStyle: "dashed", color: "var(--muted-foreground)" }}
+                onClick={onToggleActions}
+                title={t("combat.hideActions")}
+              >
+                <X size={11} /> {t("combat.hideActions")}
+              </button>
+            </div>
+          )}
 
         </div>
       </div>
@@ -324,21 +370,6 @@ function PinRow({
   );
 }
 
-function SquareBtn({
-  label, icon, bg, color, onClick,
-}: { label: string; icon: React.ReactNode; bg: string; color?: string; onClick: () => void }) {
-  return (
-    <button
-      className="btn-fantasy aspect-square flex flex-col items-center justify-center gap-0.5 text-[9px] font-display uppercase tracking-wider py-1"
-      style={{ background: bg, color: color || "white" }}
-      onClick={onClick}
-      title={label}>
-      {icon}
-      <span className="leading-none">{label}</span>
-    </button>
-  );
-}
-
 function IconBtn({
   label, icon, bg, color, onClick,
 }: { label: string; icon: React.ReactNode; bg: string; color?: string; onClick: () => void }) {
@@ -355,3 +386,159 @@ function IconBtn({
   );
 }
 
+// ─────────────────── Effects strip + detail ───────────────────
+
+function emojiForEffect(e: EffectRow): string {
+  // explicit icon column doesn't exist yet (Phase 2). Derive from effect_type/label.
+  const type = (e.effect_type || "").toLowerCase();
+  const label = (e.label || "").toLowerCase();
+  const map: Record<string, string> = {
+    poison: "☠️", venom: "☠️", veneno: "☠️",
+    burn: "🔥", quemadura: "🔥", fire: "🔥",
+    bleed: "🩸", sangrado: "🩸",
+    freeze: "❄️", congelación: "❄️", frozen: "❄️",
+    stun: "💫", aturdimiento: "💫",
+    fear: "👁️", miedo: "👁️",
+    blind: "🙈", ceguera: "🙈",
+    silence: "🔇", silencio: "🔇",
+    knockdown: "⬇️", derribo: "⬇️",
+    restrain: "⛓️", restricción: "⛓️",
+    vulnerable: "🎯",
+    mark: "📍", marcado: "📍",
+    shield: "🛡️", escudo: "🛡️",
+    defense: "🛡️", defensa: "🛡️",
+    damage: "⚔️", "daño extra": "⚔️",
+    heal: "💚", regeneration: "💚", regeneración: "💚",
+    buff: "✨",
+    note: "📜",
+  };
+  for (const [k, v] of Object.entries(map)) {
+    if (type === k || label.includes(k)) return v;
+  }
+  if (type === "shield") return "🛡️";
+  if (type === "note") return "📜";
+  return "✨";
+}
+
+function EnemyEffectsStrip({ participantId, encounterId }: { participantId: string; encounterId: string }) {
+  const { t } = useT();
+  const [effects, setEffects] = useState<EffectRow[]>([]);
+  const [detail, setDetail] = useState<EffectRow | null>(null);
+
+  const load = async () => {
+    const rows = await listEffectsForEnemy(participantId);
+    setEffects(rows);
+  };
+
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel(`enemy-fx-${participantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "combat_temporary_effects", filter: `encounter_id=eq.${encounterId}` },
+        () => { load(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participantId, encounterId]);
+
+  const lpFor = (e: EffectRow) =>
+    // long-press the emoji to open the detail modal
+    ({} as any);
+
+  if (effects.length === 0) return null;
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-1.5 pt-0.5">
+        {effects.map(e => {
+          const emoji = emojiForEffect(e);
+          const dur = typeof e.duration_rounds === "number" ? e.duration_rounds : null;
+          return (
+            <div key={e.id} className="flex flex-col items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setDetail(e)}
+                className="w-7 h-7 rounded-md border border-border bg-card hover:border-[var(--gold)]/60 flex items-center justify-center text-base leading-none"
+                title={e.label || e.effect_type || ""}
+                aria-label={t("combat.effects.detail")}
+              >
+                <span>{emoji}</span>
+              </button>
+              {dur !== null && (
+                <button
+                  type="button"
+                  onClick={async () => { await decrementEffectDuration(e.id); load(); }}
+                  className="min-w-[20px] h-4 px-1 rounded-sm border border-border bg-secondary/50 text-[9px] font-display leading-none flex items-center justify-center hover:border-[var(--gold)]/60"
+                  title={t("combat.effects.reduce")}
+                  aria-label={t("combat.effects.reduce")}
+                >
+                  {dur}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {detail && (
+        <EffectDetailModal
+          effect={detail}
+          emoji={emojiForEffect(detail)}
+          onClose={() => setDetail(null)}
+          onRemove={async () => { await removeEffect(detail.id); setDetail(null); load(); }}
+          onReduce={async () => { await decrementEffectDuration(detail.id); setDetail(null); load(); }}
+        />
+      )}
+    </>
+  );
+}
+
+function EffectDetailModal({
+  effect, emoji, onClose, onRemove, onReduce,
+}: { effect: EffectRow; emoji: string; onClose: () => void; onRemove: () => void; onReduce: () => void }) {
+  const { t } = useT();
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3" onClick={onClose}>
+      <div className="ornate-card max-w-sm w-full p-4 space-y-3" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl leading-none">{emoji}</span>
+          <h3 className="font-display text-[var(--gold)] text-base uppercase tracking-widest flex-1 truncate">
+            {effect.label || effect.effect_type || t("combat.effects.detail")}
+          </h3>
+        </div>
+        <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
+          <dt className="text-muted-foreground">{t("combat.effects.type")}</dt>
+          <dd>{effect.effect_type || "—"}</dd>
+          <dt className="text-muted-foreground">{t("combat.effects.value")}</dt>
+          <dd>{effect.value ?? 0}</dd>
+          <dt className="text-muted-foreground">{t("combat.effects.duration")}</dt>
+          <dd>{effect.duration_rounds ?? "—"}</dd>
+          {effect.source_character_id && (
+            <>
+              <dt className="text-muted-foreground">{t("combat.effects.source")}</dt>
+              <dd className="truncate">{effect.source_character_id.slice(0, 8)}…</dd>
+            </>
+          )}
+        </dl>
+        <div className="flex gap-2 pt-1">
+          <button className="btn-fantasy flex-1 text-xs py-1.5" onClick={onReduce}>
+            {t("combat.effects.reduce")}
+          </button>
+          <button
+            className="btn-fantasy flex-1 text-xs py-1.5"
+            style={{ background: "color-mix(in oklab, var(--loss) 60%, var(--card))", color: "white" }}
+            onClick={onRemove}
+          >
+            <Trash2 size={12} className="inline -mt-0.5 mr-1" />
+            {t("combat.effects.remove")}
+          </button>
+        </div>
+        <button className="btn-fantasy w-full text-xs py-1.5" onClick={onClose}>
+          {t("common.close")}
+        </button>
+      </div>
+    </div>
+  );
+}
