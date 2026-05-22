@@ -15,6 +15,8 @@ import { Escenario } from "@/components/app/Escenario";
 import { CombatList } from "@/components/app/CombatList";
 import { InitiativeButton } from "@/components/app/InitiativeButton";
 import { User, Minus, Plus, Camera, Heart, HeartPulse, Coins, RotateCw } from "lucide-react";
+import tabActiveBg from "@/assets/tab-active.png";
+import tabInactiveBg from "@/assets/tab-inactive.png";
 import navEquipo from "@/assets/nav/equipo.png";
 import navMochila from "@/assets/nav/mochila.png";
 import navLogros from "@/assets/nav/logros.png";
@@ -129,24 +131,25 @@ function Profile() {
 
       {/* Tabs: Personaje / Escenario */}
       <div className="grid grid-cols-2 gap-2 mb-4">
-        <button
-          onClick={() => setActiveTab("personaje")}
-          className={`btn-fantasy font-display tracking-wider ${activeTab === "personaje" ? "" : "opacity-50"}`}
-          style={activeTab === "personaje"
-            ? { background: "linear-gradient(135deg, oklch(0.45 0.16 145), oklch(0.30 0.12 145))", color: "white" }
-            : undefined}
-        >
-          {t("profile.tabCharacter")}
-        </button>
-        <button
-          onClick={() => setActiveTab("escenario")}
-          className={`btn-fantasy font-display tracking-wider ${activeTab === "escenario" ? "" : "opacity-50"}`}
-          style={activeTab === "escenario"
-            ? { background: "linear-gradient(135deg, oklch(0.50 0.15 195), oklch(0.30 0.12 195))", color: "white" }
-            : undefined}
-        >
-          {t("profile.tabScene")}
-        </button>
+        {(["personaje", "escenario"] as const).map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className="relative aspect-[3.6/1] w-full bg-no-repeat bg-center bg-contain font-display tracking-wider text-sm flex items-center justify-center transition-transform active:scale-[0.98]"
+              style={{
+                backgroundImage: `url(${isActive ? tabActiveBg : tabInactiveBg})`,
+                color: isActive ? "oklch(0.96 0.04 95)" : "oklch(0.75 0.05 30)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+              }}
+            >
+              <span className="relative z-10">
+                {tab === "personaje" ? t("profile.tabCharacter") : t("profile.tabScene")}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === "personaje" && (
