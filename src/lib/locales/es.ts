@@ -1119,7 +1119,7 @@ export const es = {
         description: "Descripción",
         close: "Cerrar",
       },
-      type: {
+      types: {
         condition: "Condición",
         buff: "Buff",
         debuff: "Debuff",
