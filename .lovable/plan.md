@@ -1,86 +1,141 @@
-# Rediseño Vista Combate DM
+# Plan: compactar tarjetas de enemigos y sistema de efectos/escudos
 
-Cambios solo UI/UX + nueva entidad "turn pin". Sin tocar lógica de iniciativa, daño, curación, skills ni bestiario.
+Esta solicitud cubre 14 partes muy heterogéneas (UI, base de datos, escudos, panel DM, realtime, i18n). Hacerlo todo en un solo turno me obligaría a tocar casi todo el módulo de combate de golpe, con alto riesgo de romper iniciativa, turnos, daño, curación o realtime. Propongo dividirlo en **3 fases independientes y entregables por separado**. Cada fase queda funcional y no rompe lo anterior.
 
-## 1. Exploración previa (antes de implementar)
-Leer para entender estructura actual:
-- `src/routes/campaign.dm.tsx` (zona Escena + bloques Log/Combat)
-- `src/components/app/CombatDMPanel.tsx`
-- `src/components/app/CombatList.tsx` (tarjetas enemigo + drag&drop actual)
-- `src/components/app/EnemyManagerDM.tsx`
-- `src/lib/combat.ts` (funciones turn shift, addEnemies, etc.)
-- `src/lib/locales/{es,en}.ts`
+> Aviso: para responder a tu memoria de i18n, todos los textos nuevos pasan por `t(...)` con claves en `es.ts` y `en.ts`. Nada hardcodeado.
 
-## 2. Eliminar duplicación Log/Combat ↔ Combat inferior
-- En el bloque superior del DM (Escena), quitar la pestaña/tab "Combat" que repite rounds/turnos/lista.
-- Mantener **solo Log** arriba.
-- El bloque inferior `CombatDMPanel` queda como única zona de gestión: Round, Turno activo, Orden, Añadir enemigo, Bestiario, Active Links, enemigos.
-- Si la pestaña superior tenía controles únicos, migrarlos al panel inferior.
+---
 
-## 3. Drag & drop: mover al orden de turnos
-- Quitar DnD de la lista interna de enemigos en `CombatList`/`EnemyManagerDM`.
-- Activar DnD en la **representación del orden de combate** (turn order list dentro de `CombatDMPanel`): permite reordenar jugadores, enlaces, enemigos y pines.
-- Usar `@dnd-kit/core` + `sortable` (ya en el proyecto si existe; si no, instalar).
-- Al soltar: recalcular `order_index` de `combat_participants` + `combat_turn_pins`; ajustar `current_turn_index` para no romper el turno activo (mantener el id del participante activo, recalcular su nuevo índice).
+## Fase 1 — UI: botón "Actions" y efectos compactos en tarjeta de enemigo
 
-## 4. Nueva entidad: Turn Pins (pines de turno)
-**Migración DB** — nueva tabla `combat_turn_pins`:
-- `id uuid pk`
-- `encounter_id uuid`
-- `campaign_id uuid`
-- `linked_participant_id uuid` (apunta a `combat_participants` del enemigo)
-- `label text` (opcional, override)
-- `order_index int`
-- `initiative int`
-- `is_active bool default true`
-- `created_at timestamptz default now()`
-- RLS `public_all` (consistente con resto del proyecto)
+Sólo UI sobre la tarjeta de enemigo del DM. Ya existe la tabla `combat_temporary_effects`, la reusamos para mostrar lo que haya, aunque la creación todavía no exista para enemigos (queda vacío hasta Fase 2).
 
-Reglas:
-- Sin HP propio. Toda acción (daño/curación/sheet/skills) opera sobre el enemigo enlazado.
-- Si enemigo enlazado `is_defeated = true` → pin se renderiza inactivo (gris, no recibe turno) y se salta en `dmShiftTurn`.
-- Si se elimina enemigo → eliminar pines (cascade lógico desde código).
+### Cambios
 
-Funciones en `src/lib/combat.ts`:
-- `addTurnPin(encounterId, linkedParticipantId)`
-- `deleteTurnPin(pinId)`
-- `reorderTurnSequence(items)` — recibe lista mixta (participantes + pines) con nuevo orden.
-- Adaptar `dmShiftTurn` para iterar la secuencia combinada (participantes + pines activos), saltando bloques sin enemigos vivos y pines cuyo enemigo está derrotado. **No cambia la lógica base**, solo extiende el iterable.
+- `EnemyManagerDM.tsx`:
+  - Estado local `openActionsId: string | null` para que sólo una tarjeta tenga acciones abiertas a la vez.
+  - Siempre visibles: icono/asset, nombre, DEF, SPD, INI, barra HP, HP actual/máx, "End Enemy Turn" (si está en turno), "Add Turn Pin".
+  - Por defecto, debajo de la barra HP (o debajo del botón amarillo si está en turno): botón ancho `Actions` con estilo azul oscuro.
+  - Al pulsar, oculta el botón y muestra la fila actual con los 6 botones cuadrados (Damage, Heal, Sheet, Edit, Clone, Delete) + un botón pequeño `×` para volver a colapsar.
+- Nuevo subcomponente `EnemyEffectsStrip`:
+  - Fila de chips: emoji grande + un botoncito debajo `[N]` con turnos restantes.
+  - Click en `[N]`: decrementa duración (`combat_temporary_effects.duration_rounds`); si llega a 0, elimina la fila.
+  - Long-press / segundo tap en el emoji: abre `EffectDetailModal` (nombre, tipo, valor, duración, fuente, botón eliminar).
+- `combat-skills.ts`: añadir helpers `listEffectsForEnemy(participantId)`, `decrementEffectDuration(id)`, `removeEffect(id)`. (Hoy sólo hay flujos parciales).
+- i18n: `combat.actions`, `combat.hideActions`, `combat.effects.reduce`, `combat.effects.remove`, `combat.effects.detail`.
 
-## 5. Rediseño tarjeta enemigo (DM)
-Nuevo componente `EnemyCombatCardDM` (o refactor en `CombatList.tsx`):
+### No toca
 
-Layout horizontal:
-- Izquierda: círculo grande (≈96px) con asset/icono del enemigo (usar `EnemyIconPicker` con `assetScale` ya existente).
-- Centro: Nombre (h3), línea `DEF X · SPD Y`, barra HP con `HP/HPmax`.
-- Esquina sup. derecha: botón **Open Sheet** (icono pergamino).
-- Si en turno: botón amarillo grande **End Enemy Turn** centrado bajo HP.
-- Dos filas de 3 botones cuadrados compactos:
-  - Fila 1: Damage (rojo, espada) · Heal (verde, cruz) · Open Sheet (dorado, pergamino) *(o mover Sheet aquí en vez de esquina)*
-  - Fila 2: Edit (azul, lápiz) · Clone (gris, copy) · Delete (rojo oscuro, papelera)
-- Eliminar botones -1/-5/+1/+5 HP de la card.
-- Bordes dorados/rojos por tier; fondo `bg-card`/oscuro.
-- Estado derrotado: opacidad reducida + badge.
+Lógica de daño, curación, sheet, edit, clone, delete, turnos, iniciativa, logs.
 
-## 6. Pin Card
-Componente compacto `TurnPinCard`:
-- Etiqueta horizontal slim, icono pequeño del enemigo, texto "Turno de {nombre}" + badge "Turno adicional".
-- Borde con color del tier del enemigo.
-- Acciones: End Turn (si activo), Delete pin (modal propio).
-- Click → abre sheet del enemigo enlazado.
+---
 
-## 7. Confirmaciones
-Reemplazar `window.confirm` en acciones de enemigo/pin con `ConfirmDialog` existente.
+## Fase 2 — Sistema de efectos aplicables (jugadores + enemigos + entidades)
 
-## 8. i18n
-Añadir claves en `es.ts` y `en.ts`:
-`damage, heal, openSheet, edit, clone, delete, endEnemyTurn, enemyTurn, turnPin, extraTurn, enemyTurnOf, addTurnPin, deletePin`.
+Esta fase introduce el modelo de datos completo y los modales para crearlos.
 
-## 9. Validación
-- Build limpio.
-- Probar: añadir pin, reordenar mediante DnD en turn order, end turn salta pines de enemigos derrotados, daño afecta enemigo enlazado, modal de delete sin window.confirm.
+### Migración DB
 
-## Notas técnicas
-- Realtime: añadir suscripción a `combat_turn_pins` donde se suscribe a `combat_participants`.
-- Tipos: regenerados automáticamente tras migración.
-- Mantener compatibilidad: encuentros sin pines siguen funcionando idéntico.
+Extender `combat_temporary_effects` (ya existe) con columnas que faltan:
+
+- `kind` text (`condition` | `buff` | `debuff` | `shield` | `extra_def` | `extra_dmg` | `extra_max_hp` | `control` | `note`).
+- `name` text, `icon` text (emoji), `description` text.
+- `remaining_value` int (para escudos).
+- `visibility` text (`public` | `dm`).
+- `is_manual` bool (no auto-decrementa).
+- `source_label` text.
+
+Más índices por `encounter_id` y `target_*`. Realtime ya disponible vía publicación o se añade.
+
+### UI / lógica
+
+- En `ConditionsPanel` (Character Sheet), si hay combate activo, botón `Apply effect to…`.
+- Nuevo `ApplyEffectModal`:
+  1. **Target picker**: jugadores activos + enemigos activos (pin → enemigo original). Multi-select.
+  2. **Type picker**: los 9 tipos listados (`Negative condition`, `Buff`, etc.).
+  3. **Preset picker** con presets emoji (Veneno, Quemadura, …) + opción `Custom` (nombre + emoji + descripción).
+  4. **Value** (condicional según tipo).
+  5. **Duration** (mínimo 1, opción "manual" / "until end of combat").
+  6. **Visibility** (public / dm-private).
+- Validaciones de la Parte 13.
+- Permisos de la Parte 11 (jugador → sus efectos + propuestas; DM → todo).
+- Aplicación a múltiples targets crea una fila por target (instancia independiente).
+
+### i18n
+
+Todas las claves listadas en la Parte 12 entran en `es.ts` y `en.ts`.
+
+---
+
+## Fase 3 — Escudos, defensa extra y panel global de efectos
+
+Lógica numérica + panel del DM. Depende de Fase 2.
+
+### Escudos (Parte 4, 5, 7)
+
+- Cada aplicación de escudo = una fila `kind = "shield"` con `remaining_value` y `duration_rounds` propios.
+- Helper `applyDamageWithShields(targetType, targetId, dmg)`:
+  1. Calcular daño bruto.
+  2. Restar `extra_def` activa si la fuente lo pide.
+  3. Consumir escudos por orden de menor `duration_rounds` (FIFO entre empates), restando `remaining_value`.
+  4. Sobrante baja HP (sin pasar de 0).
+  5. Log: `Shield absorbed X` y `Y to HP`.
+- Reglas: valores se suman en la vista total pero duraciones NUNCA se combinan; un nuevo escudo no renueva los anteriores.
+- Distribución grupal (Parte 7) en `ApplyEffectModal`: opciones `Same`, `Split total`, `Manual` con preview antes de aplicar.
+
+### Defensa extra (Parte 6)
+
+- Filas `kind = "extra_def"` con `value` positivo o negativo.
+- Helper `effectiveDefense(target)` = DEF base + suma de buffs - debuffs activos.
+- Daño con defensa pasa por `effectiveDefense`.
+
+### Panel global del DM (Parte 9)
+
+- Nuevo bloque colapsable `Active Effects` en `CombatDMPanel`:
+  - Lista plana de efectos del encuentro: target | emoji | name | type | value | duration | source | botones reducir/eliminar.
+
+### Realtime (Parte 10)
+
+- Suscripción `postgres_changes` sobre `combat_temporary_effects` filtrada por `encounter_id` para refrescar tarjetas, sheet y panel DM.
+
+### Integración con flujos existentes
+
+- `EnemyDamageModal`: usar `applyDamageWithShields` para enemigos (no rompe DEF actual: añade escudos como una capa nueva).
+- `applyEnemyDamage` sobre jugadores: idem.
+
+---
+
+## Detalles técnicos (referencia)
+
+```text
+combat_temporary_effects (existente, se amplía)
+ ├── kind            text
+ ├── icon            text   -- emoji
+ ├── name            text
+ ├── description     text
+ ├── value           int    -- escudo: total inicial; def: bonus; etc.
+ ├── remaining_value int    -- sólo escudos
+ ├── duration_rounds int    -- ya existe
+ ├── is_manual       bool
+ ├── visibility      text   -- 'public' | 'dm'
+ └── source_label    text
+```
+
+Orden de cálculo de daño:
+
+```text
+raw -> (− effective_def si aplica) -> hits shields FIFO -> remainder hits HP
+```
+
+---
+
+## ¿Cómo procedemos?
+
+Por tamaño no es realista entregar las 3 fases en un solo turno sin romper algo. Te propongo:
+
+- **Empezar por Fase 1** (UI compacta + visualización de efectos existentes). Es la que más impacto visual te da y no toca lógica de combate.
+- Confirmar que todo sigue funcionando.
+- Pasar a Fase 2 (modelo de datos + `ApplyEffectModal`).
+- Cerrar con Fase 3 (escudos, defensa extra, panel DM, realtime).
+
+Dime si arranco con la Fase 1 tal cual está descrita, o si quieres reordenar (por ejemplo, hacer escudos antes que el panel DM).

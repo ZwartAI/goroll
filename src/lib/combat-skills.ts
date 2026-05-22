@@ -474,3 +474,44 @@ export async function reduceShield(effectId: string, amount: number) {
 export async function removeEffect(effectId: string) {
   await (supabase as any).from("combat_temporary_effects").delete().eq("id", effectId);
 }
+
+// ─────────────────────── Per-target effects (Phase 1) ───────────────────────
+
+export async function listEffectsForEnemy(participantId: string): Promise<CombatTemporaryEffect[]> {
+  const { data } = await (supabase as any)
+    .from("combat_temporary_effects")
+    .select("*")
+    .eq("target_enemy_participant_id", participantId)
+    .order("created_at", { ascending: true });
+  return (data as any) || [];
+}
+
+export async function listEffectsForCharacter(characterId: string): Promise<CombatTemporaryEffect[]> {
+  const { data } = await (supabase as any)
+    .from("combat_temporary_effects")
+    .select("*")
+    .eq("target_character_id", characterId)
+    .order("created_at", { ascending: true });
+  return (data as any) || [];
+}
+
+/**
+ * Decrement an effect's remaining duration by 1.
+ * If duration reaches 0 (or is already null/0), the effect is deleted.
+ */
+export async function decrementEffectDuration(effectId: string) {
+  const { data } = await (supabase as any)
+    .from("combat_temporary_effects")
+    .select("duration_rounds")
+    .eq("id", effectId)
+    .maybeSingle();
+  if (!data) return;
+  const cur = typeof data.duration_rounds === "number" ? data.duration_rounds : 0;
+  const next = cur - 1;
+  if (next <= 0) {
+    await (supabase as any).from("combat_temporary_effects").delete().eq("id", effectId);
+  } else {
+    await (supabase as any).from("combat_temporary_effects").update({ duration_rounds: next }).eq("id", effectId);
+  }
+}
+
