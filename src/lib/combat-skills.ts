@@ -11,6 +11,7 @@ import {
   activeBlock,
   blockContainsCharacter,
   buildOrderedTurns,
+  groupForCharacter,
   isEnemy,
   type CombatEncounter,
   type CombatParticipant,
