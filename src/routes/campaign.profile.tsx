@@ -254,7 +254,7 @@ function Profile() {
                   background: hpPct > 50 ? "var(--gain)" : hpPct > 25 ? "var(--gold)" : "var(--loss)",
                 }} />
               </div>
-              <span className="font-display text-xs shrink-0 text-right tabular-nums w-[7ch]">{character.current_hp}/{stats.maxHp}</span>
+              <span className="font-display text-xs shrink-0 tabular-nums w-[7ch] text-center mr-[2px]">{character.current_hp}/{stats.maxHp}</span>
             </div>
           </div>
 
