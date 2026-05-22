@@ -6,7 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { pushLog } from "@/lib/log";
 import type { Character } from "@/lib/game";
-import { resetUsedThisTurn, clearEncounterSkillState } from "@/lib/combat-skills";
+import { resetUsedThisTurn, clearEncounterSkillState, tickPlayerTurnEnd } from "@/lib/combat-skills";
 
 export type EncounterStatus = "collecting" | "active" | "ended";
 
