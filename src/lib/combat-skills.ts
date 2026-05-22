@@ -16,6 +16,7 @@ import {
   type CombatEncounter,
   type CombatParticipant,
   type CombatTurnGroup,
+  type CombatTurnPin,
 } from "@/lib/combat";
 import type { Character, Item, Rarity } from "@/lib/game";
 import { totals } from "@/lib/game";
@@ -88,11 +89,12 @@ export function computeTurnState(
   participants: CombatParticipant[],
   groups: CombatTurnGroup[],
   characterId: string | null,
+  pins: CombatTurnPin[] = [],
 ): TurnState {
   if (!encounter || !characterId) return { isYourTurn: false, reason: "not_active" };
   if (encounter.status === "ended") return { isYourTurn: false, reason: "ended" };
   if (encounter.status !== "active") return { isYourTurn: false, reason: "not_active" };
-  const blocks = buildOrderedTurns(participants, groups);
+  const blocks = buildOrderedTurns(participants, groups, pins);
   const block = activeBlock(encounter, blocks);
   if (!block) return { isYourTurn: false, reason: "not_active" };
   return blockContainsCharacter(block, characterId)
@@ -326,6 +328,7 @@ export async function useSkill(args: {
   encounter: CombatEncounter;
   participants: CombatParticipant[];
   groups: CombatTurnGroup[];
+  pins?: CombatTurnPin[];
   source: Character;
   skill: SkillSummary;
   targets: SkillTarget[];
@@ -334,7 +337,7 @@ export async function useSkill(args: {
   const { encounter, source, skill, targets, payload } = args;
 
   // Re-validate turn ownership server-side via the data we got.
-  const turn = computeTurnState(encounter, args.participants, args.groups, source.id);
+  const turn = computeTurnState(encounter, args.participants, args.groups, source.id, args.pins || []);
   if (!turn.isYourTurn) return { ok: false, error: "not_your_turn" as const };
 
   // Lazy create / fetch use record + sibling uses.

@@ -158,6 +158,7 @@ function Skills() {
         encounter={combat.encounter}
         participants={combat.participants}
         groups={combat.groups}
+        pins={combat.pins}
         character={character}
         allCharacters={characters}
         skills={unlocked}

@@ -136,6 +136,7 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
           encounter={encounter}
           participants={participants}
           groups={groups}
+          pins={pins}
           onClose={() => setSheet(null)}
         />
       )}

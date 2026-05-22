@@ -12,6 +12,7 @@ import {
   type CombatEncounter,
   type CombatParticipant,
   type CombatTurnGroup,
+  type CombatTurnPin,
 } from "@/lib/combat";
 import { InitiativeRollModal } from "@/components/app/InitiativeRollModal";
 
@@ -20,16 +21,17 @@ type Props = {
   encounter: CombatEncounter | null;
   participants: CombatParticipant[];
   groups: CombatTurnGroup[];
+  pins?: CombatTurnPin[];
   /** Online characters in the campaign — used to populate Enlace selector. */
   online: Character[];
 };
 
-export function InitiativeButton({ character, encounter, participants, groups, online }: Props) {
+export function InitiativeButton({ character, encounter, participants, groups, pins, online }: Props) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const status = encounter?.status ?? null;
   const myPart = participantForCharacter(participants, character.id);
-  const blocks = buildOrderedTurns(participants, groups);
+  const blocks = buildOrderedTurns(participants, groups, pins || []);
   const active = activeBlock(encounter, blocks);
   const myTurn = active ? blockContainsCharacter(active, character.id) : false;
 

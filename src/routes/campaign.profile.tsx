@@ -230,6 +230,7 @@ function Profile() {
                   encounter={combat.encounter}
                   participants={combat.participants}
                   groups={combat.groups}
+                  pins={combat.pins}
                   online={characters.filter(c => onlineIds.has(c.id))}
                 />
               </div>
@@ -701,6 +702,7 @@ function ProfileLogPanel({ logs, combat, selfId, onOpenChar, onOpenItem, onOpenB
           encounter={combat.encounter}
           participants={combat.participants}
           groups={combat.groups}
+          pins={combat.pins}
           selfCharacterId={selfId}
           onOpenChar={onOpenChar}
         />

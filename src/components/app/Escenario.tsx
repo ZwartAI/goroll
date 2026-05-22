@@ -116,6 +116,7 @@ export function Escenario({ characters, items, onlineIds, logs, selfId, onOpenCh
               encounter={combat.encounter}
               participants={combat.participants}
               groups={combat.groups}
+              pins={combat.pins}
               selfCharacterId={selfId}
               onOpenChar={onOpenChar}
             />

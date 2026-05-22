@@ -6,25 +6,26 @@ import { RARITY_COLOR } from "@/lib/game";
 import type { CharacterSkill } from "./SkillCard";
 import { SkillUseModal } from "./SkillUseModal";
 import { computeTurnState, RARITY_MAX_USES, type CombatSkillUse } from "@/lib/combat-skills";
-import type { CombatEncounter, CombatParticipant, CombatTurnGroup } from "@/lib/combat";
+import type { CombatEncounter, CombatParticipant, CombatTurnGroup, CombatTurnPin } from "@/lib/combat";
 import { Swords } from "lucide-react";
 
 type Props = {
   encounter: CombatEncounter | null;
   participants: CombatParticipant[];
   groups: CombatTurnGroup[];
+  pins?: CombatTurnPin[];
   character: Character;
   allCharacters: Character[];
   skills: CharacterSkill[];
 };
 
-export function PlayerCombatSkillsPanel({ encounter, participants, groups, character, allCharacters, skills }: Props) {
+export function PlayerCombatSkillsPanel({ encounter, participants, groups, pins, character, allCharacters, skills }: Props) {
   const { t } = useT();
   const [uses, setUses] = useState<CombatSkillUse[]>([]);
   const [open, setOpen] = useState<CharacterSkill | null>(null);
 
   const active = encounter && encounter.status === "active";
-  const turn = computeTurnState(encounter, participants, groups, character.id);
+  const turn = computeTurnState(encounter, participants, groups, character.id, pins || []);
 
   async function reload() {
     if (!encounter) { setUses([]); return; }
@@ -98,6 +99,7 @@ export function PlayerCombatSkillsPanel({ encounter, participants, groups, chara
           encounter={encounter}
           participants={participants}
           groups={groups}
+          pins={pins}
           source={character}
           allCharacters={allCharacters}
           skill={open}

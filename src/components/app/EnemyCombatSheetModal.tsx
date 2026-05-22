@@ -15,6 +15,7 @@ import {
   type CombatEnemySkill,
   type CombatParticipant,
   type CombatTurnGroup,
+  type CombatTurnPin,
 } from "@/lib/combat";
 import { loadTemplate, type EnemyTemplate } from "@/lib/bestiary";
 import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
@@ -29,10 +30,11 @@ type Props = {
   encounter: CombatEncounter;
   participants: CombatParticipant[];
   groups: CombatTurnGroup[];
+  pins?: CombatTurnPin[];
   onClose: () => void;
 };
 
-export function EnemyCombatSheetModal({ participant, encounter, participants, groups, onClose }: Props) {
+export function EnemyCombatSheetModal({ participant, encounter, participants, groups, pins, onClose }: Props) {
   const { t } = useT();
   const [skills, setSkills] = useState<CombatEnemySkill[]>([]);
   const [template, setTemplate] = useState<EnemyTemplate | null>(null);
@@ -45,7 +47,7 @@ export function EnemyCombatSheetModal({ participant, encounter, participants, gr
     if (participant.enemy_template_id) loadTemplate(participant.enemy_template_id).then(setTemplate);
   }, [participant.id, participant.enemy_template_id]);
 
-  const blocks = buildOrderedTurns(participants, groups);
+  const blocks = buildOrderedTurns(participants, groups, pins || []);
   const active = activeBlock(encounter, blocks);
   const isActive = !!active && active.kind === "solo" && active.participant.id === participant.id;
   const ended = encounter.status === "ended";

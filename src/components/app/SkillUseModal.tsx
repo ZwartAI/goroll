@@ -16,7 +16,7 @@ import {
   type CombatSkillUse,
   RARITY_MAX_USES,
 } from "@/lib/combat-skills";
-import type { CombatEncounter, CombatParticipant, CombatTurnGroup } from "@/lib/combat";
+import type { CombatEncounter, CombatParticipant, CombatTurnGroup, CombatTurnPin } from "@/lib/combat";
 import { isEnemy, groupForCharacter } from "@/lib/combat";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,6 +24,7 @@ type Props = {
   encounter: CombatEncounter;
   participants: CombatParticipant[];
   groups: CombatTurnGroup[];
+  pins?: CombatTurnPin[];
   source: Character;
   allCharacters: Character[];
   skill: CharacterSkill;
@@ -36,7 +37,7 @@ type Props = {
  * Bloque "Uso de Skill" — modal donde un jugador resuelve el uso de una skill
  * sobre personajes (incluido él mismo) y/o enemigos del combate activo.
  */
-export function SkillUseModal({ encounter, participants: initialParticipants, groups, source, allCharacters, skill, use, onClose, onDone }: Props) {
+export function SkillUseModal({ encounter, participants: initialParticipants, groups, pins, source, allCharacters, skill, use, onClose, onDone }: Props) {
   const { t } = useT();
   const color = RARITY_COLOR[skill.rarity];
   const max = RARITY_MAX_USES[skill.rarity];
@@ -165,6 +166,7 @@ export function SkillUseModal({ encounter, participants: initialParticipants, gr
       encounter,
       participants,
       groups,
+      pins,
       source,
       skill: {
         id: skill.id,

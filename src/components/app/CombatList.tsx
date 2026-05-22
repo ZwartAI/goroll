@@ -71,6 +71,8 @@ export function CombatList({ encounter, participants, groups, pins, selfCharacte
       enlaceLabel={t("combat.linkBadge")}
       enemyLabel={t("combat.enemyLabel")}
       defeatedLabel={t("combat.defeated")}
+      extraTurnLabel={t("combat.extraTurn")}
+      enemyTurnOfLabel={t("combat.enemyTurnOf")}
       onOpenChar={onOpenChar}
       draggable={!!onReorder}
     />
@@ -106,10 +108,11 @@ export function CombatList({ encounter, participants, groups, pins, selfCharacte
 }
 
 function TurnRow({
-  block, isActive, isSelf, activeLabel, activeEnemyLabel, enlaceLabel, enemyLabel, defeatedLabel, onOpenChar, draggable,
+  block, isActive, isSelf, activeLabel, activeEnemyLabel, enlaceLabel, enemyLabel, defeatedLabel, extraTurnLabel, enemyTurnOfLabel, onOpenChar, draggable,
 }: {
   block: TurnBlock; isActive: boolean; isSelf: boolean;
   activeLabel: string; activeEnemyLabel: string; enlaceLabel: string; enemyLabel: string; defeatedLabel: string;
+  extraTurnLabel: string; enemyTurnOfLabel: string;
   onOpenChar?: (id: string) => void;
   draggable?: boolean;
 }) {
@@ -230,11 +233,13 @@ function TurnRow({
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-display text-xs truncate" style={{ color: baseColor }}>
-            {block.pin.label || `${enemyLabel}: ${l.display_name}`}
+            {block.pin.label || `${enemyTurnOfLabel} ${l.display_name}`}
           </p>
-          <p className="text-[9px] uppercase tracking-widest text-muted-foreground">{activeEnemyLabel}</p>
+          <span className="text-[9px] font-display uppercase tracking-widest px-1.5 py-0.5 rounded bg-[var(--loss)]/25 text-[var(--loss)]">
+            {extraTurnLabel}
+          </span>
         </div>
-        
+        <InitiativeChip n={block.pin.initiative} />
         {isActive && !inactive && <ActiveBadge label={activeEnemyLabel} tone="enemy" />}
       </div>
     );
