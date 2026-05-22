@@ -532,6 +532,12 @@ async function undoLog(l: LogRow, campaignId: string, dm: { id: string; name: st
     await supabase.from("achievements").delete().eq("id", u.id);
   } else if (u.kind === "achievement.recreate") {
     await supabase.from("achievements").insert(u.row as any);
+  } else if (u.kind === "combat.duplicate.remove") {
+    const ids = u.participantIds || [];
+    if (ids.length) {
+      await supabase.from("combat_enemy_skills").delete().in("combat_participant_id", ids);
+      await supabase.from("combat_participants").delete().in("id", ids);
+    }
   }
   await supabase.from("logs").update({ undone: true } as any).eq("id", l.id);
   await pushLog(campaignId, [
