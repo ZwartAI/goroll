@@ -16,6 +16,7 @@ import { CombatList } from "@/components/app/CombatList";
 import { InitiativeButton } from "@/components/app/InitiativeButton";
 import { User, Minus, Plus, Camera, Heart, HeartPulse, Coins, RotateCw } from "lucide-react";
 import tabActiveBg from "@/assets/tab-active.png";
+import hpFrameBg from "@/assets/hp-frame.png";
 import tabInactiveBg from "@/assets/tab-inactive.png";
 import navEquipo from "@/assets/nav/equipo.png";
 import navMochila from "@/assets/nav/mochila.png";
@@ -236,7 +237,15 @@ function Profile() {
 
 
           {/* HP bar */}
-          <div className="ornate-card p-2 mb-3">
+          <div
+            className="p-2 mb-3"
+            style={{
+              backgroundImage: `url(${hpFrameBg})`,
+              backgroundSize: "100% 100%",
+              backgroundRepeat: "no-repeat",
+              padding: "10px 22px",
+            }}
+          >
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -251,7 +260,7 @@ function Profile() {
               >
                 <Heart size={18} fill="oklch(0.55 0.22 25)" color="oklch(0.45 0.22 25)" strokeWidth={2} />
               </button>
-              <div className="flex-1 h-3 rounded-full bg-secondary overflow-hidden border border-[var(--gold)]/40">
+              <div className="flex-1 h-3 rounded-full bg-black/40 overflow-hidden border border-[var(--gold)]/40">
                 <div className="h-full transition-all" style={{
                   width: `${hpPct}%`,
                   background: hpPct > 50 ? "var(--gain)" : hpPct > 25 ? "var(--gold)" : "var(--loss)",
