@@ -890,4 +890,67 @@ export async function tickPlayerTurnEnd(args: {
 }
 
 
+// ─────────────────────── DM-driven effect application ───────────────────────
+
+export type DMEffectKind = "shield" | "buff" | "debuff" | "control" | "note";
+
+export type DMEffectTarget = {
+  characterId?: string | null;
+  enemyParticipantId?: string | null;
+  displayName: string;
+  color?: string | null;
+};
+
+/**
+ * DM applies a buff / debuff / shield / control / note to one or more
+ * participants. Inserts one row per target into combat_temporary_effects
+ * and writes a single log entry summarizing the action.
+ */
+export async function dmApplyEffectsToTargets(args: {
+  encounter: CombatEncounter;
+  dm: { id: string; name: string; color: string };
+  kind: DMEffectKind;
+  label: string;
+  emoji: string;
+  value: number;
+  durationRounds: number | null;
+  targets: DMEffectTarget[];
+}): Promise<{ ok: boolean }> {
+  const { encounter, dm, kind, label, emoji, value, durationRounds, targets } = args;
+  if (!targets.length) return { ok: false };
+
+  const safeValue = Math.max(0, Math.floor(value || 0));
+  const safeDuration = durationRounds && durationRounds > 0 ? Math.floor(durationRounds) : null;
+  const composedLabel = `${emoji ? emoji + " " : ""}${label || ""}`.trim() || emoji || label || kind;
+
+  const rows = targets.map(target => ({
+    encounter_id: encounter.id,
+    campaign_id: encounter.campaign_id,
+    target_character_id: target.characterId || null,
+    target_enemy_participant_id: target.enemyParticipantId || null,
+    source_character_id: dm.id,
+    source_skill_id: null,
+    effect_type: kind,
+    value: kind === "note" ? 0 : safeValue,
+    label: composedLabel,
+    duration_rounds: safeDuration,
+  }));
+
+  const { error } = await (supabase as any).from("combat_temporary_effects").insert(rows);
+  if (error) return { ok: false };
+
+  const targetNames = targets.map(t => t.displayName).join(", ");
+  await pushLog(encounter.campaign_id, [
+    { t: "char", v: dm.name, color: dm.color, id: dm.id },
+    {
+      t: "text",
+      v: ` aplicó ${composedLabel}${kind !== "note" && safeValue > 0 ? ` (${kind === "shield" ? "+" : ""}${safeValue})` : ""}${safeDuration ? ` por ${safeDuration}t` : ""} a ${targetNames}.`,
+    },
+  ] as any);
+
+  return { ok: true };
+}
+
+
+
 

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Swords, Flag, Play, ChevronLeft, ChevronRight, X, Plus, BookOpen } from "lucide-react";
+import { Swords, Flag, Play, ChevronLeft, ChevronRight, X, Plus, BookOpen, Sparkles } from "lucide-react";
 import { BestiaryPickerModal } from "@/components/app/BestiaryPickerModal";
+import { DMApplyEffectModal } from "@/components/app/DMApplyEffectModal";
 import {
   buildOrderedTurns,
   cancelInitiative,
@@ -37,6 +38,7 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups,
   const status = encounter?.status ?? null;
   const [addingEnemy, setAddingEnemy] = useState(false);
   const [pickingTemplate, setPickingTemplate] = useState(false);
+  const [applyingEffect, setApplyingEffect] = useState(false);
   const [confirmState, setConfirmState] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const canAddEnemy = encounter && status !== "ended";
@@ -177,6 +179,11 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups,
             )}
             <EnemyManagerDM encounter={encounter} participants={participants} groups={groups} pins={pins} dm={dm} />
           </div>
+          <button className="btn-fantasy w-full text-xs py-1.5"
+            style={{ background: "color-mix(in oklab, var(--gold) 30%, var(--card))", color: "var(--gold)" }}
+            onClick={() => setApplyingEffect(true)}>
+            <Sparkles size={12} className="inline mr-1" /> {t("combat.dmEffects.openButton")}
+          </button>
           <div className="grid grid-cols-3 gap-2 pt-1">
             <button className="btn-fantasy text-xs"
               onClick={() => dmShiftTurn(encounter, buildOrderedTurns(participants, groups, pins), -1)}>
@@ -212,6 +219,14 @@ export function CombatDMPanel({ campaignId, dm, encounter, participants, groups,
           encounter={encounter}
           dm={dm}
           onClose={() => setPickingTemplate(false)}
+        />
+      )}
+      {applyingEffect && encounter && (
+        <DMApplyEffectModal
+          encounter={encounter}
+          participants={participants}
+          dm={dm}
+          onClose={() => setApplyingEffect(false)}
         />
       )}
 
