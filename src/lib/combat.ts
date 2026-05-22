@@ -1305,4 +1305,193 @@ export async function applyEnemyAttackToPlayers(
 }
 
 
+// ─────────────── Guided multi-duplicate ───────────────
+
+export type DuplicatePlacement =
+  | "afterOriginal"
+  | "atBeginning"
+  | "atEnd"
+  | "distributePlayers"
+  | "randomMix"
+  | "sameInitiative";
+
+/**
+ * Duplicate an enemy already in combat N times with a chosen placement.
+ * Creates independent instances with their own HP. Does NOT touch the bestiary.
+ * Snapshots existing combat skills onto each copy.
+ */
+export async function duplicateEnemyMulti(
+  participant: CombatParticipant,
+  encounter: CombatEncounter,
+  blocks: TurnBlock[],
+  count: number,
+  placement: DuplicatePlacement,
+  dm: { id: string; name: string; color: string },
+): Promise<{ ok: boolean; created?: number; error?: string }> {
+  if (encounter.status === "ended") return { ok: false, error: "ended" };
+  if (!isEnemy(participant)) return { ok: false, error: "not_enemy" };
+  const qty = Math.max(1, Math.min(20, Math.floor(count || 1)));
+  const baseName = participant.enemy_name || participant.display_name;
+  const startInstance = await nextInstanceNumber(encounter.id, baseName);
+  const startOrder = await nextOrderIndex(encounter.id);
+
+  const rows: any[] = [];
+  for (let i = 0; i < qty; i++) {
+    rows.push({
+      encounter_id: encounter.id,
+      campaign_id: encounter.campaign_id,
+      character_id: null,
+      participant_type: "enemy",
+      display_name: `${baseName} ${startInstance + i}`,
+      image_url: null,
+      color: participant.enemy_color || null,
+      initiative: participant.initiative,
+      order_index: startOrder + i, // provisional; reassigned below
+      enemy_name: baseName,
+      enemy_icon: participant.enemy_icon,
+      enemy_color: participant.enemy_color,
+      enemy_hp: participant.enemy_max_hp,
+      enemy_max_hp: participant.enemy_max_hp,
+      enemy_defense: participant.enemy_defense || 0,
+      enemy_speed: participant.enemy_speed,
+      enemy_notes: participant.enemy_notes,
+      enemy_instance_number: startInstance + i,
+      is_enemy_visible: true,
+      is_defeated: false,
+      enemy_role: (participant as any).enemy_role || null,
+      enemy_biome: (participant as any).enemy_biome || null,
+      enemy_base_damage: (participant as any).enemy_base_damage || null,
+      enemy_behavior: (participant as any).enemy_behavior || null,
+      enemy_template_id: (participant as any).enemy_template_id || null,
+    });
+  }
+
+  const { data: inserted, error } = await (supabase as any)
+    .from("combat_participants")
+    .insert(rows)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  const newIds: string[] = ((inserted as any[]) || []).map(r => r.id as string);
+
+  // Clone combat skills snapshot to each copy.
+  try {
+    const srcSkills = await listEnemySkills(participant.id);
+    if (srcSkills.length && newIds.length) {
+      const skillRows: any[] = [];
+      for (const id of newIds) {
+        for (const s of srcSkills) {
+          skillRows.push({
+            encounter_id: encounter.id,
+            campaign_id: encounter.campaign_id,
+            combat_participant_id: id,
+            template_skill_id: s.template_skill_id,
+            name: s.name,
+            rarity: s.rarity,
+            skill_type: s.skill_type,
+            target_shape: s.target_shape,
+            targets: s.targets,
+            dice: s.dice,
+            range_text: s.range_text,
+            effect: s.effect,
+            visual_brief: s.visual_brief,
+            order_index: s.order_index,
+          });
+        }
+      }
+      await (supabase as any).from("combat_enemy_skills").insert(skillRows);
+    }
+  } catch {
+    // Skill clone is best-effort.
+  }
+
+  // sameInitiative: keep copies at the end with the same initiative; buildOrderedTurns
+  // resolves order. No reorder needed.
+  if (placement !== "sameInitiative") {
+    type Entry = { type: "block"; block: TurnBlock } | { type: "copy"; id: string };
+    const existing: Entry[] = blocks.map(b => ({ type: "block" as const, block: b }));
+    const copies: Entry[] = newIds.map(id => ({ type: "copy" as const, id }));
+
+    let arr: Entry[] = [];
+    if (placement === "atBeginning") {
+      arr = [...copies, ...existing];
+    } else if (placement === "atEnd") {
+      arr = [...existing, ...copies];
+    } else if (placement === "afterOriginal") {
+      const idx = existing.findIndex(
+        e => e.type === "block" && e.block.kind === "solo" && e.block.participant.id === participant.id,
+      );
+      if (idx < 0) arr = [...existing, ...copies];
+      else arr = [...existing.slice(0, idx + 1), ...copies, ...existing.slice(idx + 1)];
+    } else if (placement === "distributePlayers") {
+      arr = [...existing];
+      const slots: number[] = [];
+      arr.forEach((e, i) => {
+        if (e.type !== "block") return;
+        const b = e.block;
+        if (b.kind === "group") slots.push(i);
+        else if (b.kind === "solo" && b.participant.participant_type === "player") slots.push(i);
+      });
+      let consumed = 0;
+      // Insert from back to keep slot indices valid.
+      for (let s = slots.length - 1; s >= 0 && consumed < copies.length; s--) {
+        const pos = slots[s] + 1;
+        arr.splice(pos, 0, copies[consumed]);
+        consumed++;
+      }
+      if (consumed < copies.length) arr = [...arr, ...copies.slice(consumed)];
+    } else if (placement === "randomMix") {
+      arr = [...existing];
+      for (const c of copies) {
+        const pos = Math.floor(Math.random() * (arr.length + 1));
+        arr.splice(pos, 0, c);
+      }
+    }
+
+    // Track active block to keep current_turn_index correct.
+    const oldCurrent = encounter.current_turn_index;
+    const activeKey =
+      encounter.status === "active" && oldCurrent >= 0 && oldCurrent < blocks.length
+        ? blocks[oldCurrent].key
+        : null;
+    let newActiveIndex = oldCurrent;
+
+    let order = 0;
+    for (let i = 0; i < arr.length; i++) {
+      const e = arr[i];
+      if (e.type === "block") {
+        if (activeKey && e.block.key === activeKey) newActiveIndex = i;
+        const b = e.block;
+        if (b.kind === "solo") {
+          await (supabase as any).from("combat_participants").update({ order_index: order }).eq("id", b.participant.id);
+        } else if (b.kind === "group") {
+          for (const m of b.members) {
+            await (supabase as any).from("combat_participants").update({ order_index: order }).eq("id", m.id);
+          }
+        } else {
+          await (supabase as any).from("combat_turn_pins").update({ order_index: order }).eq("id", b.pin.id);
+        }
+      } else {
+        await (supabase as any).from("combat_participants").update({ order_index: order }).eq("id", e.id);
+      }
+      order++;
+    }
+
+    if (encounter.status === "active" && activeKey && newActiveIndex !== oldCurrent) {
+      await (supabase as any)
+        .from("combat_encounters")
+        .update({ current_turn_index: newActiveIndex })
+        .eq("id", encounter.id);
+    }
+  }
+
+  await pushLog(encounter.campaign_id, [
+    { t: "char", v: dm.name, color: dm.color, id: dm.id },
+    { t: "text", v: ` duplicó ${baseName} x${qty}.` },
+  ]);
+
+  return { ok: true, created: qty };
+}
+
+
+
 
