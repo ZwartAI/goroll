@@ -239,21 +239,22 @@ function Profile() {
 
           {/* HP bar */}
           <div
-            className="p-2 mb-3"
+            className="mb-3"
             style={{
               backgroundImage: `url(${hpFrameBg})`,
               backgroundSize: "100% 100%",
               backgroundRepeat: "no-repeat",
-              padding: "10px 22px",
+              padding: "0 22px",
+              aspectRatio: "9 / 1",
             }}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 h-full">
               <button
                 type="button"
                 onClick={() => setHpModal(true)}
                 aria-label={t("profile.modifyHpAria")}
                 title={t("profile.modifyHpAria")}
-                className="shrink-0 h-10 w-10 flex items-center justify-center transition-transform active:scale-95 bg-transparent border-0 p-0"
+                className="shrink-0 h-full aspect-square flex items-center justify-center transition-transform active:scale-95 bg-transparent border-0 p-0"
               >
                 <img src={hpButtonImg} alt="" className="h-full w-full object-contain pointer-events-none select-none" draggable={false} />
               </button>
