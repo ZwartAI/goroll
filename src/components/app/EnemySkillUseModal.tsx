@@ -11,10 +11,10 @@ import { EnemyIcon } from "@/components/app/EnemyIconPicker";
 import { StatText } from "@/components/app/StatText";
 
 export function EnemySkillUseModal({
-  participant, skill, onClose,
-}: { participant: CombatParticipant; skill: CombatEnemySkill; onClose: () => void }) {
+  participant, skill, onClose, initialResolvedTargets,
+}: { participant: CombatParticipant; skill: CombatEnemySkill; onClose: () => void; initialResolvedTargets?: string }) {
   const { t } = useT();
-  const [resolvedTargets, setResolvedTargets] = useState("");
+  const [resolvedTargets, setResolvedTargets] = useState(initialResolvedTargets || "");
   const [rollResult, setRollResult] = useState("");
   const [dmNote, setDmNote] = useState("");
   const [visibility, setVisibility] = useState<EnemySkillVisibility>("full");

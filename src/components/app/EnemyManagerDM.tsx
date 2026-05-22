@@ -113,7 +113,7 @@ export function EnemyManagerDM({ encounter, participants, groups, pins = [], dm 
         <EnemyAttackPlayersModal enemy={attacking} onClose={() => setAttacking(null)} />
       )}
       {healing && (
-        <EnemyDamageModal participant={healing} mode="heal" onClose={() => setHealing(null)} />
+        <EnemyDamageModal participant={healing} mode="both" onClose={() => setHealing(null)} />
       )}
       {sheet && (
         <EnemyCombatSheetModal
