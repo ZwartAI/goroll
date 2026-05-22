@@ -6,6 +6,8 @@ import type { Character, Item, LogRow } from "@/lib/game";
 import { totals } from "@/lib/game";
 import { useT } from "@/lib/i18n";
 import { useGameData } from "@/lib/useGame";
+import { useEncounterShields } from "@/hooks/useEncounterShields";
+import { HpShieldBar } from "@/components/app/HpShieldBar";
 
 type Props = {
   characters: Character[];
