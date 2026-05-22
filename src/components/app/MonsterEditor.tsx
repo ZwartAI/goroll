@@ -33,7 +33,7 @@ type Props = {
   onSaved?: (t: EnemyTemplate) => void;
 };
 
-const RARITIES = ["white", "green", "blue", "purple", "orange", "red"] as const;
+const RARITIES = ["white", "blue", "purple", "gold"] as const;
 
 /** Local skill draft used before the template is saved. id starts with "local-". */
 type LocalSkill = EnemyTemplateSkillDraft & { id: string; _isLocal?: boolean };
