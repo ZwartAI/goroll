@@ -662,9 +662,8 @@ export async function tickEnemyEffect(effectId: string): Promise<void> {
   const dmg = Math.max(0, Math.floor(fx.value || 0));
   let appliedDmg = 0;
   let participantName = "";
-  let participantColor: string | null = null;
-  let participantId: string | null = null;
   let defeated = false;
+
 
   if (fx.target_enemy_participant_id) {
     const { data: p } = await (supabase as any)
