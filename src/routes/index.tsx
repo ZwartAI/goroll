@@ -17,6 +17,8 @@ import { CharacterPortrait } from "@/components/app/CharacterPortrait";
 import { useT } from "@/lib/i18n";
 import goRollLogo from "@/assets/go-roll-logo.png";
 import loginFrame from "@/assets/login-frame.png";
+import { preloadCharacterSheetAssets } from "@/lib/preloadCharacterSheetAssets";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Vamos a Rolear · GoRoll" }] }),
