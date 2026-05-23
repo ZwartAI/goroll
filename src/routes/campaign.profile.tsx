@@ -220,9 +220,8 @@ function Profile() {
                 />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <span
-                    className="font-display font-bold leading-none text-[var(--gold)]"
+                    className="font-display font-bold leading-none text-[var(--gold)] text-2xl sm:text-3xl"
                     style={{
-                      fontSize: "clamp(18px, 7cqw, 32px)",
                       textShadow: "0 1px 2px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)",
                     }}
                   >
