@@ -58,21 +58,6 @@ function Home() {
   const [actionCampaign, setActionCampaign] = useState<Campaign | null>(null);
   const [expelledCampaign, setExpelledCampaign] = useState<Campaign | null>(null);
   const [showAppSettings, setShowAppSettings] = useState(false);
-  const [campaignLoading, setCampaignLoading] = useState<{ active: boolean; name: string }>({ active: false, name: "" });
-  const [loadingSlow, setLoadingSlow] = useState(false);
-  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function beginCampaignLoading(c: Campaign) {
-    setLoadingSlow(false);
-    setCampaignLoading({ active: true, name: c.name });
-    if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-    loadingTimerRef.current = setTimeout(() => setLoadingSlow(true), 12_000);
-  }
-  function stopCampaignLoading() {
-    if (loadingTimerRef.current) { clearTimeout(loadingTimerRef.current); loadingTimerRef.current = null; }
-    setLoadingSlow(false);
-    setCampaignLoading({ active: false, name: "" });
-  }
 
   // character
   const [myChars, setMyChars] = useState<Character[]>([]);
@@ -285,27 +270,18 @@ function Home() {
   }
 
   async function pickCampaign(c: Campaign) {
-    beginCampaignLoading(c);
-    try {
-      setCampaign(c);
-      if (role === "spectator") {
-        enterCampaign(c, null);
-        return;
+    setCampaign(c);
+    if (role === "spectator") {
+      enterCampaign(c, null);
+    } else if (role === "dm") {
+      // Owner enters directly; non-owner goes through approval flow
+      if ((c as any).owner_user_id === user!.id) {
+        enterAsDM(c);
+      } else {
+        await requestCoDM(c);
       }
-      if (role === "dm") {
-        if ((c as any).owner_user_id === user!.id) {
-          await enterAsDM(c);
-        } else {
-          await requestCoDM(c);
-          stopCampaignLoading();
-        }
-        return;
-      }
+    } else {
       setStep("character");
-      stopCampaignLoading();
-    } catch (e) {
-      stopCampaignLoading();
-      throw e;
     }
   }
 
@@ -577,18 +553,15 @@ function Home() {
           <h2 className="text-center font-display text-lg">{t("home.roleQuestion")}</h2>
           <div className="grid grid-cols-3 gap-2">
             <button className="btn-fantasy h-24 flex flex-col items-center justify-center gap-1 text-xs"
-              disabled={campaignLoading.active}
               onClick={() => { setRole("player"); setStep("campaign"); }}>
               <span className="text-2xl">🗡️</span>{t("home.rolePlayer")}
             </button>
             <button className="btn-fantasy h-24 flex flex-col items-center justify-center gap-1 text-xs"
               style={{ background: "var(--gradient-gold)", color: "oklch(0.15 0.03 25)" }}
-              disabled={campaignLoading.active}
               onClick={() => { setRole("dm"); setStep("campaign"); }}>
               <span className="text-2xl">👑</span>{t("home.roleDM")}
             </button>
             <button className="btn-fantasy h-24 flex flex-col items-center justify-center gap-1 text-xs"
-              disabled={campaignLoading.active}
               onClick={() => { setRole("spectator"); setStep("campaign"); }}>
               <span className="text-2xl">👁️</span>{t("home.roleSpectator")}
             </button>
@@ -640,8 +613,7 @@ function Home() {
           <div className="max-h-56 overflow-y-auto space-y-2">
             {campaigns.filter(c => c.name.toLowerCase().includes(search.toLowerCase())).map(c => (
               <button key={c.id} onClick={() => setActionCampaign(c)}
-                disabled={campaignLoading.active}
-                className="w-full rounded-lg border border-border bg-card px-3 py-3 text-left hover:border-[var(--gold)]/60 transition disabled:opacity-60">
+                className="w-full rounded-lg border border-border bg-card px-3 py-3 text-left hover:border-[var(--gold)]/60 transition">
                 <span className="font-display text-base">{c.name}</span>
               </button>
             ))}
@@ -652,8 +624,8 @@ function Home() {
             <p className="text-xs uppercase tracking-widest text-muted-foreground">{t("home.joinByCode")}</p>
             <div className="flex flex-wrap gap-2">
               <input className="flex-1 min-w-0 basis-[12rem] rounded-md bg-input border border-border px-3 py-2 text-sm"
-                placeholder={t("home.joinPlaceholder")} value={joinCode} onChange={e => setJoinCode(e.target.value)} disabled={campaignLoading.active} />
-              <button className="btn-fantasy shrink-0" disabled={campaignLoading.active} onClick={joinByCode}>{t("home.join")}</button>
+                placeholder={t("home.joinPlaceholder")} value={joinCode} onChange={e => setJoinCode(e.target.value)} />
+              <button className="btn-fantasy shrink-0" onClick={joinByCode}>{t("home.join")}</button>
             </div>
           </div>
           {role === "dm" && (
@@ -663,8 +635,8 @@ function Home() {
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">{t("home.createCampaign")}</p>
                 <div className="flex flex-wrap gap-2">
                   <input className="flex-1 min-w-0 basis-[12rem] rounded-md bg-input border border-border px-3 py-2 text-sm"
-                    placeholder={t("home.namePlaceholder")} value={newCampaignName} onChange={e => setNewCampaignName(e.target.value)} disabled={campaignLoading.active} />
-                  <button className="btn-fantasy shrink-0" disabled={campaignLoading.active} onClick={createCampaign}>{t("home.create")}</button>
+                    placeholder={t("home.namePlaceholder")} value={newCampaignName} onChange={e => setNewCampaignName(e.target.value)} />
+                  <button className="btn-fantasy shrink-0" onClick={createCampaign}>{t("home.create")}</button>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                   <input type="checkbox" checked={singleDmOnly} onChange={e => setSingleDmOnly(e.target.checked)} />
@@ -730,44 +702,13 @@ function Home() {
           campaign={actionCampaign}
           currentUserId={user.id}
           role={role}
-          onPlay={() => { if (campaignLoading.active) return; pickCampaign(actionCampaign); }}
-          onClose={() => { if (campaignLoading.active) return; setActionCampaign(null); }}
+          onPlay={() => { const c = actionCampaign; setActionCampaign(null); pickCampaign(c); }}
+          onClose={() => setActionCampaign(null)}
           onDeleted={() => {
             setCampaigns(cs => cs.filter(c => c.id !== actionCampaign.id));
             setActionCampaign(null);
           }}
         />
-      )}
-      {campaignLoading.active && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="ornate-card p-6 text-center space-y-4 max-w-sm w-full">
-            <div className="text-5xl">⏳</div>
-            <h2 className="font-display text-lg text-[var(--gold)]">{t("home.loadingCampaignTitle")}</h2>
-            <p className="text-sm text-muted-foreground">{t("home.loadingCampaignBody", { name: campaignLoading.name })}</p>
-            <div className="animate-spin w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full mx-auto" />
-            {loadingSlow && (
-              <div className="space-y-2 pt-2">
-                <p className="text-xs text-[var(--loss)]">{t("home.loadingSlow")}</p>
-                <button
-                  className="btn-fantasy w-full"
-                  onClick={() => {
-                    const c = actionCampaign || campaign;
-                    stopCampaignLoading();
-                    if (c) pickCampaign(c);
-                  }}
-                >
-                  {t("home.retry")}
-                </button>
-              </div>
-            )}
-            <button
-              className="text-xs underline text-muted-foreground"
-              onClick={() => { stopCampaignLoading(); setCampaign(null); }}
-            >
-              {t("common.cancel")}
-            </button>
-          </div>
-        </div>
       )}
     </PageFrame>
   );
