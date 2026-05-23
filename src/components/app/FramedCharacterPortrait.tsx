@@ -97,12 +97,13 @@ export function FramedCharacterPortrait({ character, onClick, ariaLabel, classNa
           <span
             className="font-display font-bold leading-none text-base sm:text-lg text-center"
             style={{
-              color: "rgba(255,255,255,0.85)",
-              textShadow: "0 1px 2px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.6)",
+              color: "rgba(255,255,255,0.9)",
+              textShadow: "0 0 10px color-mix(in oklab, #ffffff 55%, transparent), 0 0 2px color-mix(in oklab, #ffffff 80%, transparent), 0 1px 2px rgba(0,0,0,0.9)",
             }}
           >
             {lvl}
           </span>
+
 
         </div>
       </div>

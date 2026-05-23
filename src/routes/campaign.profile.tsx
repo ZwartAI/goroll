@@ -194,9 +194,9 @@ function Profile() {
                   draggable={false}
                 />
                 {[
-                  { leftPct: 16.5, value: stats.damage > 0 ? `+${stats.damage}` : `${stats.damage}` },
-                  { leftPct: 50,   value: `${stats.defense}` },
-                  { leftPct: 83.5, value: <>{character.velocity}<span className="text-[0.55em] ml-0.5">ft</span></> },
+                  { leftPct: 16.5, value: stats.damage > 0 ? `+${stats.damage}` : `${stats.damage}`, color: "#ffb3b3" },
+                  { leftPct: 50,   value: `${stats.defense}`, color: "#b3d1ff" },
+                  { leftPct: 83.5, value: <>{character.velocity}<span className="text-[0.55em] ml-0.5">ft</span></>, color: "#fff2b3" },
                 ].map((s, i) => (
                   <div
                     key={i}
@@ -204,13 +204,17 @@ function Profile() {
                     style={{ left: `${s.leftPct}%`, top: "72%", transform: "translate(-50%, -50%)" }}
                   >
                     <span
-                      className="font-display font-bold leading-none text-[var(--gold)] text-xl sm:text-2xl"
-                      style={{ textShadow: "0 1px 2px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)" }}
+                      className="font-display font-bold leading-none text-xl sm:text-2xl"
+                      style={{
+                        color: s.color,
+                        textShadow: `0 0 10px color-mix(in oklab, ${s.color} 55%, transparent), 0 0 2px color-mix(in oklab, ${s.color} 80%, transparent), 0 1px 2px rgba(0,0,0,0.9)`,
+                      }}
                     >
                       {s.value}
                     </span>
                   </div>
                 ))}
+
               </div>
 
 
