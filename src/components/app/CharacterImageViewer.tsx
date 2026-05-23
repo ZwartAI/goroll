@@ -25,13 +25,25 @@ export function CharacterImageViewer({
   onEditBody: () => void;
 }) {
   const { t } = useT();
+  const hasBody = !!character?.body_image_url;
   const bodyUrl: string =
     character?.body_image_url || character?.image_url || "";
   const faceUrl: string = character?.image_url || "";
-  const ox = character?.body_image_offset_x ?? 50;
-  const oy = character?.body_image_offset_y ?? 50;
-  const scale = character?.body_image_scale || 1;
-  const rot = character?.body_image_rotation || 0;
+  // If there's no dedicated body image and we fall back to the face image,
+  // also use the face's framing (offset/scale/rotation) so the portrait
+  // matches what the player configured. Otherwise use the body's framing.
+  const ox = hasBody
+    ? (character?.body_image_offset_x ?? 50)
+    : (character?.image_offset_x ?? 50);
+  const oy = hasBody
+    ? (character?.body_image_offset_y ?? 50)
+    : (character?.image_offset_y ?? 50);
+  const scale = hasBody
+    ? (character?.body_image_scale || 1)
+    : (character?.image_scale || 1);
+  const rot = hasBody
+    ? (character?.body_image_rotation || 0)
+    : (character?.image_rotation || 0);
 
   async function deleteImage(kind: "face" | "body") {
     if (!character?.id) return;
