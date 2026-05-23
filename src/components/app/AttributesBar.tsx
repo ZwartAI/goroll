@@ -8,12 +8,12 @@ type Char = {
 };
 
 const ATTRS = [
-  { k: "fue",      color: "var(--stat-fue)", esLabel: "Fuerza",       enLabel: "Strength",     x: 10.2, y: 61 },
-  { k: "des",      color: "var(--stat-des)", esLabel: "Destreza",     enLabel: "Dexterity",    x: 26.8, y: 61 },
-  { k: "con",      color: "var(--stat-con)", esLabel: "Constitución", enLabel: "Constitution", x: 42.8, y: 61 },
-  { k: "int_stat", color: "var(--stat-int)", esLabel: "Inteligencia", enLabel: "Intelligence", x: 58.4, y: 61 },
-  { k: "wis",      color: "var(--stat-sab)", esLabel: "Sabiduría",    enLabel: "Wisdom",       x: 73.6, y: 61 },
-  { k: "car",      color: "var(--stat-car)", esLabel: "Carisma",      enLabel: "Charisma",     x: 89.4, y: 61 },
+  { k: "fue",      color: "var(--stat-fue)", esLabel: "Fuerza",       enLabel: "Strength",     x: 10.2, y: 57 },
+  { k: "des",      color: "var(--stat-des)", esLabel: "Destreza",     enLabel: "Dexterity",    x: 26.8, y: 57 },
+  { k: "con",      color: "var(--stat-con)", esLabel: "Constitución", enLabel: "Constitution", x: 42.8, y: 57 },
+  { k: "int_stat", color: "var(--stat-int)", esLabel: "Inteligencia", enLabel: "Intelligence", x: 58.4, y: 57 },
+  { k: "wis",      color: "var(--stat-sab)", esLabel: "Sabiduría",    enLabel: "Wisdom",       x: 73.6, y: 57 },
+  { k: "car",      color: "var(--stat-car)", esLabel: "Carisma",      enLabel: "Charisma",     x: 89.4, y: 57 },
 ] as const;
 
 export function AttributesBar({ character }: { character: Char }) {
