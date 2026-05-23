@@ -15,14 +15,13 @@ type Props = {
 export function StatAsset({ src, value, ariaLabel, valueTopPct = 74 }: Props) {
   return (
     <div
-      className="relative w-full select-none"
-      style={{ aspectRatio: "95 / 140" }}
+      className="relative w-full h-full select-none"
       aria-label={ariaLabel}
     >
       <img
         src={src}
         alt=""
-        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+        className="absolute inset-0 w-full h-full object-fill pointer-events-none"
         draggable={false}
       />
       <div
@@ -30,7 +29,7 @@ export function StatAsset({ src, value, ariaLabel, valueTopPct = 74 }: Props) {
         style={{ top: `${valueTopPct}%`, transform: "translateY(-50%)" }}
       >
         <span
-          className="font-display font-bold leading-none text-[var(--gold)] text-xl sm:text-2xl"
+          className="font-display font-bold leading-none text-[var(--gold)] text-2xl sm:text-3xl"
           style={{
             textShadow: "0 1px 2px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)",
           }}
