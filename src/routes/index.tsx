@@ -344,6 +344,10 @@ function Home() {
 
   function enterCampaign(c: Campaign, ch: Character | null) {
     if (!user) return;
+    // Ensure the blocking overlay is visible across the navigation hand-off
+    // so the player never sees a brief flash of the campaign list / character
+    // picker between click and the new route mounting.
+    setEntering(true);
     setSession({
       userId: user.id, username: user.username,
       campaignId: c.id, characterId: ch?.id || null, role,
