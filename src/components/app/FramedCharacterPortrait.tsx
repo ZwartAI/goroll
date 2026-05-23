@@ -19,8 +19,9 @@ const PORTRAIT_FRAME_LAYOUT = {
   frameScale: 1.08,
   frameOffsetX: -2,
   frameOffsetY: -2,
-  levelX: 13,
-  levelY: 17,
+  levelX: 16,
+  levelY: 18.5,
+
 };
 
 
