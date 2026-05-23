@@ -180,7 +180,7 @@ export function CharacterSheetModal({ characterId, campaignId, editor, onClose, 
               <img src={url} alt={character.name}
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{
-                  transform: `translate(${ox - 50}%, ${oy - 50}%) scale(${scale}) rotate(${rot}deg)`,
+                  transform: `translate(${ox - 50}%, ${oy - 50}%) scale(${scale})`,
                   transformOrigin: "center center",
                 }} />
             </div>
