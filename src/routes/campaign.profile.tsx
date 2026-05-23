@@ -32,6 +32,7 @@ import { useVoice } from "@/lib/useVoice";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
+import { AttributesBar } from "@/components/app/AttributesBar";
 import { useLongPress } from "@/hooks/useLongPress";
 
 
