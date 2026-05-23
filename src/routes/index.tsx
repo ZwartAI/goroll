@@ -59,6 +59,7 @@ function Home() {
   const [actionCampaign, setActionCampaign] = useState<Campaign | null>(null);
   const [expelledCampaign, setExpelledCampaign] = useState<Campaign | null>(null);
   const [showAppSettings, setShowAppSettings] = useState(false);
+  const [entering, setEntering] = useState(false);
 
   // character
   const [myChars, setMyChars] = useState<Character[]>([]);
