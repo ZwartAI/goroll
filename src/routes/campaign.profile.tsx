@@ -164,8 +164,8 @@ function Profile() {
 
       {activeTab === "personaje" && (
         <>
-          {/* Top: framed portrait (left) + 3 stat assets (right), equal halves */}
-          <div className="grid grid-cols-2 gap-2 mb-2 items-stretch">
+          {/* Top: framed portrait (left) + right column with 3 stat assets above, purse/initiative below */}
+          <div className="grid grid-cols-2 gap-2 mb-3 items-start">
             <div>
               <FramedCharacterPortrait
                 character={character}
@@ -181,68 +181,68 @@ function Profile() {
               />
             </div>
 
-            {/* 3 vertical stat assets — fill same height as portrait */}
-            <div className="grid grid-cols-3 gap-1 h-full">
-              <StatAsset
-                src={statAttackImg}
-                ariaLabel={`${t("profile.damage")} ${stats.damage}`}
-                value={stats.damage > 0 ? `+${stats.damage}` : stats.damage}
-              />
-              <StatAsset
-                src={statDefenseImg}
-                ariaLabel={`${t("profile.defense")} ${stats.defense}`}
-                value={stats.defense}
-              />
-              <StatAsset
-                src={statSpeedImg}
-                ariaLabel={`${t("profile.velocity")} ${character.velocity}`}
-                value={<>{character.velocity}<span className="text-[0.55em] ml-0.5">ft</span></>}
-              />
+            <div className="flex flex-col gap-1.5">
+              {/* 3 vertical stat assets — natural aspect ratio */}
+              <div className="grid grid-cols-3 gap-1">
+                <StatAsset
+                  src={statAttackImg}
+                  ariaLabel={`${t("profile.damage")} ${stats.damage}`}
+                  value={stats.damage > 0 ? `+${stats.damage}` : stats.damage}
+                />
+                <StatAsset
+                  src={statDefenseImg}
+                  ariaLabel={`${t("profile.defense")} ${stats.defense}`}
+                  value={stats.defense}
+                />
+                <StatAsset
+                  src={statSpeedImg}
+                  ariaLabel={`${t("profile.velocity")} ${character.velocity}`}
+                  value={<>{character.velocity}<span className="text-[0.55em] ml-0.5">ft</span></>}
+                />
+              </div>
+
+              {/* Purse OR Initiative (initiative temporarily replaces purse while combat is active) */}
+              {combat.encounter?.status && combat.encounter.status !== "ended" ? (
+                <InitiativeButton
+                  character={character}
+                  encounter={combat.encounter}
+                  participants={combat.participants}
+                  groups={combat.groups}
+                  pins={combat.pins}
+                  online={characters.filter(c => onlineIds.has(c.id))}
+                />
+              ) : (
+                <button
+                  type="button"
+                  {...coinsPress}
+                  onContextMenu={(e) => { e.preventDefault(); setPurseOpen(true); }}
+                  onDoubleClick={() => setPurseOpen(true)}
+                  aria-label={`${t("purse.openHint")} — ${t("profile.coins")} ${character.coins}`}
+                  title={t("purse.openHint")}
+                  className="relative w-full block p-0 bg-transparent border-0 select-none transition-transform active:scale-[0.96]"
+                  style={{ aspectRatio: "295 / 80", WebkitTapHighlightColor: "transparent" }}
+                >
+                  <img
+                    src={pursePanelImg}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span
+                      className="font-display font-bold leading-none text-[var(--gold)] text-xl sm:text-2xl"
+                      style={{
+                        textShadow: "0 1px 2px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)",
+                      }}
+                    >
+                      {character.coins}
+                    </span>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Purse — long horizontal asset occupying full width (initiative's old slot) */}
-          <button
-            type="button"
-            {...coinsPress}
-            onContextMenu={(e) => { e.preventDefault(); setPurseOpen(true); }}
-            onDoubleClick={() => setPurseOpen(true)}
-            aria-label={`${t("purse.openHint")} — ${t("profile.coins")} ${character.coins}`}
-            title={t("purse.openHint")}
-            className="relative w-full block p-0 bg-transparent border-0 select-none transition-transform active:scale-[0.96] mb-2"
-            style={{ aspectRatio: "620 / 110", WebkitTapHighlightColor: "transparent" }}
-          >
-            <img
-              src={pursePanelImg}
-              alt=""
-              className="absolute inset-0 w-full h-full object-fill pointer-events-none"
-              draggable={false}
-            />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span
-                className="font-display font-bold leading-none text-[var(--gold)] text-3xl sm:text-4xl"
-                style={{
-                  textShadow: "0 1px 2px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)",
-                }}
-              >
-                {character.coins}
-              </span>
-            </div>
-          </button>
-
-          {/* Initiative / Pass Turn — only when combat is active or collecting */}
-          {combat.encounter?.status && combat.encounter.status !== "ended" && (
-            <div className="mb-3">
-              <InitiativeButton
-                character={character}
-                encounter={combat.encounter}
-                participants={combat.participants}
-                groups={combat.groups}
-                pins={combat.pins}
-                online={characters.filter(c => onlineIds.has(c.id))}
-              />
-            </div>
-          )}
 
 
           {/* HP bar — bigger heart icon, integrated with frame */}
