@@ -163,8 +163,8 @@ function Profile() {
       {activeTab === "personaje" && (
         <>
           {/* Top: framed portrait (left) + right column with 3 stat assets above, purse/initiative below */}
-          <div className="grid grid-cols-2 gap-2 mb-3 items-start pl-0 border-none border-0 ml-0">
-            <div>
+          <div className="grid grid-cols-2 gap-2 mb-3 items-start pl-0 border-none border-0 ml-0" style={{ overflow: "visible" }}>
+            <div style={{ overflow: "visible" }}>
               <FramedCharacterPortrait
                 character={character}
                 level={(character as any).level ?? 1}
@@ -178,6 +178,7 @@ function Profile() {
                 }}
               />
             </div>
+
 
             <div className="flex flex-col gap-1.5">
               {/* Combined stats panel: attack / defense / speed in a single asset */}
