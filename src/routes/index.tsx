@@ -663,8 +663,8 @@ function Home() {
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">{t("home.createCampaign")}</p>
                 <div className="flex flex-wrap gap-2">
                   <input className="flex-1 min-w-0 basis-[12rem] rounded-md bg-input border border-border px-3 py-2 text-sm"
-                    placeholder={t("home.namePlaceholder")} value={newCampaignName} onChange={e => setNewCampaignName(e.target.value)} />
-                  <button className="btn-fantasy shrink-0" onClick={createCampaign}>{t("home.create")}</button>
+                    placeholder={t("home.namePlaceholder")} value={newCampaignName} onChange={e => setNewCampaignName(e.target.value)} disabled={campaignLoading.active} />
+                  <button className="btn-fantasy shrink-0" disabled={campaignLoading.active} onClick={createCampaign}>{t("home.create")}</button>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                   <input type="checkbox" checked={singleDmOnly} onChange={e => setSingleDmOnly(e.target.checked)} />
