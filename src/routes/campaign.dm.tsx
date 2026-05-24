@@ -17,6 +17,7 @@ import { DMConditionsCreator } from "@/components/app/ConditionsPanel";
 import { BoosterEditor } from "@/components/app/BoosterEditor";
 import { type Booster } from "@/components/app/BoosterCard";
 import { DMRequestGate } from "@/components/app/DMRequestGate";
+import { EffectRemoveRequestsPanel } from "@/components/app/EffectRemoveRequestsPanel";
 import { SkillsManager, ManualCreate as SkillManualCreate } from "@/components/app/SkillsManager";
 import { Escenario } from "@/components/app/Escenario";
 import { CharacterImageViewer } from "@/components/app/CharacterImageViewer";
@@ -137,6 +138,7 @@ function DM() {
 
       {tab === "log" && (
         <>
+          <EffectRemoveRequestsPanel campaignId={campaign.id} />
           <LogList rows={logs} initial={20} maxH="max-h-[70vh]"
             renderRow={(l: LogRow) => (
               <div key={l.id} className={`text-sm bg-secondary/40 rounded px-3 py-2 leading-relaxed ${l.undone ? "opacity-50 line-through" : ""}`}>

@@ -346,7 +346,7 @@ function Profile() {
 
           
 
-          <ConditionsPanel character={character} campaignId={campaign.id} canEdit={true} />
+          <ConditionsPanel character={character} campaignId={campaign.id} canEdit={true} viewerIsDm={character.role === "dm"} />
 
           {/* Quick links — single row of 6 vertical asset buttons */}
           <div className="grid grid-cols-6 gap-1 mb-4">

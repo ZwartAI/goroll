@@ -47,10 +47,13 @@ export function ConditionsPanel({
   character,
   campaignId,
   canEdit = true,
+  viewerIsDm = true,
 }: {
   character: Character;
   campaignId: string;
   canEdit?: boolean;
+  /** When false, "remove" creates a DM approval request instead of deleting. */
+  viewerIsDm?: boolean;
 }) {
   const [rows, setRows] = useState<ConditionRow[]>([]);
   const [catalog, setCatalog] = useState<CatalogRow[]>([]);
@@ -118,8 +121,23 @@ export function ConditionsPanel({
   }
 
   async function removeCondition(c: ConditionRow) {
-    await (supabase as any).from("character_conditions").delete().eq("id", c.id);
-    reload();
+    if (viewerIsDm) {
+      await (supabase as any).from("character_conditions").delete().eq("id", c.id);
+      reload();
+      return;
+    }
+    const label = getRowLabel(c);
+    const { error } = await (supabase as any).from("effect_remove_requests").insert({
+      campaign_id: campaignId,
+      character_id: character.id,
+      condition_id: c.id,
+      player_name: character.name,
+      effect_label: label,
+      effect_icon: c.icon,
+      status: "pending",
+    });
+    if (error) toast.error(error.message);
+    else toast.success(t("turnControl.removeRequested"));
   }
 
   return (
