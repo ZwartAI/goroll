@@ -1036,6 +1036,45 @@ export type Database = {
         }
         Relationships: []
       }
+      effect_remove_requests: {
+        Row: {
+          campaign_id: string
+          character_id: string
+          condition_id: string
+          created_at: string
+          effect_icon: string
+          effect_label: string
+          id: string
+          player_name: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          character_id: string
+          condition_id: string
+          created_at?: string
+          effect_icon?: string
+          effect_label?: string
+          id?: string
+          player_name?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          character_id?: string
+          condition_id?: string
+          created_at?: string
+          effect_icon?: string
+          effect_label?: string
+          id?: string
+          player_name?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       enemy_template_skills: {
         Row: {
           campaign_id: string
