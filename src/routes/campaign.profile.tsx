@@ -42,6 +42,7 @@ import { useT } from "@/lib/i18n";
 import { AttributesBar } from "@/components/app/AttributesBar";
 import { FramedCharacterPortrait } from "@/components/app/FramedCharacterPortrait";
 import { LevelUpModal } from "@/components/app/LevelUpModal";
+import { PlayerNotifier } from "@/components/app/PlayerNotifier";
 import { InitialStatsSetupModal } from "@/components/app/InitialStatsSetupModal";
 
 
@@ -150,6 +151,12 @@ function Profile() {
       <LevelUpModal
         level={(character as any).level ?? 1}
         enabled={character.role === "player"}
+      />
+      <PlayerNotifier
+        characterId={character.id}
+        enabled={character.role === "player"}
+        initialSp={(character as any).skill_points ?? 0}
+        initialLevel={(character as any).level ?? 1}
       />
       {character.role === "player" && !(character as any).stats_setup_completed && (
         <InitialStatsSetupModal

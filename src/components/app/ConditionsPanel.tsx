@@ -87,7 +87,8 @@ export function ConditionsPanel({
   }, [character.id]);
 
   async function tick(c: ConditionRow) {
-    const next = c.turns_left - 1;
+    const infinite = c.turns_left === 0;
+    const next = infinite ? 0 : c.turns_left - 1;
     const label = getRowLabel(c);
     if (c.damage_per_turn > 0) {
       const newHp = Math.max(0, character.current_hp - c.damage_per_turn);
@@ -104,13 +105,13 @@ export function ConditionsPanel({
         { t: "text", v: `(${newHp})` },
       ], { kind: "character.update", id: character.id, prev });
     }
-    if (next <= 0) {
+    if (!infinite && next <= 0) {
       await (supabase as any).from("character_conditions").delete().eq("id", c.id);
       await pushLog(campaignId, [
         { t: "char", v: character.name, color: character.color, id: character.id },
         { t: "text", v: t("conditions.noLonger", { icon: c.icon, label }) },
       ]);
-    } else {
+    } else if (!infinite) {
       await (supabase as any).from("character_conditions").update({ turns_left: next }).eq("id", c.id);
     }
     reload();
@@ -152,7 +153,7 @@ export function ConditionsPanel({
             <button onClick={() => tick(c)}
               className="text-[10px] px-2 py-1 rounded bg-[var(--gold)] text-black font-display min-w-[2.5rem]"
               title={t("conditions.apply")}>
-              {c.turns_left}t
+              {c.turns_left === 0 ? "∞" : `${c.turns_left}t`}
             </button>
           </div>
         ))}
@@ -247,7 +248,7 @@ export function ApplyConditionModal({
 
   async function apply() {
     if (!picked) return toast.error(t("conditions.pickEffect"));
-    if (turns < 1) return toast.error(t("conditions.minTurns"));
+    if (turns < 0) return toast.error(t("conditions.minTurns"));
     const label = getCatalogLabel(picked, t);
 
     if (mode === "enemy") {
@@ -327,8 +328,9 @@ export function ApplyConditionModal({
           ))}
         </select>
         <label className="flex items-center justify-between text-sm">{t("conditions.turns")}
-          <input type="number" min={1} className="w-20 bg-input border border-border rounded px-2 py-1 text-right"
-            value={turns} onChange={e => setTurns(Math.max(1, +e.target.value))} />
+          <input type="number" min={0} className="w-20 bg-input border border-border rounded px-2 py-1 text-right"
+            value={turns} onChange={e => setTurns(Math.max(0, +e.target.value))}
+            title={t("turnControl.infinite")} placeholder="∞" />
         </label>
         {picked?.is_damage && (
           <label className="flex items-center justify-between text-sm">{t("conditions.damagePerTurn")}
@@ -428,7 +430,7 @@ export function DMConditionsCreator({
       catalog_id: picked.id,
       label: localizedLabel,
       icon: picked.icon,
-      turns_left: Math.max(1, turns),
+      turns_left: Math.max(0, turns),
       damage_per_turn: picked.is_damage ? Math.max(0, damage) : 0,
     }));
     const { error } = await (supabase as any).from("character_conditions").insert(rows);
@@ -478,8 +480,9 @@ export function DMConditionsCreator({
           </select>
           <div className="grid grid-cols-2 gap-2">
             <label className="flex items-center justify-between text-sm">{t("conditions.turns")}
-              <input type="number" min={1} className="w-16 bg-input border border-border rounded px-2 py-1 text-right"
-                value={turns} onChange={e => setTurns(Math.max(1, +e.target.value))} />
+              <input type="number" min={0} className="w-16 bg-input border border-border rounded px-2 py-1 text-right"
+                value={turns} onChange={e => setTurns(Math.max(0, +e.target.value))}
+                title={t("turnControl.infinite")} placeholder="∞" />
             </label>
             {picked?.is_damage && (
               <label className="flex items-center justify-between text-sm">{t("conditions.damagePerTurn")}
