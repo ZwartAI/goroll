@@ -248,7 +248,7 @@ export function ApplyConditionModal({
 
   async function apply() {
     if (!picked) return toast.error(t("conditions.pickEffect"));
-    if (turns < 1) return toast.error(t("conditions.minTurns"));
+    if (turns < 0) return toast.error(t("conditions.minTurns"));
     const label = getCatalogLabel(picked, t);
 
     if (mode === "enemy") {
