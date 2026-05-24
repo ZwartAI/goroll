@@ -1368,8 +1368,55 @@ export const es = {
     immunity_blind: "Ceguera", immunity_silence: "Silencio", immunity_mindControl: "Control mental",
     immunity_defenseReduction: "Reducción de defensa", immunity_movementRestriction: "Restricción de movimiento",
   },
+  levelUp: {
+    title: "¡Subiste de nivel!",
+    body: "Has alcanzado el nivel {level}.",
+    spReward: "Recibiste +1 Skill Point",
+    ok: "Ok",
+  },
+  spMgmt: {
+    title: "Gestión de nivel y Skill Points",
+    levelUp: "Subir nivel",
+    levelDown: "Bajar nivel",
+    revertLevel: "Revertir nivel",
+    giveSp: "Dar Skill Points",
+    giveSpHint: "Dar Skill Points sin subir nivel",
+    pickPlayers: "Selecciona uno o varios personajes",
+    confirm: "Aplicar",
+    leveledUpToast: "Subiste a {name} al nivel {level}",
+    leveledDownToast: "Bajaste a {name} al nivel {level}",
+    spGivenToast: "Diste {n} SP a {name}",
+    levelingUp: "Subiendo nivel…",
+    applying: "Aplicando…",
+  },
+  turnControl: {
+    advanceTurn: "Avanzar turno",
+    advanceTurnHint: "Resta 1 turno a todos los efectos y aplica daño por turno",
+    infinite: "Infinito",
+    requestRemove: "Pedir aprobación al DM",
+    requestRemoveBody: "El jugador {player} quiere quitar el efecto {effect} antes de tiempo.",
+    approve: "Aprobar",
+    reject: "Rechazar",
+    removeRequested: "Solicitud enviada al DM",
+  },
+  notify: {
+    received: "Has recibido algo nuevo",
+    receivedItem: "Recibiste {label}",
+    inboxTitle: "Bandeja",
+    inboxEmpty: "Sin novedades.",
+    markAllRead: "Marcar todo como leído",
+  },
+  collapseUI: {
+    showMore: "Ver más",
+    collapse: "Contraer",
+  },
+  acquireSkills: {
+    title: "Adquirir habilidades",
+    subtitle: "Usar Skill Points para aprender nuevas habilidades",
+  },
 };
 
 
 export type Dict = typeof es;
+
 

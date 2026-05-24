@@ -1366,6 +1366,54 @@ export const en: Dict = {
     immunity_blind: "Blind", immunity_silence: "Silence", immunity_mindControl: "Mind Control",
     immunity_defenseReduction: "Defense Reduction", immunity_movementRestriction: "Movement Restriction",
   },
+  levelUp: {
+    title: "You leveled up!",
+    body: "You reached level {level}.",
+    spReward: "You received +1 Skill Point",
+    ok: "Ok",
+  },
+  spMgmt: {
+    title: "Level and Skill Points Management",
+    levelUp: "Level up",
+    levelDown: "Level down",
+    revertLevel: "Revert level",
+    giveSp: "Give Skill Points",
+    giveSpHint: "Give Skill Points without leveling up",
+    pickPlayers: "Pick one or more characters",
+    confirm: "Apply",
+    leveledUpToast: "Leveled {name} up to level {level}",
+    leveledDownToast: "Lowered {name} to level {level}",
+    spGivenToast: "Gave {n} SP to {name}",
+    levelingUp: "Leveling up…",
+    applying: "Applying…",
+  },
+  turnControl: {
+    advanceTurn: "Advance turn",
+    advanceTurnHint: "Subtracts 1 turn from all effects and applies per-turn damage",
+    infinite: "Infinite",
+    requestRemove: "Request DM approval",
+    requestRemoveBody: "Player {player} wants to remove the effect {effect} early.",
+    approve: "Approve",
+    reject: "Reject",
+    removeRequested: "Request sent to the DM",
+  },
+  notify: {
+    received: "You received something new",
+    receivedItem: "You received {label}",
+    inboxTitle: "Inbox",
+    inboxEmpty: "Nothing new.",
+    markAllRead: "Mark all as read",
+  },
+  collapseUI: {
+    showMore: "Show more",
+    collapse: "Collapse",
+  },
+  acquireSkills: {
+    title: "Acquire skills",
+    subtitle: "Use Skill Points to learn new skills",
+  },
 };
+
+
 
 
