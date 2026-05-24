@@ -152,6 +152,12 @@ function Profile() {
         level={(character as any).level ?? 1}
         enabled={character.role === "player"}
       />
+      <PlayerNotifier
+        characterId={character.id}
+        enabled={character.role === "player"}
+        initialSp={(character as any).skill_points ?? 0}
+        initialLevel={(character as any).level ?? 1}
+      />
       {character.role === "player" && !(character as any).stats_setup_completed && (
         <InitialStatsSetupModal
           character={character}
