@@ -882,6 +882,7 @@ export function ManualCreate({ campaignId, target, dm, players, onDone }: {
 function GrantSp({ campaignId, target, dm }: { campaignId: string; target: Character; dm: { id: string; name: string; color: string } }) {
   const { t } = useT();
   const [amount, setAmount] = useState(1);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   async function grant() {
     if (amount === 0) return;
     const cur = (target as any).skill_points ?? 0;
@@ -895,6 +896,7 @@ function GrantSp({ campaignId, target, dm }: { campaignId: string; target: Chara
       { t: "text", v: t("skills.logTo") },
       { t: "char", v: target.name, color: target.color, id: target.id },
     ], { kind: "character.update", id: target.id, prev });
+    setConfirmOpen(false);
   }
   return (
     <div className="ornate-card p-3 space-y-2">
@@ -906,8 +908,22 @@ function GrantSp({ campaignId, target, dm }: { campaignId: string; target: Chara
       </p>
       <div className="flex items-center gap-2">
         <input type="number" className="flex-1 bg-input border border-border rounded px-2 py-2 text-sm text-right" value={amount} onChange={e => setAmount(+e.target.value)} />
-        <button className="btn-fantasy flex-1" onClick={grant}>{amount >= 0 ? t("skills.give") : t("skills.take")}</button>
+        <button className="btn-fantasy flex-1" onClick={() => amount !== 0 && setConfirmOpen(true)}>{amount >= 0 ? t("skills.give") : t("skills.take")}</button>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title={t("skills.confirmGrantSpTitle")}
+        description={t("skills.confirmGrantSpDesc", {
+          amount: Math.abs(amount),
+          verb: amount > 0 ? t("skills.verbGranted") : t("skills.verbRemoved"),
+          target: target.name,
+        })}
+        confirmLabel={t("skills.confirmYes")}
+        cancelLabel={t("skills.cancelBtn")}
+        variant={amount < 0 ? "warning" : "normal"}
+        onConfirm={grant}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
