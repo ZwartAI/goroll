@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useT } from "@/lib/i18n";
+
 
 /**
  * Log container that:
@@ -30,6 +32,7 @@ export function LogList<T>({
   collapsible?: boolean;
   collapsedRows?: number;
 }) {
+  const { t } = useT();
   const [expanded, setExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(collapsible);
   const visible = expanded ? rows : rows.slice(0, initial);
@@ -122,7 +125,7 @@ export function LogList<T>({
               handleInteract();
             }}
           >
-            ver más + ({hidden})
+            {t("collapseUI.showMore")} + ({hidden})
           </button>
         )}
         {expanded && rows.length > initial && (
@@ -134,7 +137,7 @@ export function LogList<T>({
               handleInteract();
             }}
           >
-            ver menos −
+            {t("collapseUI.collapse")} −
           </button>
         )}
       </div>

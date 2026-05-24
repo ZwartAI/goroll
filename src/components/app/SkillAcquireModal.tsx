@@ -45,8 +45,8 @@ export function SkillAcquireModal({ skills, spBalance, onClose, onPurchase }: Pr
           style={{ background: "linear-gradient(180deg, color-mix(in oklab, var(--gold) 12%, transparent), transparent)" }}>
           <Sparkles size={18} className="text-[var(--gold)]" />
           <div className="flex-1 min-w-0">
-            <h3 className="font-display text-lg leading-tight text-[var(--gold)] truncate">{t("skills.shopTitle")}</h3>
-            <p className="text-[11px] text-muted-foreground truncate">{t("skills.shopSubtitle")}</p>
+            <h3 className="font-display text-lg leading-tight text-[var(--gold)] truncate">{t("acquireSkills.title")}</h3>
+            <p className="text-[11px] text-muted-foreground truncate">{t("acquireSkills.subtitle")}</p>
           </div>
           <div className="ornate-card px-2 py-1 flex items-center gap-1 text-xs">
             <span className="text-muted-foreground">SP</span>
