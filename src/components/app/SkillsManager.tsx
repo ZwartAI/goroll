@@ -993,6 +993,7 @@ function MassGrant({ campaignId, dm, players, onlineIds }: {
       ], { kind: "character.update", id: p.id, prev: { level: cur } });
     }
     toast.success(t("skills.massLevelDone", { n: sel.size }));
+    setConfirmKind(null);
   }
 
   return (
