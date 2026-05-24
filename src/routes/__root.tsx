@@ -125,7 +125,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  useEffect(() => { mountGlobalClickSound(); mountDisableAutofill(); }, []);
+  useEffect(() => {
+    mountGlobalClickSound();
+    mountDisableAutofill();
+    const warm = () => { preloadButtonSound(); window.removeEventListener("pointerdown", warm); };
+    window.addEventListener("pointerdown", warm, { once: true });
+  }, []);
   useGlobalBackground();
 
   return (
