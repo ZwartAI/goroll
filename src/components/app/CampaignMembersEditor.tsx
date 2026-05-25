@@ -24,6 +24,9 @@ export function CampaignMembersEditor({ campaign, onBack }: { campaign: Campaign
   const [requests, setRequests] = useState<Req[]>([]);
   const [singleDmOnly, setSingleDmOnly] = useState<boolean>(!!(campaign as any).single_dm_only);
   const [lockNames, setLockNames] = useState<boolean>(!!(campaign as any).lock_character_names);
+  const [joinMode, setJoinMode] = useState<"request" | "closed">(
+    ((campaign as any).player_join_mode as "request" | "closed") || "request",
+  );
   const [busy, setBusy] = useState(false);
   const { t } = useT();
   const me = getStoredUser();
