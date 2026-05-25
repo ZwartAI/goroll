@@ -128,8 +128,10 @@ function RootComponent() {
   useEffect(() => {
     mountGlobalClickSound();
     mountDisableAutofill();
-    const warm = () => { preloadButtonSound(); window.removeEventListener("pointerdown", warm); };
-    window.addEventListener("pointerdown", warm, { once: true });
+    // Eagerly warm the button click sample so the very first interaction
+    // (login, campaign select) plays the real sound — never the old
+    // synthetic fallback.
+    preloadButtonSound();
   }, []);
   useGlobalBackground();
 

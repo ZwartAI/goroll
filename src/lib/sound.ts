@@ -165,22 +165,6 @@ export function preloadSfx(urls: string[]) {
   });
 }
 
-function playFallbackClick(c: AudioContext) {
-  try {
-    const o = c.createOscillator();
-    const g = c.createGain();
-    o.type = "triangle";
-    o.frequency.setValueAtTime(680, c.currentTime);
-    o.frequency.exponentialRampToValueAtTime(320, c.currentTime + 0.07);
-    g.gain.setValueAtTime(0.0001, c.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.08, c.currentTime + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.09);
-    o.connect(g).connect(c.destination);
-    o.start();
-    o.stop(c.currentTime + 0.1);
-  } catch { /* ignore */ }
-}
-
 export function playClick() {
   if (!isSoundOn()) return;
   const c = ensureCtx();
@@ -194,11 +178,12 @@ export function playClick() {
       src.connect(g).connect(c.destination);
       src.start();
       return;
-    } catch { /* fall through */ }
+    } catch { /* ignore */ }
   }
-  // Trigger async load and play fallback once.
+  // Buffer not ready yet: trigger load but stay silent. We no longer emit
+  // the synthetic fallback click so the entire app uses a single,
+  // consistent button sound across every screen.
   loadButtonBuffer(c);
-  playFallbackClick(c);
 }
 
 /** Subtle "ding" bell for notifications (synthetic, no asset). */
