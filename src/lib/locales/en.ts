@@ -805,6 +805,7 @@ export const en: Dict = {
     noRequests: "No pending requests.",
     kindCoDM: "Co-DM",
     kindRejoin: "Rejoin",
+    kindPlayerJoin: "Join",
     accept: "Accept",
     reject: "Reject",
     removedAndBanned: "{name} was removed from the campaign. Their items and boosters were sent to your Vault.",
