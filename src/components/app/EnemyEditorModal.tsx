@@ -120,6 +120,10 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
       biome: biome || null,
       base_damage: baseDamage.trim() || null,
       behavior: behavior.trim() || null,
+      image_url: image.url || null,
+      image_offset_x: image.offsetX,
+      image_offset_y: image.offsetY,
+      image_scale: image.scale,
     };
 
     if (isEdit && editing) {
