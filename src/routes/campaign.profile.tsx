@@ -48,7 +48,7 @@ import { PlayerNotifier } from "@/components/app/PlayerNotifier";
 import { InitialStatsSetupModal } from "@/components/app/InitialStatsSetupModal";
 
 
-import { useLongPress } from "@/hooks/useLongPress";
+
 
 // Kick off character-sheet asset preloading as soon as this route module is
 // imported (idempotent — the home screen also calls this when Player/Spectator
