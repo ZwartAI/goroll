@@ -33,6 +33,11 @@ export type EnemyTemplate = {
   created_by_character_id: string | null;
   created_at: string;
   updated_at: string;
+  // Custom uploaded image + framing (overrides the visual asset when set).
+  image_url: string;
+  image_offset_x: number;
+  image_offset_y: number;
+  image_scale: number;
 };
 
 export type EnemyTemplateSkill = {
