@@ -906,9 +906,9 @@ function GrantSp({ campaignId, target, dm }: { campaignId: string; target: Chara
       <p className="text-[10px] text-muted-foreground">
         {t("skills.spBalance")}: <span className="font-display text-[var(--gold)]">{(target as any).skill_points ?? 0}</span>
       </p>
-      <div className="flex items-center gap-2">
-        <input type="number" className="flex-1 bg-input border border-border rounded px-2 py-2 text-sm text-right" value={amount} onChange={e => setAmount(+e.target.value)} />
-        <button className="btn-fantasy flex-1" onClick={() => amount !== 0 && setConfirmOpen(true)}>{amount >= 0 ? t("skills.give") : t("skills.take")}</button>
+      <div className="flex flex-col gap-2">
+        <input type="number" className="w-full bg-input border border-border rounded px-2 py-2 text-sm text-left" value={amount} onChange={e => setAmount(+e.target.value)} />
+        <button className="btn-fantasy w-full" onClick={() => amount !== 0 && setConfirmOpen(true)}>{amount >= 0 ? t("skills.give") : t("skills.take")}</button>
       </div>
       <ConfirmDialog
         open={confirmOpen}
