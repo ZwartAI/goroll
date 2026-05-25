@@ -683,7 +683,7 @@ function Home() {
         </div>
       )}
 
-      {!waitingReqId && !expelledCampaign && step === "campaign" && user && (
+      {!waitingReqId && !expelledCampaign && !closedCampaign && step === "campaign" && user && (
         <div className="ornate-card p-5 space-y-4">
           <h2 className="text-center font-display text-lg">{t("home.myCampaigns")}</h2>
           <input className="w-full rounded-md bg-input border border-border px-3 py-2 text-sm"
