@@ -26,7 +26,7 @@ import { HpShieldBar } from "@/components/app/HpShieldBar";
 import { useEncounterShields } from "@/hooks/useEncounterShields";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
+import { EnemyIcon, getEnemyAssetUrl, getEnemyCustomImage } from "@/components/app/EnemyIconPicker";
 import { EnemyEditorModal } from "@/components/app/EnemyEditorModal";
 import { EnemyDamageModal } from "@/components/app/EnemyDamageModal";
 import { EnemyAttackPlayersModal } from "@/components/app/EnemyAttackPlayersModal";
