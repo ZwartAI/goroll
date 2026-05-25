@@ -143,9 +143,15 @@ function Profile() {
       const k = Date.now();
       setDamageKey(k);
       setShakeKey(k);
+      const tDmg = window.setTimeout(() => setDamageKey((v) => (v === k ? null : v)), 1300);
+      const tShk = window.setTimeout(() => setShakeKey((v) => (v === k ? null : v)), 700);
+      return () => { window.clearTimeout(tDmg); window.clearTimeout(tShk); };
     } else if (cur > prev) {
       playSfx(sfxHeal);
-      setHealKey(Date.now());
+      const k = Date.now();
+      setHealKey(k);
+      const tHeal = window.setTimeout(() => setHealKey((v) => (v === k ? null : v)), 1400);
+      return () => { window.clearTimeout(tHeal); };
     }
   }, [character?.current_hp]);
 

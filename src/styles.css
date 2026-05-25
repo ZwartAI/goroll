@@ -417,28 +417,32 @@
   /* Character sheet damage / heal feedback (scoped to portrait inner box) */
   @keyframes cs-damage-flash {
     0%   { opacity: 0; }
-    20%  { opacity: 1; }
+    15%  { opacity: 1; }
+    70%  { opacity: 0.95; }
     100% { opacity: 0; }
   }
   @keyframes cs-heal-pulse {
-    0%   { opacity: 0; transform: scale(0.85); }
-    35%  { opacity: 0.9; transform: scale(1.05); }
-    100% { opacity: 0; transform: scale(1.18); }
+    0%   { opacity: 0; transform: scale(0.9); }
+    20%  { opacity: 1; transform: scale(1.02); }
+    70%  { opacity: 0.95; transform: scale(1.06); }
+    100% { opacity: 0; transform: scale(1.15); }
   }
   .cs-damage-overlay {
     position: absolute; inset: 0;
-    background: radial-gradient(circle, rgba(220,38,38,0.6) 0%, rgba(127,29,29,0.4) 70%, transparent 100%);
-    mix-blend-mode: multiply;
+    background: radial-gradient(circle, rgba(255,40,40,0.95) 0%, rgba(200,15,15,0.85) 55%, rgba(120,0,0,0.55) 100%);
+    box-shadow: inset 0 0 40px 8px rgba(255,0,0,0.85);
     pointer-events: none;
-    animation: cs-damage-flash 650ms ease-out forwards;
+    z-index: 5;
+    animation: cs-damage-flash 1200ms ease-out forwards;
   }
   .cs-heal-overlay {
     position: absolute; inset: 0;
-    background: radial-gradient(circle, rgba(34,197,94,0.55) 0%, rgba(16,122,55,0.3) 65%, transparent 100%);
-    mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(60,255,120,0.9) 0%, rgba(20,200,80,0.8) 55%, rgba(0,140,60,0.5) 100%);
+    box-shadow: inset 0 0 40px 8px rgba(40,255,120,0.85);
     pointer-events: none;
     transform-origin: center;
-    animation: cs-heal-pulse 850ms ease-out forwards;
+    z-index: 5;
+    animation: cs-heal-pulse 1300ms ease-out forwards;
   }
 
   @keyframes cs-shake {
