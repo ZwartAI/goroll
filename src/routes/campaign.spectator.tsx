@@ -155,7 +155,7 @@ function SpectatorHeader({
   const [mailboxOpen, setMailboxOpen] = useState(false);
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const items = useStandardHeaderItems({
-    achievements: true,
+    achievements: false,
     mic: { enabled: voice.enabled, toggle: voice.toggle },
     fullscreen: true,
     settings: { onOpen: () => setAppSettingsOpen(true) },

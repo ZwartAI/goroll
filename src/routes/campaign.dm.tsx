@@ -859,7 +859,7 @@ function DMHeader({
   const [mailboxOpen, setMailboxOpen] = useState(false);
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const items = useStandardHeaderItems({
-    achievements: true,
+    achievements: false,
     bestiary: true,
     mailbox: { onOpen: () => setMailboxOpen(true) },
     mic: { enabled: voice.enabled, toggle: voice.toggle },

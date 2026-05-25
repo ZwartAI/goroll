@@ -48,7 +48,7 @@ import { PlayerNotifier } from "@/components/app/PlayerNotifier";
 import { InitialStatsSetupModal } from "@/components/app/InitialStatsSetupModal";
 
 
-import { useLongPress } from "@/hooks/useLongPress";
+
 
 // Kick off character-sheet asset preloading as soon as this route module is
 // imported (idempotent — the home screen also calls this when Player/Spectator
@@ -87,7 +87,7 @@ function Profile() {
   // When opened from Escenario tab (or from the log), force read-only sheet.
   const [openCharReadOnly, setOpenCharReadOnly] = useState(false);
 
-  const coinsPress = useLongPress(() => setPurseOpen(true), 500);
+  
 
   const voice = useVoice(campaign?.id, character?.id);
   const [micSettingsOpen, setMicSettingsOpen] = useState(false);
@@ -274,9 +274,7 @@ function Profile() {
               ) : (
                 <button
                   type="button"
-                  {...coinsPress}
-                  onContextMenu={(e) => { e.preventDefault(); setPurseOpen(true); }}
-                  onDoubleClick={() => setPurseOpen(true)}
+                  onClick={() => setPurseOpen(true)}
                   aria-label={`${t("purse.openHint")} — ${t("profile.coins")} ${character.coins}`}
                   title={t("purse.openHint")}
                   className="relative w-full block p-0 bg-transparent border-0 select-none transition-transform active:scale-[0.96]"
@@ -837,7 +835,7 @@ function ProfileHeader({
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const items = useStandardHeaderItems({
     stats: { to: "/campaign/settings" },
-    achievements: true,
+    achievements: false,
     mic: { enabled: voice.enabled, toggle: voice.toggle },
     fullscreen: true,
     settings: { onOpen: () => setAppSettingsOpen(true) },
