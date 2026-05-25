@@ -158,6 +158,10 @@ export async function createTemplate(
     is_boss: draft.is_boss,
     is_elite: draft.is_elite,
     created_by_character_id: dm.id,
+    image_url: draft.image_url ?? "",
+    image_offset_x: draft.image_offset_x ?? 50,
+    image_offset_y: draft.image_offset_y ?? 50,
+    image_scale: draft.image_scale ?? 1,
   };
   const { data, error } = await (supabase as any)
     .from("enemy_templates")
