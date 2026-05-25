@@ -44,10 +44,10 @@ export function FramedCharacterPortrait({ character, onClick, ariaLabel, classNa
       <div
         className="absolute overflow-hidden bg-[var(--secondary)]"
         style={{
-          top: "calc(9% - 3px)",
-          right: "calc(9% - 6px)",
-          bottom: "calc(9% - 4px)",
-          left: "calc(9% - 3px)",
+          top: "calc(9% - 9px)",
+          right: "calc(9% - 12px)",
+          bottom: "calc(9% - 10px)",
+          left: "calc(9% - 9px)",
           borderRadius: "6%",
           transform: `translate(${portraitOffsetX}%, ${portraitOffsetY}%) scale(${1 / 1.1})`,
           transformOrigin: "center center",
