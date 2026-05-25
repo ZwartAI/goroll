@@ -18,7 +18,7 @@ import {
   type CombatTurnPin,
 } from "@/lib/combat";
 import { loadTemplate, type EnemyTemplate } from "@/lib/bestiary";
-import { EnemyIcon, getEnemyAssetUrl } from "@/components/app/EnemyIconPicker";
+import { EnemyIcon, getEnemyAssetUrl, getEnemyCustomImage } from "@/components/app/EnemyIconPicker";
 import { EnemySkillCard } from "@/components/app/EnemySkillCard";
 import { EnemySkillUseModal } from "@/components/app/EnemySkillUseModal";
 import { EnemySpeechModal } from "@/components/app/EnemySpeechModal";
