@@ -840,26 +840,27 @@ function ProfileHeader({
   settingsAria: string;
 }) {
   const [mailboxOpen, setMailboxOpen] = useState(false);
+  const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const items = useStandardHeaderItems({
+    stats: { to: "/campaign/settings" },
     achievements: true,
     mic: { enabled: voice.enabled, toggle: voice.toggle },
     fullscreen: true,
+    settings: { onOpen: () => setAppSettingsOpen(true) },
     exit: { onExit: onLogout },
   });
   return (
-    <header className="relative mb-3 min-h-[64px]">
+    <header className="relative mb-3 min-h-[64px]" aria-label={settingsAria}>
       <div className="text-center px-2">
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{campaignName}</p>
         <h1 className="font-display text-xl rune-glow truncate">{characterName}</h1>
         <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
       </div>
       <div className="absolute right-0 top-1 flex items-center gap-1">
-        <Link to="/campaign/settings" className="text-muted-foreground hover:text-foreground p-1" aria-label={settingsAria}>
-          <User size={20} />
-        </Link>
         <HeaderMenu items={items} />
       </div>
       <MailboxInlineModal open={mailboxOpen} onClose={() => setMailboxOpen(false)} />
+      {appSettingsOpen && <AppSettingsModal onClose={() => setAppSettingsOpen(false)} />}
     </header>
   );
 }
