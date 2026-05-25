@@ -3,17 +3,17 @@ import { useT } from "@/lib/i18n";
 
 
 /**
- * Log container that:
- *  - Shows last `initial` entries (newest order assumed pre-sorted).
- *  - Renders a "ver más +" expander to reveal the rest.
- *  - Wraps the scroll area INSIDE the ornate-card so the inner red
- *    border (::before) doesn't visually scroll out of view.
+ * Log container with up to three display modes:
+ *  - "closed"   (only when `extraClosedState` is true): collapses the whole
+ *               block down to a single tappable button labeled `closedLabel`
+ *               so the screen ends at the button's bottom edge. Tapping it
+ *               expands to the peek state.
+ *  - "peek"     (when `collapsible` is true): shows `collapsedRows` entries.
+ *               Tapping the block expands it fully.
+ *  - "expanded": full scrollable log with "show more" pagination.
  *
- * When `collapsible` is true the block starts collapsed showing only
- * `collapsedRows` entries (default 2). Clicking expands it to full size.
- * After 1 minute of inactivity it collapses but preserves the scroll
- * position. After 3 minutes of inactivity the scroll position is reset
- * to the top.
+ * After 1 minute of inactivity in the expanded state we save the scroll
+ * position and collapse to peek. After 3 minutes the scroll is reset.
  */
 export function LogList<T>({
   rows,
@@ -23,6 +23,8 @@ export function LogList<T>({
   renderRow,
   collapsible = false,
   collapsedRows = 2,
+  extraClosedState = false,
+  closedLabel,
 }: {
   rows: T[];
   initial?: number;
@@ -31,10 +33,15 @@ export function LogList<T>({
   renderRow: (row: T) => ReactNode;
   collapsible?: boolean;
   collapsedRows?: number;
+  /** When true, adds an outermost "fully closed" state that renders only a button. */
+  extraClosedState?: boolean;
+  /** Label shown inside the closed-state button. */
+  closedLabel?: string;
 }) {
   const { t } = useT();
   const [expanded, setExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(collapsible);
+  const [closed, setClosed] = useState(extraClosedState);
   const visible = expanded ? rows : rows.slice(0, initial);
   const hidden = rows.length - visible.length;
 
@@ -66,22 +73,34 @@ export function LogList<T>({
 
   // Restore scroll when re-opening from collapsed state.
   useEffect(() => {
-    if (!collapsed && scrollRef.current) {
+    if (!closed && !collapsed && scrollRef.current) {
       scrollRef.current.scrollTop = savedScrollRef.current;
       scheduleIdle();
     }
     return () => {
-      if (collapsed) clearTimers();
+      if (collapsed || closed) clearTimers();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collapsed]);
+  }, [collapsed, closed]);
 
   useEffect(() => () => clearTimers(), []);
 
   const handleInteract = () => {
-    if (!collapsible || collapsed) return;
+    if (!collapsible || collapsed || closed) return;
     scheduleIdle();
   };
+
+  if (extraClosedState && closed) {
+    return (
+      <button
+        type="button"
+        className="ornate-card w-full px-3 py-2 text-center font-display text-xs uppercase tracking-widest text-[var(--gold)] cursor-pointer"
+        onClick={() => setClosed(false)}
+      >
+        {closedLabel ?? t("profile.sessionLog")}
+      </button>
+    );
+  }
 
   if (collapsible && collapsed) {
     const peek = rows.slice(0, collapsedRows);
@@ -102,6 +121,19 @@ export function LogList<T>({
           {peek.map(renderRow)}
           {!rows.length && <p className="text-center text-xs text-muted-foreground py-4">{empty}</p>}
         </div>
+        {extraClosedState && (
+          <button
+            type="button"
+            className="w-full text-[10px] text-muted-foreground hover:underline py-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCollapsed(true);
+              setClosed(true);
+            }}
+          >
+            {t("collapseUI.collapse")} −
+          </button>
+        )}
       </div>
     );
   }
@@ -135,6 +167,20 @@ export function LogList<T>({
               e.stopPropagation();
               setExpanded(false);
               handleInteract();
+            }}
+          >
+            {t("collapseUI.collapse")} −
+          </button>
+        )}
+        {extraClosedState && (
+          <button
+            type="button"
+            className="w-full text-[10px] text-muted-foreground hover:underline py-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(false);
+              setCollapsed(true);
+              setClosed(true);
             }}
           >
             {t("collapseUI.collapse")} −
