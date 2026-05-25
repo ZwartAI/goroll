@@ -1,20 +1,46 @@
+# Ajuste de posición del cuadro de imagen del portrait
+
+## Contexto
+
+En `src/components/app/FramedCharacterPortrait.tsx` el componente está compuesto por dos capas independientes:
+
+1. El **cuadro de imagen** (inner portrait), posicionado con `inset: "9%"` sobre el cuadrado base.
+2. El **frame decorativo + número de nivel**, en un wrapper aparte con su propio `scale` y `translate` (constantes `frameScale`, `frameOffsetX`, `frameOffsetY`).
+
+Como son dos capas separadas, podemos mover solo la imagen sin que el frame ni el número de nivel se desplacen.
+
 ## Cambio
 
-Reemplazar el archivo `src/assets/character-sheet/stats-panel.png` por la imagen recién subida `ADV2.png`.
+Agregar dos constantes nuevas al objeto `PORTRAIT_FRAME_LAYOUT` para el offset del cuadro interior:
 
-## Por qué es seguro
+- `portraitOffsetX: -2` (porcentaje, negativo = izquierda)
+- `portraitOffsetY: -2` (porcentaje, negativo = arriba)
 
-- Las dimensiones coinciden: ambos son 1920×980.
-- El layout del nuevo asset es idéntico al actual (3 tarjetas: ataque / defensa / velocidad, con iconos en la mitad superior y zona oscura inferior para los valores).
-- El componente que lo usa (`src/routes/campaign.profile.tsx`, líneas 223-258) calcula las posiciones de los valores con porcentajes (`leftPct` 16.5 / 50 / 83.5 y `top: 72%`), que siguen cuadrando con la nueva imagen.
+Y aplicarlas como `transform: translate(...)` al `<div>` que tiene `inset: "9%"` (la capa de la imagen), dejando intacto el wrapper del frame.
 
-## Pasos
+```text
+┌──────────────────────────┐
+│   frame (sin cambios)    │
+│   ┌──────────────────┐   │
+│   │  imagen ← ↑      │   │  ← solo esta capa se mueve
+│   └──────────────────┘   │
+└──────────────────────────┘
+```
 
-1. Copiar `user-uploads://ADV2.png` a `src/assets/character-sheet/stats-panel.png` (sobrescribir).
-2. No tocar código: el import y las coordenadas siguen siendo válidos.
-3. Verificar visualmente en `/campaign/profile` que los números (daño, defensa, velocidad + sufijo `ft`) quedan centrados en cada tarjeta. Si hace falta micro-ajuste, mover `top: "72%"` un par de puntos.
+Valores iniciales sugeridos: `-2%` en X y `-2%` en Y (movimiento sutil hacia arriba-izquierda). Si después se necesita más/menos, basta con ajustar esas dos constantes en un solo lugar.
 
-## Fuera de alcance
+## Detalles técnicos
 
-- No se modifican textos, lógica, ni i18n.
-- No se cambian los assets de cabecera/HP/portrait ni el `preloadCharacterSheetAssets` (la ruta del archivo es la misma).
+Archivo único a modificar: `src/components/app/FramedCharacterPortrait.tsx`.
+
+- Añadir `portraitOffsetX` y `portraitOffsetY` al objeto `PORTRAIT_FRAME_LAYOUT`.
+- En el `<div>` de la imagen (actualmente `style={{ inset: "9%", borderRadius: "6%" }}`) añadir `transform: translate(${portraitOffsetX}%, ${portraitOffsetY}%)`.
+- No tocar el wrapper del frame ni el posicionamiento del número de nivel.
+- No se modifican rutas, tipos, estilos globales ni otros componentes.
+
+## Validación
+
+Revisar visualmente en `/campaign/profile` que:
+- La imagen quede pegada al borde interno superior-izquierdo del frame.
+- El frame siga exactamente en la misma posición que antes.
+- El número de nivel siga centrado en el mismo lugar.
