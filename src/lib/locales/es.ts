@@ -807,6 +807,7 @@ export const es = {
     noRequests: "No hay solicitudes pendientes.",
     kindCoDM: "Co-DM",
     kindRejoin: "Reingreso",
+    kindPlayerJoin: "Ingreso",
     accept: "Aceptar",
     reject: "Rechazar",
     removedAndBanned: "{name} fue removido de la campaña. Sus objetos y potenciadores se enviaron a tu Vault.",
