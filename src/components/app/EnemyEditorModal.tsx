@@ -58,6 +58,12 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
   const [behavior, setBehavior] = useState<string>((editing as any)?.enemy_behavior || "");
   const [count, setCount] = useState(1);
   const [position, setPosition] = useState<InsertPosition>("byInitiative");
+  const [image, setImage] = useState<EnemyImageState>({
+    url: (editing as any)?.image_url || "",
+    offsetX: (editing as any)?.enemy_image_offset_x ?? 50,
+    offsetY: (editing as any)?.enemy_image_offset_y ?? 50,
+    scale: (editing as any)?.enemy_image_scale ?? 1,
+  });
   const [busy, setBusy] = useState(false);
 
   // Skills (snapshot per enemy participant).
