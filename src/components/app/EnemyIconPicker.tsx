@@ -43,8 +43,31 @@ export function getEnemyAssetUrl(key: string | null | undefined): string | null 
   return ENEMY_ASSETS[key.slice(6)] || null;
 }
 
+export type EnemyCustomImage = {
+  url: string;
+  offsetX?: number; // 0..100 (50 = center)
+  offsetY?: number;
+  scale?: number;
+};
+
+/**
+ * Extract the custom-image framing from a record. Works for both bestiary
+ * templates (`image_url`, `image_offset_x`, …) and combat participants
+ * (`image_url`, `enemy_image_offset_x`, …). Returns null when no custom
+ * image is set so callers can fall back to the visual asset / lucide icon.
+ */
+export function getEnemyCustomImage(entity: any): EnemyCustomImage | null {
+  if (!entity) return null;
+  const url: string = entity.image_url || "";
+  if (!url) return null;
+  const ox = entity.image_offset_x ?? entity.enemy_image_offset_x ?? 50;
+  const oy = entity.image_offset_y ?? entity.enemy_image_offset_y ?? 50;
+  const sc = entity.image_scale ?? entity.enemy_image_scale ?? 1;
+  return { url, offsetX: Number(ox), offsetY: Number(oy), scale: Number(sc) };
+}
+
 export function EnemyIcon({
-  name, size = 24, color, fill = false, assetScale = 1,
+  name, size = 24, color, fill = false, assetScale = 1, customImage,
 }: {
   name: string | null | undefined;
   size?: number;
@@ -52,11 +75,45 @@ export function EnemyIcon({
   fill?: boolean;
   /** Scale factor applied only to tier visual assets (not to lucide icons). */
   assetScale?: number;
+  /** When present, render this uploaded image (with the saved framing) as a
+   *  circular avatar instead of the asset / lucide icon. */
+  customImage?: EnemyCustomImage | null;
 }) {
+  // Custom uploaded image takes precedence over assets / lucide icons.
+  if (customImage?.url) {
+    const ox = customImage.offsetX ?? 50;
+    const oy = customImage.offsetY ?? 50;
+    const sc = customImage.scale ?? 1;
+    const tx = `translate(${ox - 50}%, ${oy - 50}%) scale(${sc})`;
+    if (fill) {
+      return (
+        <img
+          src={customImage.url}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: "center", transform: tx, transformOrigin: "center" }}
+        />
+      );
+    }
+    return (
+      <span
+        style={{ width: size, height: size, display: "inline-block", borderRadius: "9999px", overflow: "hidden", position: "relative" }}
+      >
+        <img
+          src={customImage.url}
+          alt=""
+          style={{
+            position: "absolute", inset: 0, width: "100%", height: "100%",
+            objectFit: "cover", objectPosition: "center",
+            transform: tx, transformOrigin: "center",
+          }}
+        />
+      </span>
+    );
+  }
+
   const asset = getEnemyAssetUrl(name);
   if (asset) {
-    // When `fill` is true the image fills its parent (use inside a rounded
-    // bordered container). Otherwise render at the requested fixed size.
     if (fill) {
       return (
         <img
@@ -68,7 +125,6 @@ export function EnemyIcon({
       );
     }
     if (assetScale !== 1) {
-      // Render inside a fixed-size circular clip and scale the image to zoom in.
       return (
         <span
           style={{ width: size, height: size, display: "inline-block", borderRadius: "9999px", overflow: "hidden", position: "relative" }}
@@ -77,14 +133,9 @@ export function EnemyIcon({
             src={asset}
             alt=""
             style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center",
-              transform: `scale(${assetScale})`,
-              transformOrigin: "center",
+              position: "absolute", inset: 0, width: "100%", height: "100%",
+              objectFit: "cover", objectPosition: "center",
+              transform: `scale(${assetScale})`, transformOrigin: "center",
             }}
           />
         </span>
