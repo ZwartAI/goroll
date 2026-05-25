@@ -219,6 +219,15 @@ export function EnemyEditorModal({ encounter, dm, editing, onClose }: Props) {
           </div>
         </Field>
 
+        <Field label={t("bestiary.customImage")}>
+          <EnemyImageEditor
+            value={image}
+            onChange={setImage}
+            fallbackUrl={getEnemyAssetUrl(icon)}
+            storageKey={`enemy/${encounter.campaign_id}`}
+          />
+        </Field>
+
         <Field label={t("combat.icon")}>
           <EnemyIconPicker value={icon} onChange={setIcon} />
         </Field>
