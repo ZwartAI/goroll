@@ -336,13 +336,10 @@
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-card);
     position: relative;
-  }
-  .ornate-card::before {
-    content: "";
-    position: absolute; inset: 4px;
-    border: 1px solid color-mix(in oklab, var(--blood) 50%, transparent);
-    border-radius: calc(var(--radius-xl) - 4px);
-    pointer-events: none;
+    /* Inner red frame drawn with outline so it tracks the visible
+       border-box even when the card itself scrolls. */
+    outline: 1px solid color-mix(in oklab, var(--blood) 50%, transparent);
+    outline-offset: -5px;
   }
   .gem-divider {
     height: 1px;
