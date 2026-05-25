@@ -10,6 +10,9 @@ type Props = {
   ariaLabel?: string;
   className?: string;
   level?: number;
+  /** Trigger keys: when changed and non-null, plays a one-shot damage/heal overlay inside the portrait. */
+  damageFlashKey?: number | null;
+  healFlashKey?: number | null;
 };
 
 // Adjustable layout constants for the framed portrait.
