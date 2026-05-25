@@ -49,7 +49,7 @@ import { CharacterImageViewer } from "@/components/app/CharacterImageViewer";
 import { FrameSelectorModal } from "@/components/app/FrameSelectorModal";
 import { AppSettingsModal } from "@/components/app/AppSettingsModal";
 import { useVoice } from "@/lib/useVoice";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { AttributesBar } from "@/components/app/AttributesBar";
