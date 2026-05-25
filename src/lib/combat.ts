@@ -593,6 +593,11 @@ export type EnemyDraft = {
   biome?: string | null;
   base_damage?: string | null;
   behavior?: string | null;
+  // Custom image (uploaded asset) + framing.
+  image_url?: string | null;
+  image_offset_x?: number | null;
+  image_offset_y?: number | null;
+  image_scale?: number | null;
 };
 
 
