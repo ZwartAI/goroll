@@ -24,6 +24,7 @@ import { CharacterImageViewer } from "@/components/app/CharacterImageViewer";
 import { CombatDMPanel } from "@/components/app/CombatDMPanel";
 import { MicSettingsModal } from "@/components/app/MicSettingsModal";
 import { HeaderMenu, MailboxInlineModal, useStandardHeaderItems } from "@/components/app/HeaderMenu";
+import { AppSettingsModal } from "@/components/app/AppSettingsModal";
 import { useVoice } from "@/lib/useVoice";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
