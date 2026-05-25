@@ -115,6 +115,10 @@ export function MonsterEditor({ campaignId, dm, editing, onClose, onSaved }: Pro
     is_boss: tier === "boss" || tier === "god",
     is_elite: tier === "elite",
     created_by_character_id: dm.id,
+    image_url: image.url || "",
+    image_offset_x: image.offsetX,
+    image_offset_y: image.offsetY,
+    image_scale: image.scale,
   });
 
   /** All skills (saved + local) shown in the editor. */
