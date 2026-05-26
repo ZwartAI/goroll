@@ -152,7 +152,7 @@ export function EnemyImageEditor({
             src={showUrl}
             alt=""
             draggable={false}
-            className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+            className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none"
             style={{
               transform: `translate(${ox - 50}%, ${oy - 50}%) scale(${scale})`,
               transformOrigin: "center center",

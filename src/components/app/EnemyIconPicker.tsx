@@ -90,7 +90,7 @@ export function EnemyIcon({
         <img
           src={customImage.url}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
           style={{ objectPosition: "center", transform: tx, transformOrigin: "center" }}
         />
       );
@@ -104,7 +104,7 @@ export function EnemyIcon({
           alt=""
           style={{
             position: "absolute", inset: 0, width: "100%", height: "100%",
-            objectFit: "cover", objectPosition: "center",
+            objectFit: "contain", objectPosition: "center",
             transform: tx, transformOrigin: "center",
           }}
         />
